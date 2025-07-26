@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.Hosting.LocalStack", "src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj", "{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.LocalStack", "src\Aspire.LocalStack\Aspire.LocalStack.csproj", "{882CDB82-6C4C-4C1F-BF7B-5254841DDC24}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{7FF6089A-D52B-438B-870A-69D1A9D4ECB5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{882CDB82-6C4C-4C1F-BF7B-5254841DDC24}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{882CDB82-6C4C-4C1F-BF7B-5254841DDC24}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{882CDB82-6C4C-4C1F-BF7B-5254841DDC24}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{882CDB82-6C4C-4C1F-BF7B-5254841DDC24}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{882CDB82-6C4C-4C1F-BF7B-5254841DDC24} = {7FF6089A-D52B-438B-870A-69D1A9D4ECB5}
+		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47} = {7FF6089A-D52B-438B-870A-69D1A9D4ECB5}
+	EndGlobalSection
+EndGlobal
