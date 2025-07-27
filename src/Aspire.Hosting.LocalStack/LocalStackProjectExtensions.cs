@@ -23,7 +23,6 @@ public static class LocalStackProjectExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentNullException.ThrowIfNull(localStack);
 
-        // Add standard connection string reference - this provides the basic LocalStack endpoint URL
         builder.WithReference(localStack, connectionName: localStack.Resource.Name);
 
         // Automatically inject LocalStack configuration as environment variables
