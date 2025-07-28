@@ -1,0 +1,61 @@
+﻿@page "/dynamodb-local-test"
+@using Amazon.DynamoDBv2
+@using Amazon.DynamoDBv2.Model
+
+@inject IAmazonDynamoDB DdbClient
+@inject ILogger<DynamoDBLocalTest> Logger
+
+
+<h3>Test DynamoDB Local Integration</h3>
+
+<p>The IAmazonDynamoDB service client is configured to make requests to: <strong>@ServiceUrl</strong></p>
+
+<p>Tables in Local DynamoDB Instance</p>
+<ul>
+@foreach(var name in TableNames)
+{
+    <li>@name</li>
+}
+</ul>
+
+@code {
+
+    private string? ServiceUrl { get; set; }
+
+    private List<string> TableNames { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var listTablesRequest = new ListTablesRequest();
+        ServiceUrl = DdbClient.DetermineServiceOperationEndpoint(listTablesRequest).URL;
+
+
+        // Create a table so something comes back in the ListTables call
+        var createRequest = new CreateTableRequest
+        {
+            TableName = "LocalDDBTable",
+            BillingMode = BillingMode.PAY_PER_REQUEST,
+            KeySchema = new List<KeySchemaElement>
+            {
+                new() {AttributeName = "Id", KeyType = KeyType.HASH}
+            },
+            AttributeDefinitions = new List<AttributeDefinition>
+            {
+                new() {AttributeName = "Id", AttributeType = ScalarAttributeType.S}
+            }
+        };
+
+        try
+        {
+            await DdbClient.CreateTableAsync(createRequest);
+            Logger.LogInformation("Table {TableName} created", createRequest.TableName);
+        }
+        catch (ResourceInUseException ex)
+        {
+            Logger.LogWarning(ex, "CreateTable failed because table already exists: {TableName}", createRequest.TableName);
+        }
+
+
+        TableNames = (await DdbClient.ListTablesAsync(listTablesRequest)).TableNames;
+    }
+}

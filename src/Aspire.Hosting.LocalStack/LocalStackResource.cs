@@ -32,6 +32,8 @@ public sealed class LocalStackResource(string name, ILocalStackOptions options) 
     /// <summary>
     /// Gets the connection string expression for the LocalStack resource.
     /// This provides the connection information in the format expected by LocalStack.Client.
+    /// Uses the configured LocalStack host and port for consistency with LocalStack.Client configuration.
     /// </summary>
-    public ReferenceExpression ConnectionStringExpression => ReferenceExpression.Create($"{PrimaryEndpoint.Property(EndpointProperty.Url)}");
+    public ReferenceExpression ConnectionStringExpression
+        => ReferenceExpression.Create($"http{(Options.Config.UseSsl ? "s" : string.Empty)}://{Options.Config.LocalStackHost}:{Options.Config.EdgePort.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
 }

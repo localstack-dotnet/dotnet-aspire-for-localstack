@@ -1,0 +1,67 @@
+﻿@page "/message-publisher"
+@using Frontend.Models
+@using AWS.Messaging
+
+<!-- IMessagePublisher comes from the AWS.Messaging package which uses the AWS service clients to publish messages to SQS, SNS and EventBridge. -->
+@inject IMessagePublisher Publisher
+
+<h3>Message Publisher Example</h3>
+
+<p>
+The page publishes a message to the SNS topic provisioning in the AppHost and assigned to this project. To publish the messages the <a href="https://github.com/awslabs/aws-dotnet-messaging">AWS Messaging</a>
+package is used which uses services clients that were configured in the AppHost.
+</p>
+
+
+<p>
+    <label>
+        Recipient:
+        <input @bind="Recipient" />
+    </label>
+</p>
+<p>
+    <label>
+        Message:
+        <input @bind="Message" />
+    </label>
+</p>
+<p>
+    <button @onclick="SendMessageAsync">Publish Message</button>
+</p>
+
+<ul>
+@foreach(var message in PublishStatuses)
+{
+    <li>@message</li>
+}
+</ul>
+
+
+@code {
+
+    private string? Message { get; set; }
+
+    private string? Recipient { get; set; }
+
+    private List<string> PublishStatuses { get; } = new();
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrEmpty(this.Message))
+        {
+            return;
+        }
+
+        var chatMessage = new ChatMessage { Message = this.Message, Recipient = this.Recipient };
+
+        try
+        {
+            await Publisher.PublishAsync(chatMessage);
+            PublishStatuses.Add($"{DateTime.UtcNow}: Message publish successfully");
+        }
+        catch(Exception e)
+        {
+            PublishStatuses.Add($"{DateTime.UtcNow}: Message failed to publish: {e.Message}");
+        }
+    }
+}

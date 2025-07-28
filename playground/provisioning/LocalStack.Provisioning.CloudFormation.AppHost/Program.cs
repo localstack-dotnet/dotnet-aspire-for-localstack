@@ -1,0 +1,45 @@
+// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+// Originally copied from https://github.com/aws/integrations-on-dotnet-aspire-for-aws
+// and adjusted for Aspire.Hosting.LocalStack. All rights reserved.
+
+using Amazon;
+using Aspire.Hosting.LocalStack;
+
+var builder = DistributedApplication.CreateBuilder(args);
+
+// Set up a configuration for the AWS .NET SDK
+var regionEndpoint = RegionEndpoint.USWest2;
+var awsConfig = builder.AddAWSSDKConfig().WithRegion(regionEndpoint);
+// Set up a configuration for the LocalStack
+var localStackOptions = builder.AddLocalStackConfig().WithRegion(regionEndpoint.SystemName);
+
+// Bootstrap the localstack container
+var localstack = builder.AddLocalStack("localstack", localStackOptions);
+
+// Provision application level resources like SQS queues and SNS topics defined in the CloudFormation template file app-resources.template.
+var awsResources = builder.AddAWSCloudFormationTemplate("AspireSampleDevResources", "app-resources.template")
+    .WithParameter("DefaultVisibilityTimeout", "30")
+    // Add the SDK configuration so the AppHost knows what account/region to provision the resources.
+    .WithReference(awsConfig)
+    // Wait for LocalStack container to become healthy
+    .WaitFor(localstack)
+    // Add the LocalStack configuration
+    .WithLocalStack(localstack);
+
+awsResources.WithTag("aws-repo", "integrations-on-dotnet-aspire-for-aws");
+
+// The AWS SDK Config reference is inferred from the CloudFormation resource associated with the project. If the
+// project doesn't have a CloudFormation resource, the AWS SDK Config reference can be assigned using the
+// WithReference method.
+builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
+    .WithExternalHttpEndpoints()
+    // Demonstrating binding all the output variables to a section in IConfiguration. By default, they are bound to the AWS::Resources prefix.
+    // The prefix is configurable by the optional configSection parameter.
+    .WithReference(awsResources)
+    // Add localstack reference to project, it will automatically configure LocalStack.Client.Extensions
+    .WaitFor(localstack)
+    .WithReference(localstack)
+    // Demonstrating binding a single output variable to an environment variable in the project.
+    .WithEnvironment("ChatTopicArnEnv", awsResources.GetOutput("ChatTopicArn"));
+
+await builder.Build().RunAsync().ConfigureAwait(false);

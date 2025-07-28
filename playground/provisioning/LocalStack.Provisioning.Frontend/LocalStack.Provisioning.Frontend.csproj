@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Core"/>
+    <PackageReference Include="AWSSDK.DynamoDBv2"/>
+    <PackageReference Include="AWSSDK.SQS"/>
+    <PackageReference Include="AWSSDK.SimpleNotificationService"/>
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup"/>
+    <PackageReference Include="AWS.Messaging"/>
+
+    <PackageReference Include="LocalStack.Client"/>
+    <PackageReference Include="LocalStack.Client.Extensions"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\LocalStack.Provisioning.ServiceDefaults\LocalStack.Provisioning.ServiceDefaults.csproj"/>
+  </ItemGroup>
+
+</Project>

@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AWS" />
-    <PackageReference Include="LocalStack.Client" />
+    <PackageReference Include="Aspire.Hosting.AWS"/>
+    <PackageReference Include="LocalStack.Client"/>
   </ItemGroup>
 
 </Project>
