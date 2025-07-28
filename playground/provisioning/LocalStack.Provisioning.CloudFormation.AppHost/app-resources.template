@@ -14,11 +14,14 @@
             }
         },
         "ChatTopic" : {
-            "Type" : "AWS::SNS::Topic",
-            "Properties" : {
-                "Subscription" : [
-                    {"Protocol" : "sqs", "Endpoint" : {"Fn::GetAtt" : [ "ChatMessagesQueue", "Arn"]}}
-                ]
+            "Type" : "AWS::SNS::Topic"
+        },
+        "ChatTopicSubscription": {
+            "Type": "AWS::SNS::Subscription",
+            "Properties": {
+                "Protocol": "sqs",
+                "TopicArn": { "Ref": "ChatTopic" },
+                "Endpoint": { "Fn::GetAtt": [ "ChatMessagesQueue", "Arn" ] }
             }
         },
         "ChatMessagesQueuePolicy": {

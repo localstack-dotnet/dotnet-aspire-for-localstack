@@ -1,11 +1,9 @@
 ﻿@page "/dynamodb-local-test"
 @using Amazon.DynamoDBv2
 @using Amazon.DynamoDBv2.Model
-@using System.Text.Json
 
 @inject IAmazonDynamoDB DdbClient
 @inject ILogger<DynamoDBLocalTest> Logger
-@inject IConfiguration Configuration
 
 <h3>DynamoDB Integration Test</h3>
 
@@ -23,73 +21,33 @@ else if (HasError)
 }
 else
 {
-    <h4>Available Tables (@TableDetails.Count)</h4>
+    <h4>Available Tables (@TableNames.Count)</h4>
 
-    @if (TableDetails.Count == 0)
+    @if (TableNames.Count == 0)
     {
         <p><em>No tables found in the DynamoDB instance.</em></p>
     }
     else
     {
-        @foreach (var table in TableDetails)
-        {
-            <div class="card mb-3">
-                <div class="card-header">
-                    <h5>Table: @table.TableName</h5>
-                    <small class="text-muted">
-                        Status: @table.Status | Items: @table.ItemCount |
-                        Created: @(table.CreationDateTime?.ToString("yyyy-MM-dd HH:mm:ss") ?? "Unknown")
-                    </small>
+        <div class="row">
+            @foreach (var tableName in TableNames)
+            {
+                <div class="col-12 mb-4">
+                    <DynamoDBTableViewer
+                        TableName="@tableName"
+                        Title="@($"Table: {tableName}")"
+                        EnablePolling="true"
+                        PollingIntervalMs="5000"
+                        MaxItems="25" />
                 </div>
-                <div class="card-body">
-                    @if (table.Items.Count == 0)
-                    {
-                        <p><em>No items found in this table.</em></p>
-                    }
-                    else
-                    {
-                        <div class="table-responsive">
-                            <table class="table table-striped table-sm">
-                                <thead>
-                                    <tr>
-                                        @foreach (var header in table.Headers)
-                                        {
-                                            <th>@header</th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var item in table.Items)
-                                    {
-                                        <tr>
-                                            @foreach (var header in table.Headers)
-                                            {
-                                                <td>
-                                                    @if (item.ContainsKey(header))
-                                                    {
-                                                        @GetAttributeValue(item[header])
-                                                    }
-                                                    else
-                                                    {
-                                                        <em>-</em>
-                                                    }
-                                                </td>
-                                            }
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </div>
-            </div>
-        }
+            }
+        </div>
     }
 }
 
 @code {
     private string? ServiceUrl { get; set; }
-    private List<TableDetail> TableDetails { get; set; } = [];
+    private List<string> TableNames { get; set; } = [];
     private bool IsLoading { get; set; } = true;
     private bool HasError { get; set; }
     private string ErrorMessage { get; set; } = string.Empty;
@@ -103,52 +61,7 @@ else
 
             // Get all tables
             var tablesResponse = await DdbClient.ListTablesAsync(listTablesRequest);
-
-            // Get details for each table
-            foreach (var tableName in tablesResponse.TableNames)
-            {
-                var tableDetail = new TableDetail { TableName = tableName };
-
-                try
-                {
-                    // Get table description
-                    var describeResponse = await DdbClient.DescribeTableAsync(new DescribeTableRequest
-                    {
-                        TableName = tableName
-                    });
-
-                    tableDetail.Status = describeResponse.Table.TableStatus;
-                    tableDetail.ItemCount = describeResponse.Table.ItemCount ?? 0;
-                    tableDetail.CreationDateTime = describeResponse.Table.CreationDateTime;
-
-                    // Scan table for items (limit to first 25 for demo purposes)
-                    var scanResponse = await DdbClient.ScanAsync(new ScanRequest
-                    {
-                        TableName = tableName,
-                        Limit = 25
-                    });
-
-                    tableDetail.Items = scanResponse.Items;
-
-                    // Extract headers from all items
-                    var headerSet = new HashSet<string>();
-                    foreach (var item in scanResponse.Items)
-                    {
-                        foreach (var key in item.Keys)
-                        {
-                            headerSet.Add(key);
-                        }
-                    }
-                    tableDetail.Headers = headerSet.OrderBy(h => h).ToList();
-                }
-                catch (Exception ex)
-                {
-                    Logger.LogWarning(ex, "Failed to get details for table {TableName}", tableName);
-                    tableDetail.Status = "Error";
-                }
-
-                TableDetails.Add(tableDetail);
-            }
+            TableNames = tablesResponse.TableNames;
         }
         catch (Exception ex)
         {
@@ -160,32 +73,5 @@ else
         {
             IsLoading = false;
         }
-    }
-
-    private static string GetAttributeValue(AttributeValue attr)
-    {
-        if (attr.S != null) return attr.S;
-        if (attr.N != null) return attr.N;
-        if (attr.B != null) return Convert.ToBase64String(attr.B.ToArray());
-        if (attr.BOOL == true) return "true";
-        if (attr.BOOL == false) return "false";
-        if (attr.NULL == true) return "null";
-        if (attr.SS?.Count > 0) return $"[{string.Join(", ", attr.SS)}]";
-        if (attr.NS?.Count > 0) return $"[{string.Join(", ", attr.NS)}]";
-        if (attr.BS?.Count > 0) return $"[{attr.BS.Count} binary items]";
-        if (attr.M?.Count > 0) return $"{{Map with {attr.M.Count} items}}";
-        if (attr.L?.Count > 0) return $"[List with {attr.L.Count} items]";
-
-        return "Unknown";
-    }
-
-    private sealed class TableDetail
-    {
-        public string TableName { get; set; } = string.Empty;
-        public string Status { get; set; } = string.Empty;
-        public long ItemCount { get; set; }
-        public DateTime? CreationDateTime { get; set; }
-        public List<Dictionary<string, AttributeValue>> Items { get; set; } = [];
-        public List<string> Headers { get; set; } = [];
     }
 }

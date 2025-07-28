@@ -8,6 +8,7 @@ using Amazon.SQS;
 using LocalStack.Client.Extensions;
 using LocalStack.Client.Options;
 using LocalStack.Provisioning.Frontend.Components;
+using LocalStack.Provisioning.Frontend.Handlers;
 using LocalStack.Provisioning.Frontend.Models;
 using Microsoft.Extensions.Options;
 
@@ -34,13 +35,17 @@ builder.Services.AddAWSMessageBus(messageBuilder =>
 
     if (chatQueueUrl != null)
     {
-        messageBuilder.AddSQSPoller(chatQueueUrl);
+        messageBuilder.AddSQSPoller(chatQueueUrl)
+            .AddMessageHandler<ChatMessageHandler, ChatMessage>();
     }
 });
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register the message handler
+builder.Services.AddSingleton<ChatMessageHandler>();
 
 var app = builder.Build();
 

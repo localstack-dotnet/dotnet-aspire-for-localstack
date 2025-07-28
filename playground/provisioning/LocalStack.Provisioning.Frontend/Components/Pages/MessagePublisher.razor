@@ -4,37 +4,89 @@
 
 <!-- IMessagePublisher comes from the AWS.Messaging package which uses the AWS service clients to publish messages to SQS, SNS and EventBridge. -->
 @inject IMessagePublisher Publisher
+@inject IConfiguration Configuration
 
-<h3>Message Publisher Example</h3>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Message Publisher Example</h3>
 
-<p>
-The page publishes a message to the SNS topic provisioning in the AppHost and assigned to this project. To publish the messages the <a href="https://github.com/awslabs/aws-dotnet-messaging">AWS Messaging</a>
-package is used which uses services clients that were configured in the AppHost.
-</p>
+            <p>
+                The page publishes a message to the SNS topic provisioning in the AppHost and assigned to this project. To publish the messages the <a href="https://github.com/awslabs/aws-dotnet-messaging">AWS Messaging</a>
+                package is used which uses services clients that were configured in the AppHost.
+            </p>
 
+            <div class="card">
+                <div class="card-header">
+                    <h5>Publish New Message</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Recipient:</label>
+                        <input class="form-control" @bind="Recipient" placeholder="Enter recipient name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message:</label>
+                        <textarea class="form-control" rows="3" @bind="Message" @bind:event="oninput" placeholder="Enter your message"></textarea>
+                    </div>
+                    <button type="button" class="btn btn-primary" @onclick="SendMessageAsync" @onclick:preventDefault="true" disabled="@IsButtonDisabled">
+                        @if (_isSubmitting)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Publishing...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-send"></i>
+                            <span>Publish Message</span>
+                        }
+                    </button>
+                </div>
+            </div>
 
-<p>
-    <label>
-        Recipient:
-        <input @bind="Recipient" />
-    </label>
-</p>
-<p>
-    <label>
-        Message:
-        <input @bind="Message" />
-    </label>
-</p>
-<p>
-    <button @onclick="SendMessageAsync">Publish Message</button>
-</p>
+            @if (PublishStatuses.Count > 0)
+            {
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6>Publish Status (@PublishStatuses.Count)</h6>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="ClearStatuses">Clear</button>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            @foreach(var message in PublishStatuses.OrderByDescending(x => x.Timestamp))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-start @(message.IsSuccess ? "list-group-item-success" : "list-group-item-danger")">
+                                    <div>
+                                        <div class="fw-bold">@message.Status</div>
+                                        <small class="text-muted">@message.Timestamp.ToString("HH:mm:ss")</small>
+                                    </div>
+                                    @if (message.IsSuccess)
+                                    {
+                                        <span class="badge bg-success rounded-pill">✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger rounded-pill">✗</span>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
 
-<ul>
-@foreach(var message in PublishStatuses)
-{
-    <li>@message</li>
-}
-</ul>
+        <div class="col-md-6">
+            <DynamoDBTableViewer
+                TableName="@GetTableName()"
+                Title="@($"Chat Messages ({MessageCount} items)")"
+                EnablePolling="true"
+                PollingIntervalMs="2000"
+                MaxItems="50"
+                OnItemCountChanged="OnMessageCountChanged" />
+        </div>
+    </div>
+</div>
 
 
 @code {
@@ -43,25 +95,79 @@ package is used which uses services clients that were configured in the AppHost.
 
     private string? Recipient { get; set; }
 
-    private List<string> PublishStatuses { get; } = new();
+    private List<PublishStatus> PublishStatuses { get; } = new();
+
+    private int MessageCount { get; set; }
+
+    private bool _isSubmitting = false;
+
+    private bool IsButtonDisabled => string.IsNullOrWhiteSpace(Message) || _isSubmitting;
 
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrEmpty(Message))
+        if (string.IsNullOrEmpty(Message) || _isSubmitting)
         {
             return;
         }
+
+        _isSubmitting = true;
+        StateHasChanged();
+
+        // Small delay to ensure UI processes the state change
+        await Task.Delay(1);
 
         var chatMessage = new ChatMessage { Message = Message, Recipient = Recipient };
 
         try
         {
             await Publisher.PublishAsync(chatMessage);
-            PublishStatuses.Add($"{DateTime.UtcNow}: Message publish successfully");
+            PublishStatuses.Add(new PublishStatus
+            {
+                Status = "Message published successfully",
+                Timestamp = DateTime.UtcNow,
+                IsSuccess = true,
+            });
+
+            // Clear the message after sending
+            Message = string.Empty;
         }
         catch(Exception e)
         {
-            PublishStatuses.Add($"{DateTime.UtcNow}: Message failed to publish: {e.Message}");
+            PublishStatuses.Add(new PublishStatus
+            {
+                Status = $"Message failed to publish: {e.Message}",
+                Timestamp = DateTime.UtcNow,
+                IsSuccess = false,
+            });
         }
+        finally
+        {
+            _isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearStatuses()
+    {
+        PublishStatuses.Clear();
+        StateHasChanged();
+    }
+
+    private string GetTableName()
+    {
+        return Configuration["AWS:Resources:ChatMessagesTableName"] ?? "ChatMessages";
+    }
+
+    private async Task OnMessageCountChanged(int count)
+    {
+        MessageCount = count;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private sealed class PublishStatus
+    {
+        public string Status { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; }
+        public bool IsSuccess { get; set; }
     }
 }

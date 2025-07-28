@@ -1,0 +1,308 @@
+@using Amazon.DynamoDBv2
+@using Amazon.DynamoDBv2.Model
+
+@inject IAmazonDynamoDB DdbClient
+@inject ILogger<DynamoDBTableViewer> Logger
+@implements IDisposable
+
+<div class="dynamodb-table-viewer">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <h4>@Title</h4>
+    }
+
+    @if (IsLoading)
+    {
+        <p><em>Loading table data...</em></p>
+    }
+    else if (HasError)
+    {
+        <div class="alert alert-danger">
+            <strong>Error:</strong> @ErrorMessage
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <span class="badge bg-secondary">@Items.Count items</span>
+            <div>
+                @if (EnablePolling)
+                {
+                    <button class="btn btn-sm @(IsPolling ? "btn-danger" : "btn-success")" @onclick="TogglePolling">
+                        @(IsPolling ? "Stop Auto-Refresh" : "Start Auto-Refresh")
+                    </button>
+                }
+                <button class="btn btn-sm btn-primary ms-2" @onclick="RefreshAsync">
+                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                </button>
+            </div>
+        </div>
+
+        @if (Items.Count == 0)
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No items found in table: <strong>@TableName</strong>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            @foreach (var header in Headers)
+                            {
+                                <th>@header</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Items)
+                        {
+                            <tr>
+                                @foreach (var header in Headers)
+                                {
+                                    <td>
+                                        @if (item.TryGetValue(header, out var value))
+                                        {
+                                            <span class="@GetCellClass(header)">
+                                                @GetAttributeValue(value)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <em class="text-muted">-</em>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (LastUpdated.HasValue)
+        {
+            <small class="text-muted">Last updated: @LastUpdated.Value.ToString("yyyy-MM-dd HH:mm:ss")</small>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string TableName { get; set; } = string.Empty;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public bool EnablePolling { get; set; } = true;
+    [Parameter] public int PollingIntervalMs { get; set; } = 3000;
+    [Parameter] public int MaxItems { get; set; } = 25;
+    [Parameter] public EventCallback<int> OnItemCountChanged { get; set; }
+
+    private List<Dictionary<string, AttributeValue>> Items { get; set; } = [];
+    private List<string> Headers { get; set; } = [];
+    private bool IsLoading { get; set; } = true;
+    private bool HasError { get; set; }
+    private string ErrorMessage { get; set; } = string.Empty;
+    private DateTime? LastUpdated { get; set; }
+    private bool IsPolling { get; set; }
+    private Timer? _pollingTimer;
+    private int _consecutiveErrors;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (string.IsNullOrEmpty(TableName))
+        {
+            HasError = true;
+            ErrorMessage = "TableName parameter is required";
+            IsLoading = false;
+            return;
+        }
+
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        // Don't show loading state during polling to prevent flickering
+        if (!IsPolling)
+        {
+            IsLoading = true;
+            StateHasChanged();
+        }
+
+        HasError = false;
+
+        try
+        {
+            var scanResponse = await DdbClient.ScanAsync(new ScanRequest
+            {
+                TableName = TableName,
+                Limit = MaxItems,
+            });
+
+            Items = scanResponse.Items.OrderByDescending(item =>
+            {
+                // Try to order it by Timestamp if it exists
+                if (item.ContainsKey("Timestamp") && item["Timestamp"].N != null)
+                {
+                    return long.TryParse(item["Timestamp"].N, out var timestamp) ? timestamp : 0;
+                }
+                return 0;
+            }).ToList();
+
+            // Extract headers from all items
+            var headerSet = new HashSet<string>();
+            foreach (var item in Items)
+            {
+                foreach (var key in item.Keys)
+                {
+                    headerSet.Add(key);
+                }
+            }
+            Headers = headerSet.OrderBy(h => h).ToList();
+
+            LastUpdated = DateTime.UtcNow;
+            _consecutiveErrors = 0; // Reset error count on successful refresh
+
+            // Notify a parent component of the item count change
+            if (OnItemCountChanged.HasDelegate)
+            {
+                await OnItemCountChanged.InvokeAsync(Items.Count);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load items from DynamoDB table {TableName}", TableName);
+            HasError = true;
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+            // Only call StateHasChanged if we're not in a timer callback to prevent flickering
+            if (!IsPolling)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void TogglePolling()
+    {
+        if (IsPolling)
+        {
+            StopPolling();
+        }
+        else
+        {
+            StartPolling();
+        }
+    }
+
+    private void StartPolling()
+    {
+        if (_pollingTimer != null)
+            return;
+
+        IsPolling = true;
+        _consecutiveErrors = 0; // Reset error count when starting polling
+        _pollingTimer = new Timer(async void (_) =>
+        {
+            try
+            {
+                await InvokeAsync(async () =>
+                {
+                    await RefreshAsync();
+                    // Minimal StateHasChanged call only for data updates during polling
+                    StateHasChanged();
+                });
+                _consecutiveErrors = 0; // Reset error count on success
+            }
+            catch (Exception ex)
+            {
+                _consecutiveErrors++;
+                Logger.LogWarning(ex, "Error during polling refresh for table {TableName}. Consecutive errors: {ErrorCount}", TableName, _consecutiveErrors);
+
+                // Stop polling after 3 consecutive errors to prevent spam
+                if (_consecutiveErrors >= 3)
+                {
+                    Logger.LogError("Stopping polling for table {TableName} due to {ErrorCount} consecutive errors", TableName, _consecutiveErrors);
+                    await InvokeAsync(() =>
+                    {
+                        StopPolling();
+                        HasError = true;
+                        ErrorMessage = $"Polling stopped due to repeated errors: {ex.Message}";
+                        StateHasChanged();
+                    });
+                }
+            }
+        }, null, PollingIntervalMs, PollingIntervalMs);
+
+        StateHasChanged();
+    }
+
+    private void StopPolling()
+    {
+        _pollingTimer?.Dispose();
+        _pollingTimer = null;
+        IsPolling = false;
+        StateHasChanged();
+    }
+
+    private static string GetAttributeValue(AttributeValue attr)
+    {
+        if (attr.S != null) return attr.S;
+        if (attr.N != null) return attr.N;
+        if (attr.B != null) return Convert.ToBase64String(attr.B.ToArray());
+        if (attr.BOOL == true) return "true";
+        if (attr.BOOL == false) return "false";
+        if (attr.NULL == true) return "null";
+        if (attr.SS?.Count > 0) return $"[{string.Join(", ", attr.SS)}]";
+        if (attr.NS?.Count > 0) return $"[{string.Join(", ", attr.NS)}]";
+        if (attr.BS?.Count > 0) return $"[{attr.BS.Count} binary items]";
+        if (attr.M?.Count > 0) return $"{{Map with {attr.M.Count} items}}";
+        if (attr.L?.Count > 0) return $"[List with {attr.L.Count} items]";
+
+        return "Unknown";
+    }
+
+    private static string GetCellClass(string header)
+    {
+        return header switch
+        {
+            "MessageId" => "font-monospace text-primary",
+            "Timestamp" => "text-info",
+            "ProcessedAt" => "text-success",
+            "Message" => "fw-bold",
+            _ => string.Empty,
+        };
+    }
+
+    public void Dispose()
+    {
+        _pollingTimer?.Dispose();
+    }
+}
+
+<style>
+    .dynamodb-table-viewer {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        padding: 1rem;
+        background-color: #f8f9fa;
+    }
+
+    .table th {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .table td {
+        font-size: 0.875rem;
+        vertical-align: middle;
+    }
+
+    .font-monospace {
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.8rem;
+    }
+</style>
