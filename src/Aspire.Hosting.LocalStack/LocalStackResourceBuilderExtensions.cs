@@ -1,6 +1,7 @@
 #pragma warning disable IDE0130
 // ReSharper disable CheckNamespace
 
+using System.Globalization;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.LocalStack;
 using LocalStack.Client.Contracts;
@@ -23,16 +24,26 @@ public static class LocalStackResourceBuilderExtensions
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
     /// <param name="options">The LocalStack configuration options. If null, default options will be used.</param>
+    /// <param name="configureContainer">Optional action to configure container-specific options.</param>
     /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>.</returns>
-    public static IResourceBuilder<LocalStackResource> AddLocalStack(this IDistributedApplicationBuilder builder, string name, ILocalStackOptions? options = null)
+    public static IResourceBuilder<LocalStackResource> AddLocalStack(
+        this IDistributedApplicationBuilder builder,
+        string name,
+        ILocalStackOptions? options = null,
+        Action<LocalStackContainerOptions>? configureContainer = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
         var localStackOptions = options ?? new LocalStackOptions();
+        var containerOptions = new LocalStackContainerOptions();
+
+        // Apply container configuration if provided
+        configureContainer?.Invoke(containerOptions);
+
         var resource = new LocalStackResource(name, localStackOptions);
 
-        return builder.AddResource(resource)
+        var resourceBuilder = builder.AddResource(resource)
             .WithImage(LocalStackContainerImageTags.Image)
             .WithImageRegistry(LocalStackContainerImageTags.Registry)
             .WithImageTag(LocalStackContainerImageTags.Tag)
@@ -43,10 +54,19 @@ public static class LocalStackResourceBuilderExtensions
                 name: LocalStackResource.PrimaryEndpointName,
                 isExternal: true)
             .WithHttpHealthCheck("/_localstack/health", 200, LocalStackResource.PrimaryEndpointName)
-            .WithLifetime(ContainerLifetime.Persistent)
-            .WithEnvironment("DEBUG", "0")
+            .WithLifetime(containerOptions.Lifetime)
+            .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
+            .WithEnvironment("LS_LOG", containerOptions.LogLevel.ToEnvironmentValue())
             .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
             .WithExternalHttpEndpoints();
+
+        // Add any additional environment variables
+        foreach (var (key, value) in containerOptions.AdditionalEnvironmentVariables)
+        {
+            resourceBuilder = resourceBuilder.WithEnvironment(key, value);
+        }
+
+        return resourceBuilder;
     }
 
     /// <summary>

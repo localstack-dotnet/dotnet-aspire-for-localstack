@@ -47,12 +47,12 @@ package is used which uses services clients that were configured in the AppHost.
 
     private async Task SendMessageAsync()
     {
-        if (string.IsNullOrEmpty(this.Message))
+        if (string.IsNullOrEmpty(Message))
         {
             return;
         }
 
-        var chatMessage = new ChatMessage { Message = this.Message, Recipient = this.Recipient };
+        var chatMessage = new ChatMessage { Message = Message, Recipient = Recipient };
 
         try
         {

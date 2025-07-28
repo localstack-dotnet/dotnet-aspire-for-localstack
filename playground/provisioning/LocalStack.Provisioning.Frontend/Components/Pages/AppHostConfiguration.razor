@@ -1,11 +1,13 @@
 ﻿@page "/apphost-configuration"
 @using Amazon.SQS;
+@using LocalStack.Client.Options;
+@using Microsoft.Extensions.Options;
 
 @inject IConfiguration Configuration;
-
 @inject IAmazonSQS SqsClient;
+@inject IOptions<LocalStackOptions> LocalStackOptions;
 
-<PageTitle>SQS Send Message Example</PageTitle>
+<PageTitle>AppHost Configuration</PageTitle>
 
 <h1>App Host Configuration</h1>
 
@@ -22,11 +24,21 @@ The list of configuration applied from the CloudFormation stack created in AppHo
     }
 </ul>
 
-
 <p>
-Configuration applied from AppHost to AWS service clients:
+LocalStack Configuration from AppHost:
 </p>
 <ul>
-    <li><b>Profile:</b> @Environment.GetEnvironmentVariable("AWS_PROFILE")</li>
-    <li><b>Region:</b> @SqsClient.Config.RegionEndpoint.SystemName</li>
+    <li><b>UseLocalStack:</b> @LocalStackOptions.Value.UseLocalStack</li>
+    <li><b>LocalStackHost:</b> @LocalStackOptions.Value.Config.LocalStackHost</li>
+    <li><b>EdgePort:</b> @LocalStackOptions.Value.Config.EdgePort</li>
+    <li><b>UseSsl:</b> @LocalStackOptions.Value.Config.UseSsl</li>
+    <li><b>Region:</b> @LocalStackOptions.Value.Session.RegionName</li>
+</ul>
+
+<p>
+AWS Service Client Configuration:
+</p>
+<ul>
+    <li><b>SQS Service URL:</b> @SqsClient.Config.ServiceURL</li>
+    <li><b>Region:</b> @SqsClient.Config.RegionEndpoint?.SystemName</li>
 </ul>

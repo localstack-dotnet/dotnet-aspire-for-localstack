@@ -13,8 +13,15 @@ var awsConfig = builder.AddAWSSDKConfig().WithRegion(regionEndpoint);
 // Set up a configuration for the LocalStack
 var localStackOptions = builder.AddLocalStackConfig().WithRegion(regionEndpoint.SystemName);
 
-// Bootstrap the localstack container
-var localstack = builder.AddLocalStack("localstack", localStackOptions);
+// Bootstrap the localstack container with enhanced configuration
+var localstack = builder
+    .AddLocalStack("localstack", localStackOptions, container =>
+    {
+        container.Lifetime = ContainerLifetime.Session;
+
+        container.DebugLevel = 1;
+        container.LogLevel = LocalStackLogLevel.Debug;
+    });
 
 // Provision application level resources like SQS queues and SNS topics defined in the CloudFormation template file app-resources.template.
 var awsResources = builder.AddAWSCloudFormationTemplate("AspireSampleDevResources", "app-resources.template")
@@ -40,6 +47,7 @@ builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
     .WaitFor(localstack)
     .WithReference(localstack)
     // Demonstrating binding a single output variable to an environment variable in the project.
-    .WithEnvironment("ChatTopicArnEnv", awsResources.GetOutput("ChatTopicArn"));
+    .WithEnvironment("ChatTopicArnEnv", awsResources.GetOutput("ChatTopicArn"))
+    .WithEnvironment("ChatMessagesQueueUrlEnv", awsResources.GetOutput("ChatMessagesQueueUrl"));
 
 await builder.Build().RunAsync().ConfigureAwait(false);

@@ -46,6 +46,47 @@
                     ]
                 }
             }
+        },
+        "ChatMessagesTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+                "TableName": "ChatMessages",
+                "BillingMode": "PAY_PER_REQUEST",
+                "AttributeDefinitions": [
+                    {
+                        "AttributeName": "MessageId",
+                        "AttributeType": "S"
+                    },
+                    {
+                        "AttributeName": "Timestamp",
+                        "AttributeType": "N"
+                    }
+                ],
+                "KeySchema": [
+                    {
+                        "AttributeName": "MessageId",
+                        "KeyType": "HASH"
+                    },
+                    {
+                        "AttributeName": "Timestamp",
+                        "KeyType": "RANGE"
+                    }
+                ],
+                "GlobalSecondaryIndexes": [
+                    {
+                        "IndexName": "TimestampIndex",
+                        "KeySchema": [
+                            {
+                                "AttributeName": "Timestamp",
+                                "KeyType": "HASH"
+                            }
+                        ],
+                        "Projection": {
+                            "ProjectionType": "ALL"
+                        }
+                    }
+                ]
+            }
         }
     },
     "Outputs" : {
@@ -54,6 +95,9 @@
         },
         "ChatTopicArn" : {
             "Value" : { "Ref" : "ChatTopic" }
+        },
+        "ChatMessagesTableName" : {
+            "Value" : { "Ref" : "ChatMessagesTable" }
         }
     }
 }
