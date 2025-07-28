@@ -58,7 +58,8 @@ public static class LocalStackResourceBuilderExtensions
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
             .WithEnvironment("LS_LOG", containerOptions.LogLevel.ToEnvironmentValue())
             .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
-            .WithExternalHttpEndpoints();
+            .WithExternalHttpEndpoints()
+            .ExcludeFromManifest(); // LocalStack is for local development only
 
         // Add any additional environment variables
         foreach (var (key, value) in containerOptions.AdditionalEnvironmentVariables)
