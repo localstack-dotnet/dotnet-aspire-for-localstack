@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0"/>
+	<Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -13,12 +13,6 @@
     <ProjectReference Include="..\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
 
     <PackageReference Include="Aspire.Hosting.AppHost"/>
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="app-resources.template">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
 </Project>

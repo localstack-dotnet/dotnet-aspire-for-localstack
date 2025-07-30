@@ -9,7 +9,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 // Set up a configuration for the AWS .NET SDK
 var regionEndpoint = RegionEndpoint.USWest2;
-var awsConfig = builder.AddAWSSDKConfig().WithRegion(regionEndpoint);
+var awsConfig = builder.AddAWSSDKConfig().WithProfile("default").WithRegion(regionEndpoint);
 // Set up a configuration for the LocalStack
 var localStackOptions = builder.AddLocalStackConfig().WithRegion(regionEndpoint.SystemName);
 
@@ -18,7 +18,6 @@ var localstack = builder
     .AddLocalStack("localstack", localStackOptions, container =>
     {
         container.Lifetime = ContainerLifetime.Session;
-
         container.DebugLevel = 1;
         container.LogLevel = LocalStackLogLevel.Debug;
     });
@@ -28,8 +27,6 @@ var awsResources = builder.AddAWSCloudFormationTemplate("AspireSampleDevResource
     .WithParameter("DefaultVisibilityTimeout", "30")
     // Add the SDK configuration so the AppHost knows what account/region to provision the resources.
     .WithReference(awsConfig)
-    // Wait for LocalStack container to become healthy
-    .WaitFor(localstack)
     // Add the LocalStack configuration
     .WithLocalStack(localstack);
 
@@ -43,8 +40,6 @@ builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
     // Demonstrating binding all the output variables to a section in IConfiguration. By default, they are bound to the AWS::Resources prefix.
     // The prefix is configurable by the optional configSection parameter.
     .WithReference(awsResources)
-    // Add localstack reference to project, it will automatically configure LocalStack.Client.Extensions
-    .WaitFor(localstack)
     .WithReference(localstack)
     // Demonstrating binding a single output variable to an environment variable in the project.
     .WithEnvironment("ChatTopicArnEnv", awsResources.GetOutput("ChatTopicArn"))

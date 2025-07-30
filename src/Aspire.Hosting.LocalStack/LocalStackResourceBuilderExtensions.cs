@@ -38,6 +38,11 @@ public static class LocalStackResourceBuilderExtensions
         var localStackOptions = options ?? new LocalStackOptions();
         var containerOptions = new LocalStackContainerOptions();
 
+        if (!localStackOptions.UseLocalStack)
+        {
+            // Return
+        }
+
         // Apply container configuration if provided
         configureContainer?.Invoke(containerOptions);
 

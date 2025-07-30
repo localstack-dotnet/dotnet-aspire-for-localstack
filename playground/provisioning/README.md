@@ -229,50 +229,50 @@ For manual testing and verification, you can use the following AWS CLI commands 
 1. **List all SNS topics**
 
    ```bash
-   aws sns list-topics --endpoint-url http://localhost:4566 --region us-west-2
+   aws sns list-topics --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 2. **List all SQS queues**
 
    ```bash
-   aws sqs list-queues --endpoint-url http://localhost:4566 --region us-west-2
+   aws sqs list-queues --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 3. **Get SNS topic attributes**
 
    ```bash
-   aws sns get-topic-attributes --topic-arn arn:aws:sns:us-west-2:000000000000:ChatTopic --endpoint-url http://localhost:4566 --region us-west-2
+   aws sns get-topic-attributes --topic-arn <topic_arn> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 4. **List subscriptions for the topic**
 
    ```bash
-   aws sns list-subscriptions-by-topic --topic-arn arn:aws:sns:us-west-2:000000000000:ChatTopic --endpoint-url http://localhost:4566 --region us-west-2
+   aws sns list-subscriptions-by-topic --topic-arn <topic_arn> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 5. **Get SQS queue attributes**
 
    ```bash
-   aws sqs get-queue-attributes --queue-url http://localhost:4566/000000000000/ChatMessagesQueue --attribute-names All --endpoint-url http://localhost:4566 --region us-west-2
+   aws sqs get-queue-attributes --queue-url <queue_url> --attribute-names All --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 6. **Test SNS→SQS integration by publishing a test message**
 
    ```bash
-   aws sns publish --topic-arn arn:aws:sns:us-west-2:000000000000:ChatTopic --message "Test message from CLI" --endpoint-url http://localhost:4566 --region us-west-2
+   aws sns publish --topic-arn <topic_arn> --message "Test message from CLI" --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 7. **Receive messages from SQS to verify SNS delivery**
 
    ```bash
-   aws sqs receive-message --queue-url http://localhost:4566/000000000000/ChatMessagesQueue --endpoint-url http://localhost:4566 --region us-west-2
+   aws sqs receive-message --queue-url <queue_url> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 8. **Check DynamoDB table**
 
    ```bash
-   aws dynamodb list-tables --endpoint-url http://localhost:4566
-   aws dynamodb scan --table-name ChatMessages --endpoint-url http://localhost:4566 --region us-west-2
+   aws dynamodb list-tables --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+   aws dynamodb scan --table-name ChatMessages --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
 ## Development Benefits
@@ -291,18 +291,6 @@ For manual testing and verification, you can use the following AWS CLI commands 
 container.Lifetime = ContainerLifetime.Session;     // Container persistence
 container.DebugLevel = 1;                          // LocalStack debug level (0-3)
 container.LogLevel = LocalStackLogLevel.Debug;     // Internal logging level
-```
-
-### DynamoDB Table Viewer Options
-
-```razor
-<DynamoDBTableViewer
-    TableName="ChatMessages"
-    Title="Chat Messages"
-    EnablePolling="true"
-    PollingIntervalMs="2000"
-    MaxItems="50"
-    OnItemCountChanged="HandleCountChanged" />
 ```
 
 ## Next Steps
