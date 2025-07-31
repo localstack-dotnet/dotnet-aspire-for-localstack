@@ -23,7 +23,6 @@ public static class LocalStackAwsExtensions
     /// <typeparam name="T">The CloudFormation resource type that implements ICloudFormationResource.</typeparam>
     /// <param name="builder">The CloudFormation resource builder.</param>
     /// <param name="localStack">The LocalStack resource to target.</param>
-    /// <param name="waitFor"></param>
     /// <returns>The same resource builder for fluent chaining.</returns>
     /// <example>
     /// <code>
@@ -38,7 +37,7 @@ public static class LocalStackAwsExtensions
     ///     .WithLocalStack(localStack);
     /// </code>
     /// </example>
-    public static IResourceBuilder<T> WithLocalStack<T>(this IResourceBuilder<T> builder, IResourceBuilder<LocalStackResource> localStack, bool waitFor = true)
+    public static IResourceBuilder<T> WithLocalStack<T>(this IResourceBuilder<T> builder, IResourceBuilder<LocalStackResource> localStack)
         where T : class, ICloudFormationResource
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -57,11 +56,6 @@ public static class LocalStackAwsExtensions
             .Create();
 
         builder.Resource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
-
-        if (waitFor)
-        {
-            builder.WaitFor(localStack);
-        }
 
         builder.WithAnnotation(new LocalStackEnabledAnnotation(localStack.Resource));
 

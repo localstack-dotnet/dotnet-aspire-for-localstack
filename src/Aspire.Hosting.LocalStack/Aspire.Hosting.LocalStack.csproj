@@ -13,4 +13,8 @@
     <PackageReference Include="LocalStack.Client"/>
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Templates\cdk-bootstrap.template" />
+  </ItemGroup>
+
 </Project>

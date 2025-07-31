@@ -19,23 +19,9 @@ var localstack = builder
         container.LogLevel = LocalStackLogLevel.Debug;
     });
 
-
-var cdkBootstrapTemplate = Path.Combine(Directory.GetCurrentDirectory(), "cdk-bootstrap.template");
-
-if (!File.Exists(cdkBootstrapTemplate))
-{
-    throw new InvalidOperationException($"Could not find `{cdkBootstrapTemplate}` template.");
-}
-
-// Bootstrap the CDK environment against LocalStack.
-var cdkBootstrap = builder.AddAWSCloudFormationTemplate("CDKBootstrap", cdkBootstrapTemplate)
-    .WithLocalStack(localstack);
-
 var customStack = builder
     .AddAWSCDKStack("custom", scope => new CustomStack(scope, "Aspire-custom"))
-    .WithReference(awsConfig)
-    .WaitFor(cdkBootstrap)
-    .WithLocalStack(localstack);
+    .WithReference(awsConfig);
 
 // Add outputs for all the resources to make them available to the frontend
 customStack.AddOutput("BucketName", stack => stack.Bucket.BucketName);
@@ -54,5 +40,7 @@ builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
     // Add specific environment variables matching CloudFormation AppHost pattern
     .WithEnvironment("ChatTopicArnEnv", customStack.GetOutput("ChatTopicArn"))
     .WithEnvironment("ChatMessagesQueueUrlEnv", customStack.GetOutput("ChatMessagesQueueUrl"));
+
+builder.UseLocalStack(localstack);
 
 await builder.Build().RunAsync().ConfigureAwait(false);
