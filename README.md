@@ -6,7 +6,7 @@ This repository contains the .NET Aspire hosting integration for [LocalStack](ht
 
 ## 🚧 Work in Progress - Try It Locally
 
-The core functionality is working and available for local testing. We've built a LocalStack integration with practical examples that you can run by cloning the repository. The project is actively evolving with testing, additional examples, and CI/CD pipeline development planned for the coming weeks.
+The core functionality is working and available for local testing. We've built a LocalStack integration with practical examples that you can run by cloning the repository. The project is actively evolving with **comprehensive testing suite and CI/CD pipeline development** as the next major focus, along with additional examples planned for the coming weeks.
 
 **📅 First Preview Release**: Mid-August 2025
 
@@ -22,40 +22,41 @@ The core functionality is working and available for local testing. We've built a
 
 [.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview) is an opinionated, cloud-ready stack for building observable, production-ready, distributed applications. It provides a consistent, opinionated set of tools and patterns to help you build and run distributed apps.
 
-## Current Features
+## Aspire.Hosting.LocalStack Features
 
-### Aspire.Hosting.LocalStack
-
+- ✅ **Extension-Only Approach**: Works alongside official [AWS
+integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) with simple extension methods -
+no drastic code changes required
+- ✅ **Auto-Configure Mode (Still Experimental)**: Single `UseLocalStack()` call automatically detects and configures all AWS and project resources.
+- ✅ **Manual Mode**: Fine-grained control with explicit `WithReference()` calls for each resource
 - ✅ **LocalStack Container as Resource**: Configurable container with session/project lifetime options, debug levels, and logging configuration
 - ✅ **No Additional Client Library**: Leverages existing [LocalStack.Client.Extensions](https://github.com/localstack-dotnet/localstack-dotnet-client) - no Aspire-specific client needed
-- ✅ **Extension-Only Approach**: Works alongside official [AWS integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) with simple extension methods - no drastic code changes required
 - ✅ **Automatic Fallback**: When LocalStack is disabled, applications seamlessly work with real AWS services without code modifications
-- ✅ **Resource Provisioning**: Both `AddAWSCloudFormationTemplate` and `AddAWSCDKStack` from AWS Aspire library automatically configured for LocalStack endpoints during development
+- ✅ **Resource Provisioning**: Both `AddAWSCloudFormationTemplate` and `AddAWSCDKStack` automatically configured for LocalStack endpoints
 
 ## Quick Start
 
-Ready to try it out? Check out our examples:
+Ready to try it out? We have **complete working examples** adapted from the official AWS Aspire integration examples:
 
-### 🎮 Playground Examples
+### 🎮 Provisioning Examples
 
-```bash
-# Clone the repository
-git clone https://github.com/localstack-dotnet/dotnet-aspire-for-localstack.git
-cd dotnet-aspire-for-localstack
+The provisioning examples includes a complete messaging flow
+demonstration with real-time UI components.
 
-# Run the SNS→SQS→DynamoDB messaging example
-dotnet run --project playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost
-```
+**Features two configuration approaches:**
 
-The playground includes a complete messaging flow demonstration with real-time UI components. For detailed information about the examples and how to use them, see the [playground README](playground/provisioning/README.md).
+- ⚡ **Auto-Configure**: `UseLocalStack()` - Experimental but recommended
+- 🔧 **Manual**: `WithReference()` - Fine-grained control
+
+For detailed examples and configuration approaches, see the [provisioning folder README](playground/provisioning/README.md).
 
 ## What's Coming Next
 
 ### 🔄 Active Development (Next Few Weeks)
 
-- **Testing Suite**: Unit and integration tests
+- **Comprehensive Testing Suite**: Unit and integration tests with full coverage
+- **CI/CD Pipeline**: Automated testing, validation, and package publishing workflows
 - **Additional Example Projects**: More scenarios and use cases
-- **CI/CD Pipeline**: Automated testing and package publishing
 - **Documentation**: Complete API documentation and guides
 
 ### 📦 First Preview Release: Mid-August 2025

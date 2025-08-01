@@ -4,26 +4,81 @@ This directory contains examples demonstrating how to use the `Aspire.Hosting.Lo
 
 ## Overview
 
-These examples show how to build a complete AWS messaging application using:
+These examples are **adapted from the official [AWS Aspire integration examples](https://github.com/aws/integrations-on-dotnet-aspire-for-aws/tree/main/playground/CloudFormationProvisioning)** with minimal changes to work with LocalStack. They demonstrate how to easily migrate existing AWS Aspire applications to use LocalStack for local development.
 
-- **SNS (Simple Notification Service)** for publishing messages
-- **SQS (Simple Queue Service)** for message queuing
-- **DynamoDB** for data persistence
-- **LocalStack** for local AWS service emulation
+**New Features Added to the official AWS Aspire integration examples:**
 
-The application demonstrates a typical message flow: messages are published to SNS, delivered to SQS via subscription, processed by a background service, and stored in DynamoDB.
+- **Interactive Frontend**: Real-time messaging application with auto-refreshing DynamoDB viewer
+- **Complete Message Flow**: SNS → SQS → DynamoDB → Live UI updates
+- **Two Configuration Approaches**: Manual reference management vs automatic configuration
+
+The application demonstrates a typical AWS messaging flow: messages are published to SNS, delivered to SQS via subscription, processed by a background service, and stored in DynamoDB with real-time UI monitoring.
 
 ## Projects Structure
 
-### AppHost Projects
+### AppHost Projects (Provisioning Methods)
 
-- **`LocalStack.Provisioning.CloudFormation.AppHost`** - Uses CloudFormation templates for AWS resource provisioning
-- **`LocalStack.Provisioning.CDK.AppHost`** - Uses AWS CDK with built-in Aspire AWS integration features
+Both projects create **identical AWS resources** but use different provisioning approaches:
+
+- **`LocalStack.Provisioning.CloudFormation.AppHost`** - Uses [CloudFormation template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) for AWS resource provisioning
+- **`LocalStack.Provisioning.CDK.AppHost`** - Uses [AWS CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) for AWS resource provisioning
 
 ### Application Projects
 
-- **`LocalStack.Provisioning.Frontend`** - Web application demonstrating message publishing and real-time monitoring
+- **`LocalStack.Provisioning.Frontend`** - Blazor application with real-time messaging and DynamoDB monitoring
 - **`LocalStack.Provisioning.ServiceDefaults`** - Shared service defaults and configurations
+
+**Note**: The Frontend application behaves identically regardless of which AppHost you use.
+
+## Quick Comparison
+
+| Aspect | CloudFormation AppHost | CDK AppHost |
+|--------|----------------------|-------------|
+| **Provisioning** | [JSON Template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) | [C# CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) |
+| **Configuration** | See [Program.cs](./LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | See [Program.cs](./LocalStack.Provisioning.CDK.AppHost/Program.cs) |
+| **Resources Created** | SNS, SQS, DynamoDB | SNS, SQS, DynamoDB, S3 |
+| **Frontend Behavior** | Identical | Identical |
+| **Learning Focus** | CloudFormation templates | CDK programmatic approach |
+
+**🔍 Explore the Code**: Check the `Program.cs` files to see manual vs auto-configure examples with detailed comments.
+
+## Configuration Approaches
+
+This integration provides **two ways** to configure LocalStack with your AWS resources:
+
+### ⚡ Auto-Configure Approach (Experimental - Recommended)
+
+**Single method configures everything automatically**
+
+```csharp
+// 1. Add LocalStack container
+var localstack = builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container => {
+    container.Lifetime = ContainerLifetime.Session;
+    container.LogLevel = LocalStackLogLevel.Debug;
+});
+
+// 2. Add your AWS resources normally
+var awsResources = builder.AddAWSCloudFormationTemplate("resources", "app-resources.template")
+    .WithReference(awsConfig);
+
+// 3. Auto-configure everything with one call
+builder.UseLocalStack(localstack);  // 🪄 Automatically detects and configures all AWS resources
+```
+
+### 🔧 Manual Approach (Fine-grained Control)
+
+**Explicit reference management for each resource**
+
+```csharp
+// Manual LocalStack references (currently commented out in Program.cs files)
+var awsResources = builder.AddAWSCloudFormationTemplate("resources", "app-resources.template")
+    .WithReference(localstack);  // Manual LocalStack reference
+
+var project = builder.AddProject<Projects.Frontend>("Frontend")
+    .WithReference(localstack);  // Manual project reference
+```
+
+**💡 Hands-on Learning**: Both `Program.cs` files contain commented code blocks. You can easily switch between manual and auto approaches by commenting/uncommenting the relevant sections.
 
 ## Getting Started
 
@@ -35,21 +90,25 @@ The application demonstrates a typical message flow: messages are published to S
 
 ### Running the Examples
 
-You can run either AppHost project depending on your preference:
+Choose your preferred provisioning method:
 
-#### Option 1: CloudFormation Approach
+#### Option 1: CloudFormation Template Approach
 
 ```bash
 dotnet run --project LocalStack.Provisioning.CloudFormation.AppHost
 ```
 
-#### Option 2: CDK Approach (Alternative)
+👀 **Explore**: [Program.cs](./LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | [Template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template)
+
+#### Option 2: AWS CDK Approach
 
 ```bash
 dotnet run --project LocalStack.Provisioning.CDK.AppHost
 ```
 
-Both approaches achieve the same result but use different methods for provisioning AWS resources.
+👀 **Explore**: [Program.cs](./LocalStack.Provisioning.CDK.AppHost/Program.cs) | [CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs)
+
+Both create the same messaging infrastructure and provide identical frontend functionality.
 
 ## Aspire.Hosting.LocalStack Integration
 
@@ -57,94 +116,39 @@ The `Aspire.Hosting.LocalStack` package provides seamless integration between .N
 
 ### Key Features
 
+- **Automatic Resource Detection**: Auto-configure all AWS resources with `UseLocalStack()`
+- **Manual vs Auto-Configure**: Choice between fine-grained control and convention-based setup
 - **Container Lifecycle Management**: Configurable container cleanup behavior
+- **Interface-Based Design**: Better type safety and abstraction with `ILocalStackResource`
 - **Service Configuration**: Automatic AWS SDK configuration for LocalStack endpoints
 - **Resource Provisioning**: Support for CloudFormation and CDK resource provisioning
+- **Bidirectional Tracking**: Annotation system for resource relationship visibility
 - **Development Experience**: Hot reload, logging, and debugging support
 
-### Configuration Example
+### Switching Between Configuration Approaches
+
+Both `Program.cs` files are currently configured for **auto-configure mode**. To experiment with manual configuration:
+
+#### In CloudFormation AppHost
 
 ```csharp
-// Configure LocalStack with custom options
-var localstack = builder
-    .AddLocalStack("localstack", localStackOptions, container =>
-    {
-        container.Lifetime = ContainerLifetime.Session;  // Keep container across debug sessions
-        container.DebugLevel = 1;                        // Enable detailed logging
-        container.LogLevel = LocalStackLogLevel.Debug;   // LocalStack internal logging
-    });
+// Comment out auto-configure
+// builder.UseLocalStack(localstack);
 
-// Add AWS resources with LocalStack integration
-var awsResources = builder.AddAWSCloudFormationTemplate("AspireSampleDevResources", "app-resources.template")
-    .WithParameter("DefaultVisibilityTimeout", "30")
-    .WithReference(awsConfig)
-    .WaitFor(localstack)           // Ensure LocalStack is ready
-    .WithLocalStack(localstack);   // Configure to use LocalStack endpoints
+// Uncomment manual references
+// .WithReference(localstack)
 ```
 
-### Container Lifetime Options
-
-- **`ContainerLifetime.Session`** - Container persists across debug sessions (recommended for development)
-- **`ContainerLifetime.Project`** - Container is recreated with each run
-
-## CloudFormation AppHost Implementation
-
-The CloudFormation approach uses traditional AWS CloudFormation templates for resource provisioning:
+#### In CDK AppHost
 
 ```csharp
-// Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-// Originally copied from https://github.com/aws/integrations-on-dotnet-aspire-for-aws
-// and adjusted for Aspire.Hosting.LocalStack. All rights reserved.
+// Comment out auto-configure
+// builder.UseLocalStack(localstack);
 
-using Amazon;
-using Aspire.Hosting.LocalStack;
-
-var builder = DistributedApplication.CreateBuilder(args);
-
-// Set up a configuration for the AWS .NET SDK
-var regionEndpoint = RegionEndpoint.USWest2;
-var awsConfig = builder.AddAWSSDKConfig().WithRegion(regionEndpoint);
-// Set up a configuration for the LocalStack
-var localStackOptions = builder.AddLocalStackConfig().WithRegion(regionEndpoint.SystemName);
-
-// Bootstrap the localstack container with enhanced configuration
-var localstack = builder
-    .AddLocalStack("localstack", localStackOptions, container =>
-    {
-        container.Lifetime = ContainerLifetime.Session;
-
-        container.DebugLevel = 1;
-        container.LogLevel = LocalStackLogLevel.Debug;
-    });
-
-// Provision application level resources like SQS queues and SNS topics defined in the CloudFormation template file app-resources.template.
-var awsResources = builder.AddAWSCloudFormationTemplate("AspireSampleDevResources", "app-resources.template")
-    .WithParameter("DefaultVisibilityTimeout", "30")
-    // Add the SDK configuration so the AppHost knows what account/region to provision the resources.
-    .WithReference(awsConfig)
-    // Wait for LocalStack container to become healthy
-    .WaitFor(localstack)
-    // Add the LocalStack configuration
-    .WithLocalStack(localstack);
-
-awsResources.WithTag("aws-repo", "integrations-on-dotnet-aspire-for-aws");
-
-// The AWS SDK Config reference is inferred from the CloudFormation resource associated with the project. If the
-// project doesn't have a CloudFormation resource, the AWS SDK Config reference can be assigned using the
-// WithReference method.
-builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
-    .WithExternalHttpEndpoints()
-    // Demonstrating binding all the output variables to a section in IConfiguration. By default, they are bound to the AWS::Resources prefix.
-    // The prefix is configurable by the optional configSection parameter.
-    .WithReference(awsResources)
-    // Add localstack reference to project, it will automatically configure LocalStack.Client.Extensions
-    .WaitFor(localstack)
-    .WithReference(localstack)
-    // Demonstrating binding a single output variable to an environment variable in the project.
-    .WithEnvironment("ChatTopicArnEnv", awsResources.GetOutput("ChatTopicArn"))
-    .WithEnvironment("ChatMessagesQueueUrlEnv", awsResources.GetOutput("ChatMessagesQueueUrl"));
-
-await builder.Build().RunAsync().ConfigureAwait(false);
+// Uncomment manual CDK bootstrap and references
+// var cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplate()...
+// .WithReference(localstack)
+// .WaitFor(cdkBootstrap)
 ```
 
 ## Frontend Application
@@ -165,27 +169,6 @@ The Frontend application (`LocalStack.Provisioning.Frontend`) is a Blazor Server
 - **Message Count**: Live updates of total messages in the system
 - **Error Handling**: Robust error handling with consecutive error tracking
 
-### Key Components
-
-#### MessagePublisher.razor
-
-- Publishes messages to SNS using the AWS.Messaging library
-- Demonstrates proper async/await patterns with loading states
-- Integrates with the DynamoDB viewer for real-time feedback
-
-#### DynamoDBTableViewer.razor
-
-- Reusable component for displaying DynamoDB table data
-- Supports configurable polling intervals and item limits
-- Anti-flickering optimizations for smooth user experience
-- Error handling with automatic retry logic
-
-#### ChatMessageHandler.cs
-
-- Background service that processes SQS messages
-- Implements `IMessageHandler<ChatMessage>` from AWS.Messaging
-- Persists processed messages to DynamoDB with proper error handling
-
 ## Message Flow Architecture
 
 ```
@@ -204,74 +187,46 @@ Real-time UI Updates (DynamoDBTableViewer)
 
 ## AWS Resources Provisioned
 
+Both provisioning approaches create these resources:
+
 - **SNS Topic**: `ChatTopic` for message publishing
 - **SQS Queue**: `ChatMessagesQueue` with configurable visibility timeout
 - **SNS Subscription**: Connects SNS topic to SQS queue
 - **Queue Policy**: Allows SNS to send messages to SQS
 - **DynamoDB Table**: `ChatMessages` with composite key (MessageId, Timestamp) and global secondary index
+- **S3 Bucket**: (CDK approach only) Additional storage demonstration
 
 ## Testing
 
 ### Using the Web Interface
 
-1. Run the AppHost project
-2. Navigate to the Frontend application
+1. Run either AppHost project
+2. Navigate to the Frontend application in Aspire Dashboard
 3. Enter a recipient and message
 4. Click "Publish Message"
 5. Watch real-time updates in the DynamoDB table viewer
 
 ### Using AWS CLI
 
-For manual testing and verification, you can use the following AWS CLI commands to test the SNS→SQS→DynamoDB integration:
+For manual testing and verification, you can use AWS CLI commands to test the SNS→SQS→DynamoDB integration:
 
-#### Individual Test Commands
+#### Quick Test Commands
 
-1. **List all SNS topics**
+1. **List all resources**
 
    ```bash
    aws sns list-topics --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-2. **List all SQS queues**
-
-   ```bash
    aws sqs list-queues --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-3. **Get SNS topic attributes**
-
-   ```bash
-   aws sns get-topic-attributes --topic-arn <topic_arn> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-4. **List subscriptions for the topic**
-
-   ```bash
-   aws sns list-subscriptions-by-topic --topic-arn <topic_arn> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-5. **Get SQS queue attributes**
-
-   ```bash
-   aws sqs get-queue-attributes --queue-url <queue_url> --attribute-names All --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-6. **Test SNS→SQS integration by publishing a test message**
-
-   ```bash
-   aws sns publish --topic-arn <topic_arn> --message "Test message from CLI" --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-7. **Receive messages from SQS to verify SNS delivery**
-
-   ```bash
-   aws sqs receive-message --queue-url <queue_url> --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   ```
-
-8. **Check DynamoDB table**
-
-   ```bash
    aws dynamodb list-tables --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+   ```
+
+2. **Test message flow**
+
+   ```bash
+   # Publish to SNS (replace <topic_arn> with actual ARN from Aspire dashboard)
+   aws sns publish --topic-arn <topic_arn> --message "Test message from CLI" --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+
+   # Check DynamoDB for processed message
    aws dynamodb scan --table-name ChatMessages --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
    ```
 
@@ -281,24 +236,5 @@ For manual testing and verification, you can use the following AWS CLI commands 
 - **Fast Feedback**: Instant testing without cloud deployment delays
 - **Cost Effective**: No AWS charges for development and testing
 - **Isolated Environment**: Each developer has their own local AWS environment
+- **Easy Migration**: Minimal changes from existing AWS Aspire applications
 - **Debugging**: Full debugging capabilities with LocalStack logs and Aspire dashboard
-
-## Configuration Options
-
-### LocalStack Container Options
-
-```csharp
-container.Lifetime = ContainerLifetime.Session;     // Container persistence
-container.DebugLevel = 1;                          // LocalStack debug level (0-3)
-container.LogLevel = LocalStackLogLevel.Debug;     // Internal logging level
-```
-
-## Next Steps
-
-- Explore the CDK AppHost implementation for alternative resource provisioning
-- Extend the message flow with additional AWS services (Lambda, EventBridge, etc.)
-- Add authentication and authorization using AWS Cognito
-- Implement message filtering and routing logic
-- Add monitoring and alerting capabilities
-
-This example provides a solid foundation for building AWS applications locally with LocalStack and .NET Aspire, enabling rapid development and testing before deploying to production AWS environments.
