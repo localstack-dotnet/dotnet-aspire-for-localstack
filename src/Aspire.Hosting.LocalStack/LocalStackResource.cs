@@ -5,12 +5,20 @@ using LocalStack.Client.Contracts;
 
 namespace Aspire.Hosting.ApplicationModel;
 
+public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithConnectionString
+{
+    /// <summary>
+    /// Gets the LocalStack configuration options.
+    /// </summary>
+    ILocalStackOptions Options { get; }
+}
+
 /// <summary>
 /// A resource that represents a LocalStack container.
 /// </summary>
 /// <param name="name">The name of the resource.</param>
 /// <param name="options">The LocalStack configuration options.</param>
-public sealed class LocalStackResource(string name, ILocalStackOptions options) : ContainerResource(name), IResourceWithConnectionString
+public sealed class LocalStackResource(string name, ILocalStackOptions options) : ContainerResource(name), ILocalStackResource
 {
     /// <summary>
     /// The well-known endpoint name for the LocalStack edge port.

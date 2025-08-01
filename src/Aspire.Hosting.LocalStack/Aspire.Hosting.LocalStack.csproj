@@ -14,7 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Templates\cdk-bootstrap.template" />
+    <EmbeddedResource Include="CDK\cdk-bootstrap.template" />
   </ItemGroup>
 
 </Project>

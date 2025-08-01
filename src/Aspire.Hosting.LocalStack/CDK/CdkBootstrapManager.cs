@@ -18,10 +18,6 @@ internal static class CdkBootstrapManager
     {
         var tempPath = Path.Combine(Path.GetTempPath(), "aspire-localstack", "cdk-bootstrap.template");
 
-        if (File.Exists(tempPath))
-        {
-            return tempPath;
-        }
         var directory = Path.GetDirectoryName(tempPath);
         if (directory != null)
         {
@@ -29,12 +25,8 @@ internal static class CdkBootstrapManager
         }
 
         using var stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream("Aspire.Hosting.LocalStack.Templates.cdk-bootstrap.template");
-
-        if (stream == null)
-        {
-            throw new InvalidOperationException("Could not find embedded CDK bootstrap template.");
-        }
+                               .GetManifestResourceStream("Aspire.Hosting.LocalStack.CDK.cdk-bootstrap.template")
+                           ?? throw new InvalidOperationException("Could not find embedded CDK bootstrap template.");
 
         using var fileStream = File.Create(tempPath);
         stream.CopyTo(fileStream);

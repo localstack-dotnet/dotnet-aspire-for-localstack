@@ -1,7 +1,7 @@
 using LocalStack.Client.Contracts;
 using LocalStack.Client.Options;
 
-namespace Aspire.Hosting.LocalStack;
+namespace Aspire.Hosting.LocalStack.Configuration;
 
 /// <summary>
 /// Extension methods for configuring LocalStack options using the fluent API.

@@ -1,26 +1,36 @@
 using Amazon;
-using Aspire.Hosting.LocalStack;
+using Aspire.Hosting.LocalStack.Container;
 using AWSCDK.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Set up a configuration for the AWS .NET SDK
-var regionEndpoint = RegionEndpoint.USWest2;
-var awsConfig = builder.AddAWSSDKConfig().WithProfile("default").WithRegion(regionEndpoint);
-// Set up a configuration for the LocalStack
-var localStackOptions = builder.AddLocalStackConfig().WithRegion(regionEndpoint.SystemName);
+var awsConfig = builder.AddAWSSDKConfig().WithProfile("default").WithRegion(RegionEndpoint.USWest2);
 
 // Bootstrap the localstack container with enhanced configuration
 var localstack = builder
-    .AddLocalStack("localstack", localStackOptions, container =>
+    .AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
     {
         container.Lifetime = ContainerLifetime.Session;
         container.DebugLevel = 1;
         container.LogLevel = LocalStackLogLevel.Debug;
     });
 
+// Add the CDK Bootstrap CloudFormation template for the CDK resources to be deployed to the localstack container
+// Since LocalStack is not a real AWS account, we need to use the CDK Bootstrap CloudFormation template to deploy the CDK resources to the localstack container
+// Comment the whole block if you use autoconfiguration below with "builder.UseLocalStack(localstack);"
+// var cdkBootstrap = builder
+//     .AddAWSCDKBootstrapCloudFormationTemplate(excludeFromManifest: true)
+//     .WithReference(localstack);
+
 var customStack = builder
     .AddAWSCDKStack("custom", scope => new CustomStack(scope, "Aspire-custom"))
+    // Add the LocalStack Reference to forward AWS calls to the LocalStack container
+    // Comment "WithReference(localstack)" if you use autoconfiguration below with "builder.UseLocalStack(localstack);"
+    // .WithReference(localstack)
+    // Wait for the CDK Bootstrap CloudFormation template to be deployed before deploying the custom stack
+    // Comment "WaitFor(cdkBootstrap)" if you use autoconfiguration below with "builder.UseLocalStack(localstack);"
+    // .WaitFor(cdkBootstrap)
     .WithReference(awsConfig);
 
 // Add outputs for all the resources to make them available to the frontend
@@ -36,11 +46,14 @@ builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
     // Reference all outputs from the custom stack (similar to CloudFormation approach)
     .WithReference(customStack)
     // Add localstack reference to project, it will automatically configure LocalStack.Client.Extensions
-    .WithReference(localstack)
+    // Comment "WithReference(localstack)" if you use autoconfiguration below with "builder.UseLocalStack(localstack);"
+    //.WithReference(localstack)
     // Add specific environment variables matching CloudFormation AppHost pattern
     .WithEnvironment("ChatTopicArnEnv", customStack.GetOutput("ChatTopicArn"))
     .WithEnvironment("ChatMessagesQueueUrlEnv", customStack.GetOutput("ChatMessagesQueueUrl"));
 
+// Autoconfigures the LocalStack for both AWS Cloudformation and CDK resources adds LocalStack reference to all resources that uses AWS references
+// Comment "builder.UseLocalStack(localstack);" if you use manual configuration above for resources with "WithReference(localstack);"
 builder.UseLocalStack(localstack);
 
 await builder.Build().RunAsync().ConfigureAwait(false);

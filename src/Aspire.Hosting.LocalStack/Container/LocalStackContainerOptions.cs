@@ -2,6 +2,7 @@
 // ReSharper disable CheckNamespace
 
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.LocalStack.Container;
 
 namespace Aspire.Hosting.LocalStack;
 
@@ -48,71 +49,4 @@ public sealed class LocalStackContainerOptions
     /// Gets or sets additional environment variables to pass to the LocalStack container.
     /// </summary>
     public IDictionary<string, string> AdditionalEnvironmentVariables { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
-}
-
-/// <summary>
-/// Represents the available log levels for LocalStack.
-/// </summary>
-public enum LocalStackLogLevel
-{
-    /// <summary>
-    /// Detailed request/response logging.
-    /// </summary>
-    Trace,
-
-    /// <summary>
-    /// Internal calls logging.
-    /// </summary>
-    TraceInternal,
-
-    /// <summary>
-    /// Debug level logging.
-    /// </summary>
-    Debug,
-
-    /// <summary>
-    /// Info level logging (default).
-    /// </summary>
-    Info,
-
-    /// <summary>
-    /// Warning level logging.
-    /// </summary>
-    Warn,
-
-    /// <summary>
-    /// Error level logging.
-    /// </summary>
-    Error,
-
-    /// <summary>
-    /// Warning level logging (alias for Warn).
-    /// </summary>
-    Warning,
-}
-
-/// <summary>
-/// Extension methods for LocalStackLogLevel enum.
-/// </summary>
-internal static class LocalStackLogLevelExtensions
-{
-    /// <summary>
-    /// Converts the LocalStackLogLevel enum to its string representation for the LS_LOG environment variable.
-    /// </summary>
-    /// <param name="logLevel">The log level to convert.</param>
-    /// <returns>The string representation of the log level.</returns>
-    public static string ToEnvironmentValue(this LocalStackLogLevel logLevel)
-    {
-        return logLevel switch
-        {
-            LocalStackLogLevel.Trace => "trace",
-            LocalStackLogLevel.TraceInternal => "trace-internal",
-            LocalStackLogLevel.Debug => "debug",
-            LocalStackLogLevel.Info => "info",
-            LocalStackLogLevel.Warn => "warn",
-            LocalStackLogLevel.Error => "error",
-            LocalStackLogLevel.Warning => "warning",
-            _ => "info",
-        };
-    }
 }

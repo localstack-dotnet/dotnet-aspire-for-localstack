@@ -4,6 +4,7 @@
 using Amazon.CloudFormation;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS.CloudFormation;
+using Aspire.Hosting.LocalStack.Annotations;
 using LocalStack.Client;
 
 namespace Aspire.Hosting;
@@ -13,7 +14,7 @@ namespace Aspire.Hosting;
 /// These extensions allow existing Aspire.Hosting.AWS resources to work with LocalStack
 /// for local development and testing scenarios.
 /// </summary>
-public static class LocalStackAwsExtensions
+public static class LocalStackCloudFormationResourceExtensions
 {
     /// <summary>
     /// Configures any AWS CloudFormation resource to use LocalStack instead of real AWS.
@@ -22,7 +23,7 @@ public static class LocalStackAwsExtensions
     /// </summary>
     /// <typeparam name="T">The CloudFormation resource type that implements ICloudFormationResource.</typeparam>
     /// <param name="builder">The CloudFormation resource builder.</param>
-    /// <param name="localStack">The LocalStack resource to target.</param>
+    /// <param name="localStackBuilder">The LocalStack resource to target.</param>
     /// <returns>The same resource builder for fluent chaining.</returns>
     /// <example>
     /// <code>
@@ -37,18 +38,17 @@ public static class LocalStackAwsExtensions
     ///     .WithLocalStack(localStack);
     /// </code>
     /// </example>
-    public static IResourceBuilder<T> WithLocalStack<T>(this IResourceBuilder<T> builder, IResourceBuilder<LocalStackResource> localStack)
+    public static IResourceBuilder<T> WithReference<T>(this IResourceBuilder<T> builder, IResourceBuilder<ILocalStackResource>? localStackBuilder)
         where T : class, ICloudFormationResource
     {
         ArgumentNullException.ThrowIfNull(builder);
-        ArgumentNullException.ThrowIfNull(localStack);
 
-        var localStackOptions = localStack.Resource.Options;
-
-        if (!localStackOptions.UseLocalStack)
+        if (localStackBuilder?.Resource.Options.UseLocalStack != true)
         {
             return builder;
         }
+
+        var localStackOptions = localStackBuilder.Resource.Options;
 
         var session = SessionStandalone.Init()
             .WithSessionOptions(localStackOptions.Session)
@@ -57,21 +57,15 @@ public static class LocalStackAwsExtensions
 
         builder.Resource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
 
-        builder.WithAnnotation(new LocalStackEnabledAnnotation(localStack.Resource));
+        builder.WaitFor(localStackBuilder);
+        builder.WithAnnotation(new LocalStackEnabledAnnotation(localStackBuilder.Resource));
+        if (!localStackBuilder.Resource.Annotations.Any(x =>
+                x is LocalStackReferenceAnnotation referenceAnnotation
+                && string.Equals(referenceAnnotation.TargetResource, builder.Resource.Name, StringComparison.Ordinal)))
+        {
+            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource.Name));
+        }
 
         return builder;
     }
-}
-
-/// <summary>
-/// Annotation to mark that a resource has been configured to use LocalStack.
-/// This enables tooling and debugging support to understand LocalStack dependencies.
-/// </summary>
-/// <param name="localStackResource">The LocalStack resource this AWS resource depends on.</param>
-internal sealed class LocalStackEnabledAnnotation(LocalStackResource localStackResource) : IResourceAnnotation
-{
-    /// <summary>
-    /// The LocalStack resource that this AWS resource is configured to use.
-    /// </summary>
-    public LocalStackResource LocalStackResource { get; } = localStackResource;
 }

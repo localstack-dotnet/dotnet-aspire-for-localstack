@@ -1,4 +1,4 @@
-namespace Aspire.Hosting.LocalStack;
+namespace Aspire.Hosting.LocalStack.Container;
 
 /// <summary>
 /// Container image tags for LocalStack.
