@@ -12,8 +12,11 @@ internal static class CdkBootstrapManager
 {
     /// <summary>
     /// Gets the path to the CDK bootstrap template, extracting it from embedded resources if needed.
+    /// The template is extracted to a temporary directory and cached for subsequent calls.
+    /// This template contains the AWS CDK bootstrap CloudFormation stack for LocalStack environments.
     /// </summary>
     /// <returns>The absolute path to the CDK bootstrap template file.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the embedded CDK bootstrap template cannot be found.</exception>
     public static string GetBootstrapTemplatePath()
     {
         var tempPath = Path.Combine(Path.GetTempPath(), "aspire-localstack", "cdk-bootstrap.template");
