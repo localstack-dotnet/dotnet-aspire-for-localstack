@@ -29,7 +29,7 @@ public static class LocalStackResourceBuilderExtensions
 
     /// <summary>
     /// Configures all AWS resources in the application to use the specified LocalStack instance.
-    /// Automatically detects CloudFormation templates and CDK stacks, and handles CDK bootstrap if needed.
+    /// Automatically detects CloudFormation templates and CDK stacks and handles CDK bootstrap if needed.
     /// This method scans all resources in the application and automatically configures AWS resources and
     /// projects that reference AWS resources to use LocalStack for local development.
     /// </summary>
@@ -66,7 +66,13 @@ public static class LocalStackResourceBuilderExtensions
         if (hasStackResources)
         {
             // Create a CDK bootstrap resource once for all CDK stacks
-            cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplate(excludeFromManifest: true);
+            cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStack);
+
+            if (cdkBootstrap == null)
+            {
+                // If we couldn't create a CDK bootstrap resource, we can't proceed
+                throw new InvalidOperationException("Failed to create CDK bootstrap CloudFormation template resource.");
+            }
 
             // Move the CDK bootstrap resource to be right after LocalStack for proper startup ordering
             var localStackIndex = builder.Resources.IndexOf(localStack.Resource);
@@ -83,7 +89,7 @@ public static class LocalStackResourceBuilderExtensions
 
         foreach (var resource in builder.Resources)
         {
-            if (resource.Annotations.Any(annotation => annotation is LocalStackEnabledAnnotation))
+            if (resource is LocalStackResource || resource.Annotations.Any(annotation => annotation is LocalStackEnabledAnnotation))
             {
                 continue;
             }
@@ -126,7 +132,7 @@ public static class LocalStackResourceBuilderExtensions
     /// <param name="localStackOptions">The LocalStack configuration options. If null, default options will be used.</param>
     /// <param name="awsConfig">Optional AWS SDK configuration to inherit region settings from.</param>
     /// <param name="configureContainer">Optional action to configure container-specific options such as lifetime, logging, and environment variables.</param>
-    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in configuration.</returns>
+    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
     public static IResourceBuilder<ILocalStackResource>? AddLocalStack(
         this IDistributedApplicationBuilder builder,
         string name = "localstack",
@@ -188,23 +194,27 @@ public static class LocalStackResourceBuilderExtensions
     /// This template contains the necessary infrastructure for AWS CDK bootstrapping in LocalStack.
     /// </summary>
     /// <param name="builder">The distributed application builder.</param>
-    /// <param name="excludeFromManifest">Whether to exclude this resource from the application manifest (default: false).</param>
+    /// <param name="localStackBuilder">The LocalStack resource to target.</param>
     /// <param name="templatePath">Optional custom path to the CDK bootstrap template. If null, uses the embedded template.</param>
     /// <returns>A CloudFormation template resource builder for the CDK bootstrap stack.</returns>
-    public static IResourceBuilder<ICloudFormationTemplateResource> AddAWSCDKBootstrapCloudFormationTemplate(
+    public static IResourceBuilder<ICloudFormationTemplateResource>? AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(
         this IDistributedApplicationBuilder builder,
-        bool excludeFromManifest = false,
+        IResourceBuilder<ILocalStackResource>? localStackBuilder,
         string? templatePath = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        var cdkBootstrapTemplate = templatePath ?? CdkBootstrapManager.GetBootstrapTemplatePath();
-        var addAwsCloudFormationTemplate = builder.AddAWSCloudFormationTemplate("CDKBootstrap", cdkBootstrapTemplate);
-
-        if (excludeFromManifest)
+        if (localStackBuilder?.Resource.Options.UseLocalStack != true)
         {
-            addAwsCloudFormationTemplate.ExcludeFromManifest();
+            return null;
         }
+
+        var cdkBootstrapTemplate = templatePath ?? CdkBootstrapManager.GetBootstrapTemplatePath();
+        var addAwsCloudFormationTemplate = builder
+            .AddAWSCloudFormationTemplate("CDKBootstrap", cdkBootstrapTemplate)
+            .WithReference(localStackBuilder);
+
+        addAwsCloudFormationTemplate.ExcludeFromManifest();
 
         return addAwsCloudFormationTemplate;
     }
@@ -212,7 +222,7 @@ public static class LocalStackResourceBuilderExtensions
     /// <summary>
     /// Reads LocalStack configuration from the application's configuration system.
     /// Looks for a "LocalStack" section in appsettings.json and binds it to LocalStack options.
-    /// If no configuration section is found, returns default options with UseLocalStack set to false.
+    /// If no configuration section is found, it returns default options with UseLocalStack set to false.
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <returns>The configured LocalStack options from appsettings.json or default options if not configured.</returns>

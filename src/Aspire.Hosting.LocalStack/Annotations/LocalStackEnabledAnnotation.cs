@@ -12,5 +12,5 @@ internal sealed class LocalStackEnabledAnnotation(ILocalStackResource localStack
     /// <summary>
     /// The LocalStack resource that this AWS resource is configured to use.
     /// </summary>
-    public ILocalStackResource LocalStackResource { get; } = localStackResource;
+    public ILocalStackResource LocalStackResource { get; } = localStackResource ?? throw new ArgumentNullException(nameof(localStackResource));
 }

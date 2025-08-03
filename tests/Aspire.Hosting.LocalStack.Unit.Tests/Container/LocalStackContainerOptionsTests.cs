@@ -1,0 +1,44 @@
+#pragma warning disable S4143
+
+namespace Aspire.Hosting.LocalStack.Unit.Tests.Container;
+
+public class LocalStackContainerOptionsTests
+{
+    [Fact]
+    public void Constructor_Should_Set_Correct_Defaults()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.Equal(ContainerLifetime.Persistent, options.Lifetime);
+        Assert.Equal(0, options.DebugLevel);
+        Assert.Equal(LocalStackLogLevel.Error, options.LogLevel);
+        Assert.NotNull(options.AdditionalEnvironmentVariables);
+        Assert.Empty(options.AdditionalEnvironmentVariables);
+    }
+
+    [Fact]
+    public void AdditionalEnvironmentVariables_Should_Be_Mutable_Dictionary()
+    {
+        var options = new LocalStackContainerOptions();
+
+        options.AdditionalEnvironmentVariables["TEST_KEY"] = "test_value";
+        options.AdditionalEnvironmentVariables["ANOTHER_KEY"] = "another_value";
+
+        Assert.Equal(2, options.AdditionalEnvironmentVariables.Count);
+        Assert.Equal("test_value", options.AdditionalEnvironmentVariables["TEST_KEY"]);
+        Assert.Equal("another_value", options.AdditionalEnvironmentVariables["ANOTHER_KEY"]);
+    }
+
+    [Fact]
+    public void AdditionalEnvironmentVariables_Should_Use_Ordinal_StringComparer()
+    {
+        var options = new LocalStackContainerOptions();
+
+        options.AdditionalEnvironmentVariables["TestKey"] = "value1";
+        options.AdditionalEnvironmentVariables["testkey"] = "value2";
+
+        Assert.Equal(2, options.AdditionalEnvironmentVariables.Count);
+        Assert.Equal("value1", options.AdditionalEnvironmentVariables["TestKey"]);
+        Assert.Equal("value2", options.AdditionalEnvironmentVariables["testkey"]);
+    }
+}

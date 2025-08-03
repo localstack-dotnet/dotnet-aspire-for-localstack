@@ -13,4 +13,9 @@
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" />
+  </ItemGroup>
+
 </Project>

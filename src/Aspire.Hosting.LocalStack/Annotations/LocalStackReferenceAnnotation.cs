@@ -14,5 +14,5 @@ internal sealed class LocalStackReferenceAnnotation(string targetResource) : IRe
     /// <summary>
     /// Gets the name of the resource that is referencing LocalStack.
     /// </summary>
-    public string TargetResource { get; } = targetResource;
+    public string TargetResource { get; } = targetResource ?? throw new ArgumentNullException(nameof(targetResource));
 }

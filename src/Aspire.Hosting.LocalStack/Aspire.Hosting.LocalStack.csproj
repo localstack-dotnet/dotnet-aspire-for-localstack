@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AWS"/>
     <PackageReference Include="LocalStack.Client"/>
   </ItemGroup>
