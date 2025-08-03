@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests" />
+    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="CDK\cdk-bootstrap.template" />
+    <EmbeddedResource Include="CDK\cdk-bootstrap.template"/>
   </ItemGroup>
 
 </Project>

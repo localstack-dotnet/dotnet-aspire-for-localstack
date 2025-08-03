@@ -9,7 +9,7 @@
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App"/>
 
-    <PackageReference Include="AWS.Messaging.Telemetry.OpenTelemetry" />
+    <PackageReference Include="AWS.Messaging.Telemetry.OpenTelemetry"/>
 
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol"/>
     <PackageReference Include="OpenTelemetry.Extensions.Hosting"/>

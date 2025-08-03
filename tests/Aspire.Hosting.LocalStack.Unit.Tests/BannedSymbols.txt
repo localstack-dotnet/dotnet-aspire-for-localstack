@@ -1,0 +1,2 @@
+M:Aspire.Hosting.DistributedApplication.RunAsync(System.Threading.CancellationToken); Do not use RunAsync in Unit Test project
+M:Aspire.Hosting.DistributedApplication.Run; Do not use Run in the Unit Test project

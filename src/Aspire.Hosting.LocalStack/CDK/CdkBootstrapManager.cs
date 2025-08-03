@@ -15,15 +15,16 @@ internal static class CdkBootstrapManager
 {
     private const string ResourceName = "Aspire.Hosting.LocalStack.CDK.cdk-bootstrap.template";
 
-    internal static readonly string TempDirPath = Path.Combine(Path.GetTempPath(), "aspire-localstack");
+    private static readonly string TempDirPath = Path.Combine(Path.GetTempPath(), "aspire-localstack");
 
     /// <summary>
     /// Gets the file path of the CDK bootstrap template
     /// </summary>
+    /// <param name="templateDirectory">Optional custom directory path. If null, empty, or not absolute, uses the default temp directory.</param>
     /// <returns>The full path to the valid template file on disk.</returns>
-    public static string GetBootstrapTemplatePath() => ExtractBootstrapTemplate();
+    internal static string GetBootstrapTemplatePath(string? templateDirectory = null) => ExtractBootstrapTemplate(templateDirectory);
 
-    private static string ExtractBootstrapTemplate()
+    private static string ExtractBootstrapTemplate(string? templateDirectory = null)
     {
         using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
                              ?? throw new InvalidOperationException($"Embedded resource '{ResourceName}' not found.");
@@ -34,9 +35,13 @@ internal static class CdkBootstrapManager
         var hash = SHA256.HashData(content);
         var hashShort = ToHexString(hash)[..16].ToLowerInvariant();
 
-        var filePath = Path.Combine(TempDirPath, $"cdk-bootstrap-{hashShort}.template");
+        var targetDirectory = !string.IsNullOrWhiteSpace(templateDirectory) && Path.IsPathRooted(templateDirectory)
+            ? templateDirectory
+            : TempDirPath;
 
-        Directory.CreateDirectory(TempDirPath);
+        var filePath = Path.Combine(targetDirectory, $"cdk-bootstrap-{hashShort}.template");
+
+        Directory.CreateDirectory(targetDirectory);
 
         if (File.Exists(filePath) && IsFileContentValid(filePath, hash))
         {
