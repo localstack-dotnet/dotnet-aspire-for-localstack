@@ -2,7 +2,9 @@
 <Project>
   <PropertyGroup>
     <DefaultTargetFramework>net8.0</DefaultTargetFramework>
-    <LangVersion>13.0</LangVersion>
+    <TargetFrameworks>$(DefaultTargetFramework)</TargetFrameworks>
+    <AllTargetFrameworks>$(DefaultTargetFramework);net9.0</AllTargetFrameworks>
+    <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Authors>LocalStack.NET, Deniz İrgin</Authors>
