@@ -1,4 +1,4 @@
-namespace tests;
+namespace Aspire.Hosting.LocalStack.Unit.Tests;
 
 public class UnitTest1
 {
