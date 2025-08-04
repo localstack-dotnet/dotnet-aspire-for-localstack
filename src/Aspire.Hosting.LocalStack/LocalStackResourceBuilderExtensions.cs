@@ -24,7 +24,6 @@ public static class LocalStackResourceBuilderExtensions
 {
     // Internal port is always 4566.
     private const int DefaultContainerPort = 4566;
-
     private const string CloudFormationReferenceAnnotation = "Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation";
 
     /// <summary>

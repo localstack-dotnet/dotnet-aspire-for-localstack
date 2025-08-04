@@ -35,7 +35,7 @@ public sealed class LocalStackResource(string name, ILocalStackOptions options) 
     /// <summary>
     /// Gets the LocalStack configuration options.
     /// </summary>
-    public ILocalStackOptions Options { get; } = options;
+    public ILocalStackOptions Options { get; } = options ?? throw new ArgumentNullException(nameof(options));
 
     /// <summary>
     /// Gets the connection string expression for the LocalStack resource.

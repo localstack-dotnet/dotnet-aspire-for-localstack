@@ -35,6 +35,26 @@ public class LocalStackLogLevelTests
         Assert.Equal(integerValues.Length, integerValues.Distinct().Count());
     }
 
+    [Fact]
+    public void ToEnvironmentValue_Should_Handle_Invalid_Enum_Values_Gracefully()
+    {
+        const LocalStackLogLevel invalidLogLevel = (LocalStackLogLevel)999;
+
+        // The implementation doesn't throw for invalid values, it handles them gracefully
+        var result = invalidLogLevel.ToEnvironmentValue();
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void ToEnvironmentValue_Should_Handle_Negative_Enum_Values_Gracefully()
+    {
+        const LocalStackLogLevel invalidLogLevel = (LocalStackLogLevel)(-1);
+
+        // The implementation doesn't throw for invalid values, it handles them gracefully
+        var result = invalidLogLevel.ToEnvironmentValue();
+        Assert.NotNull(result);
+    }
+
     public static IEnumerable<object[]> AllLogLevelMappingsTestData =>
     [
         [LocalStackLogLevel.Trace, "trace"],
@@ -43,6 +63,6 @@ public class LocalStackLogLevelTests
         [LocalStackLogLevel.Info, "info"],
         [LocalStackLogLevel.Warn, "warn"],
         [LocalStackLogLevel.Error, "error"],
-        [LocalStackLogLevel.Warning, "warning"]
+        [LocalStackLogLevel.Warning, "warning"],
     ];
 }

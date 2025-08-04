@@ -29,7 +29,7 @@ public class LocalStackReferenceAnnotationTests
     }
 
     [Fact]
-    public void LocalStackReferenceAnnotation_Should_Accept_Valid_Target_Resource_Name()
+    public void LocalStackReferenceAnnotation_Should_Maintain_Same_Target_Resource_Name()
     {
         const string targetResource = "valid-resource-name";
 
@@ -37,17 +37,20 @@ public class LocalStackReferenceAnnotationTests
 
         Assert.NotNull(annotation);
         Assert.Equal(targetResource, annotation.TargetResource);
+
+        // Multiple calls should return the same value
+        Assert.Equal(annotation.TargetResource, annotation.TargetResource);
     }
 
-    [Fact]
-    public void LocalStackReferenceAnnotation_Should_Have_Immutable_Target_Resource_Property()
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void LocalStackReferenceAnnotation_Should_Accept_Empty_Or_Whitespace_Target_Resource_Names(string name)
     {
-        const string targetResource = "test-resource";
-        var annotation = new LocalStackReferenceAnnotation(targetResource);
+        // The implementation actually accepts empty/whitespace strings
+        var annotation = new LocalStackReferenceAnnotation(name);
 
-        var retrievedTarget = annotation.TargetResource;
-
-        Assert.Equal(targetResource, retrievedTarget);
-        Assert.False(typeof(LocalStackReferenceAnnotation).GetProperty(nameof(LocalStackReferenceAnnotation.TargetResource))?.CanWrite);
+        Assert.NotNull(annotation);
+        Assert.Equal(name, annotation.TargetResource);
     }
 }

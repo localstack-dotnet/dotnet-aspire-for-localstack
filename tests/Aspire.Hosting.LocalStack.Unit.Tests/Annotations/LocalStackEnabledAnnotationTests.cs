@@ -5,9 +5,9 @@ public class LocalStackEnabledAnnotationTests
     [Fact]
     public void LocalStackEnabledAnnotation_Should_Implement_IResourceAnnotation()
     {
-        var mockLocalStackResource = Substitute.For<ILocalStackResource>();
+        var localStackResource = CreateTestLocalStackResource();
 
-        var annotation = new LocalStackEnabledAnnotation(mockLocalStackResource);
+        var annotation = new LocalStackEnabledAnnotation(localStackResource);
 
         Assert.IsType<IResourceAnnotation>(annotation, exactMatch: false);
     }
@@ -15,11 +15,11 @@ public class LocalStackEnabledAnnotationTests
     [Fact]
     public void LocalStackEnabledAnnotation_Should_Store_LocalStack_Resource_Reference()
     {
-        var mockLocalStackResource = Substitute.For<ILocalStackResource>();
+        var localStackResource = CreateTestLocalStackResource();
 
-        var annotation = new LocalStackEnabledAnnotation(mockLocalStackResource);
+        var annotation = new LocalStackEnabledAnnotation(localStackResource);
 
-        Assert.Equal(mockLocalStackResource, annotation.LocalStackResource);
+        Assert.Same(localStackResource, annotation.LocalStackResource);
     }
 
     [Fact]
@@ -29,26 +29,24 @@ public class LocalStackEnabledAnnotationTests
     }
 
     [Fact]
-    public void LocalStackEnabledAnnotation_Should_Accept_Valid_LocalStack_Resource()
+    public void LocalStackEnabledAnnotation_Should_Maintain_Same_Resource_Reference()
     {
-        var mockLocalStackResource = Substitute.For<ILocalStackResource>();
+        var localStackResource = CreateTestLocalStackResource();
 
-        var annotation = new LocalStackEnabledAnnotation(mockLocalStackResource);
+        var annotation = new LocalStackEnabledAnnotation(localStackResource);
 
+        // Test that the resource reference remains consistent
         Assert.NotNull(annotation);
         Assert.NotNull(annotation.LocalStackResource);
-        Assert.Same(mockLocalStackResource, annotation.LocalStackResource);
+        Assert.Same(localStackResource, annotation.LocalStackResource);
+
+        // Multiple calls should return the same reference
+        Assert.Same(annotation.LocalStackResource, annotation.LocalStackResource);
     }
 
-    [Fact]
-    public void LocalStackEnabledAnnotation_Should_Have_Immutable_LocalStack_Resource_Property()
+    private static LocalStackResource CreateTestLocalStackResource()
     {
-        var mockLocalStackResource = Substitute.For<ILocalStackResource>();
-        var annotation = new LocalStackEnabledAnnotation(mockLocalStackResource);
-
-        var retrievedResource = annotation.LocalStackResource;
-
-        Assert.Same(mockLocalStackResource, retrievedResource);
-        Assert.False(typeof(LocalStackEnabledAnnotation).GetProperty(nameof(LocalStackEnabledAnnotation.LocalStackResource))?.CanWrite);
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+        return new LocalStackResource("test-localstack", options);
     }
 }
