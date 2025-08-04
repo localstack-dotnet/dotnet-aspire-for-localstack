@@ -192,10 +192,10 @@ jobs:
             # Feature branches: 9.2.0-feature-name.20250804.abc12345
             BRANCH_NAME="${{ github.head_ref }}"
             SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-            VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${BUILD_DATE}.${RUN_NUMBER}.${COMMIT_SHA}"
+            VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${RUN_NUMBER}"
           else
-            # Master nightlies: 9.2.0-nightly.20250804.abc12345
-            VERSION="${BASE_VERSION}-nightly.${BUILD_DATE}.${RUN_NUMBER}.${COMMIT_SHA}"
+            # Master nightlies: 9.2.0.20250804.abc12345
+            VERSION="${BASE_VERSION}.${RUN_NUMBER}"
           fi
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
