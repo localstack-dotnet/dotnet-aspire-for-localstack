@@ -5,16 +5,22 @@ PROJECT_PATH="$1"
 RESULTS_DIR="$2"
 CONFIGURATION="${3:-Release}"
 
-# Same property trick as in PowerShell
+# 1️⃣  Get the multi-TFM list first …
 TFM_RAW=$(dotnet msbuild "$PROJECT_PATH" \
-         -getProperty:TargetFrameworks,TargetFramework -nologo -v:q)
+          -getProperty:TargetFrameworks -nologo -v:q)
+
+# 2️⃣  … fallback to single-TFM if empty
+if [[ -z "$TFM_RAW" ]]; then
+  TFM_RAW=$(dotnet msbuild "$PROJECT_PATH" \
+            -getProperty:TargetFramework -nologo -v:q)
+fi
 
 if [[ -z "$TFM_RAW" ]]; then
   echo "Unable to determine target frameworks for $PROJECT_PATH" >&2
   exit 1
 fi
 
-# Collapse newlines → semicolons → array
+# Normalise newlines → semicolons, then explode into an array
 IFS=';' read -ra TFMS <<< "$(echo "$TFM_RAW" | tr -d '\r\n')"
 
 echo "📋 Target frameworks: ${TFMS[*]}"

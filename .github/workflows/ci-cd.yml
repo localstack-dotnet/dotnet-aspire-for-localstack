@@ -27,7 +27,7 @@ jobs:
     env:
       NUGET_PACKAGES: ${{ contains(matrix.os, 'windows') && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
       BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\test-results', github.workspace) || format('{0}/test-results', github.workspace) }}
-      UNIT_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\\tests\\Aspire.Hosting.LocalStack.Unit.Tests\\Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) }}
+      UNIT_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\tests\Aspire.Hosting.LocalStack.Unit.Tests\Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) }}
       BADGE_GIST_ID: "f2b8df60871ea8cd0fa6b746798690b4"
     strategy:
       fail-fast: false
