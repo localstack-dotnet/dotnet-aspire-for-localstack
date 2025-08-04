@@ -185,16 +185,17 @@ jobs:
 
           # Generate build metadata
           BUILD_DATE=$(date -u '+%Y%m%d')
+          RUN_NUMBER="${{ github.run_number }}"     # monotonic
           COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             # Feature branches: 9.2.0-feature-name.20250804.abc12345
             BRANCH_NAME="${{ github.head_ref }}"
             SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
-            VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${BUILD_DATE}.${COMMIT_SHA}"
+            VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${BUILD_DATE}.${RUN_NUMBER}.${COMMIT_SHA}"
           else
             # Master nightlies: 9.2.0-nightly.20250804.abc12345
-            VERSION="${BASE_VERSION}-nightly.${BUILD_DATE}.${COMMIT_SHA}"
+            VERSION="${BASE_VERSION}-nightly.${BUILD_DATE}.${RUN_NUMBER}.${COMMIT_SHA}"
           fi
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
