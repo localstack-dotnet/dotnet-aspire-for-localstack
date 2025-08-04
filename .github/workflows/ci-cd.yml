@@ -1,0 +1,232 @@
+name: "CI/CD Pipeline"
+
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+    branches:
+      - "master"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - LICENSE
+    branches:
+      - master
+      - "feature/*"
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_NOLOGO: true
+
+jobs:
+  build-and-test:
+    name: "Build & Test (${{ matrix.name }})"
+    runs-on: ${{ matrix.os }}
+    env:
+      NUGET_PACKAGES: ${{ contains(matrix.os, 'windows') && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
+      TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\TestResults', github.workspace) || format('{0}/TestResults', github.workspace) }}
+      BADGE_GIST_ID: "f2b8df60871ea8cd0fa6b746798690b4"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: "Windows"
+            filename: "test-results-windows.json"
+
+          - os: ubuntu-22.04
+            name: "Linux"
+            filename: "test-results-linux.json"
+
+          - os: macos-latest
+            name: "macOS"
+            filename: "test-results-macos.json"
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Full history for better caching
+
+      - name: "Setup .NET SDK"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: "Cache NuGet packages"
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.os == 'Windows' && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: "Build"
+        run: dotnet build --configuration Release
+
+      - name: "Run Tests"
+        run: dotnet test --configuration Release --no-build --logger "trx;logfilename=testResults.trx" --results-directory "${{ env.TEST_RESULTS_DIR }}"
+
+      - name: "Publish Test Results"
+        id: test-results
+        uses: dorny/test-reporter@v1
+        if: success() || failure()
+        with:
+          name: "Test Results (${{ matrix.name }})"
+          path: "${{ env.TEST_RESULTS_DIR }}/*.trx"
+          reporter: "dotnet-trx"
+          fail-on-error: true
+          max-annotations: 50
+
+      - name: "Update Test Results Badge"
+        if: always() # Run even if tests failed or were skipped
+        continue-on-error: true # Don't fail workflow if badge update fails
+        uses: ./.github/actions/update-test-badge
+        with:
+          platform: ${{ matrix.name }}
+          gist_id: ${{ env.BADGE_GIST_ID }}
+          filename: ${{ matrix.filename }}
+          gist_token: ${{ secrets.GIST_SECRET }}
+          test_passed: ${{ steps.test-results.outputs.passed || 0 }}
+          test_failed: ${{ steps.test-results.outputs.failed || 0 }}
+          test_skipped: ${{ steps.test-results.outputs.skipped || 0 }}
+          test_url_html: ${{ steps.test-results.outputs.url_html || '' }}
+          commit_sha: ${{ github.sha }}
+          run_id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          server_url: ${{ github.server_url }}
+
+      - name: "Upload Test Artifacts"
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-results-${{ matrix.name }}
+          path: |
+            ${{ env.TEST_RESULTS_DIR }}/**/*
+          retention-days: 7
+
+  continuous-deployment:
+    name: "Continuous Deployment"
+    runs-on: ubuntu-22.04
+    needs: build-and-test
+    if: |
+      github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/')))
+    env:
+      NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: "Setup .NET SDK"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            9.0.x
+
+      - name: "Cache NuGet packages"
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/Directory.Packages.props') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: "Restore Dependencies"
+        run: dotnet restore
+
+      - name: "Build"
+        run: dotnet build --configuration Release --no-restore
+
+      - name: "Test"
+        run: dotnet test --configuration Release --no-build"
+
+      - name: "Setup GitHub Packages Authentication"
+        run: |
+          echo "🔐 Adding GitHub Packages authentication..."
+          dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
+            --name github-packages \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }} \
+            --store-password-in-clear-text
+
+      - name: "Determine Package Version"
+        id: version
+        run: |
+          # Extract base version from project file
+          PROJECT_FILE="src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj"
+          BASE_VERSION=$(grep -oP '<Version>\K[^<]+' "$PROJECT_FILE")
+
+          if [ -z "$BASE_VERSION" ]; then
+            echo "❌ Could not extract version from $PROJECT_FILE"
+            exit 1
+          fi
+
+          echo "📦 Base Version: $BASE_VERSION"
+
+          # Generate build metadata
+          BUILD_DATE=$(date -u '+%Y%m%d')
+          COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            # Feature branches: 9.2.0-feature-name.20250804.abc12345
+            BRANCH_NAME="${{ github.head_ref }}"
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${BUILD_DATE}.${COMMIT_SHA}"
+          else
+            # Master nightlies: 9.2.0-nightly.20250804.abc12345
+            VERSION="${BASE_VERSION}-nightly.${BUILD_DATE}.${COMMIT_SHA}"
+          fi
+
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Final Package Version: ${VERSION}"
+
+      - name: "Pack NuGet Package"
+        run: |
+          echo "� Packing Aspire.Hosting.LocalStack package..."
+          dotnet pack src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj \
+            --configuration Release \
+            --no-build \
+            --output ./artifacts \
+            /p:PackageVersion=${{ steps.version.outputs.version }}
+
+      - name: "Push to GitHub Packages"
+        run: |
+          echo "📦 Publishing to GitHub Packages..."
+          dotnet nuget push ./artifacts/*.nupkg \
+            --source github-packages \
+            --api-key ${{ secrets.GITHUB_TOKEN }} \
+            --skip-duplicate
+
+      - name: "Upload Package Artifacts"
+        uses: actions/upload-artifact@v4
+        with:
+          name: "packages-${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}-${{ github.run_number }}"
+          path: |
+            artifacts/*.nupkg
+            artifacts/*.snupkg
+          retention-days: 7
+
+      - name: "Generate Build Summary"
+        run: |
+          echo "📦 Generating build summary..."
+          echo "## 📦 Package Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package**: Aspire.Hosting.LocalStack" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Published to**: GitHub Packages" >> $GITHUB_STEP_SUMMARY
