@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <!-- <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport> -->
+    <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
 

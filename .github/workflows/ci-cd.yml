@@ -84,6 +84,7 @@ jobs:
           name: "Test Results (${{ matrix.name }})"
           path: "${{ env.BASE_TEST_RESULTS_DIR }}/**/*.trx"
           reporter: "dotnet-trx"
+          path-replace-backslashes: true
           fail-on-error: true
           max-annotations: 50
 
@@ -124,7 +125,6 @@ jobs:
        (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/')))
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
-      TEST_RESULTS_DIR: ${{ github.workspace }}/TestResults
 
     permissions:
       contents: read
@@ -158,27 +158,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Test"
-        run: |
-          # Get target frameworks from the test project
-          TEST_PROJECT="tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj"
-          FRAMEWORKS=$(dotnet msbuild "$TEST_PROJECT" -getProperty:TargetFrameworks)
-
-          if [ -z "$FRAMEWORKS" ]; then
-            echo "❌ Could not determine target frameworks"
-            exit 1
-          fi
-
-          echo "📋 Target Frameworks: $FRAMEWORKS"
-
-          # Split frameworks and run tests for each
-          IFS=';' read -ra FRAMEWORK_ARRAY <<< "$FRAMEWORKS"
-          for framework in "${FRAMEWORK_ARRAY[@]}"; do
-            framework=$(echo "$framework" | xargs)  # Trim whitespace
-            if [ -n "$framework" ]; then
-              echo "🧪 Running tests for $framework..."
-              dotnet test --configuration Release --framework "$framework" --no-build --logger "trx;logfilename=testResults-$framework.trx" --results-directory "${{ env.TEST_RESULTS_DIR }}"
-            fi
-          done
+        run: dotnet test --configuration Release --no-build
 
       - name: "Setup GitHub Packages Authentication"
         run: |
