@@ -6,6 +6,11 @@
     <IsPackable>true</IsPackable>
     <PackageTags>aspire,integration,hosting,aws,localstack</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Description>
+      .NET Aspire integration for LocalStack - enables local AWS service development and testing with auto-configuration,
+      container orchestration, and full compatibility with Aspire.Hosting.AWS patterns.
+    </Description>
+    <Summary>LocalStack integration for .NET Aspire applications with automatic service discovery and AWS compatibility</Summary>
   </PropertyGroup>
 
   <ItemGroup>
