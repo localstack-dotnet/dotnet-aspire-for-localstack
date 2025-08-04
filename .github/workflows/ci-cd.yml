@@ -26,9 +26,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       NUGET_PACKAGES: ${{ contains(matrix.os, 'windows') && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
-      TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\TestResults', github.workspace) || format('{0}/TestResults', github.workspace) }}
+      BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\test-results', github.workspace) || format('{0}/test-results', github.workspace) }}
+      UNIT_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\\tests\\Aspire.Hosting.LocalStack.Unit.Tests\\Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) }}
       BADGE_GIST_ID: "f2b8df60871ea8cd0fa6b746798690b4"
-
     strategy:
       fail-fast: false
       matrix:
@@ -69,8 +69,12 @@ jobs:
       - name: "Build"
         run: dotnet build --configuration Release
 
-      - name: "Run Tests"
-        run: dotnet test --configuration Release --no-build --logger "trx;logfilename=testResults.trx" --results-directory "${{ env.TEST_RESULTS_DIR }}"
+      - name: "Run Unit Tests"
+        uses: ./.github/actions/run-dotnet-tests
+        with:
+          project-path: ${{ env.UNIT_TEST_PROJECT_PATH }}
+          results-dir: ${{ runner.os == 'Windows' && format('{0}\unit', env.BASE_TEST_RESULTS_DIR) || format('{0}/unit',  env.BASE_TEST_RESULTS_DIR) }}
+          configuration: "Release"
 
       - name: "Publish Test Results"
         id: test-results
@@ -78,7 +82,7 @@ jobs:
         if: success() || failure()
         with:
           name: "Test Results (${{ matrix.name }})"
-          path: "${{ env.TEST_RESULTS_DIR }}/*.trx"
+          path: "${{ env.BASE_TEST_RESULTS_DIR }}/**/*.trx"
           reporter: "dotnet-trx"
           fail-on-error: true
           max-annotations: 50
@@ -107,7 +111,7 @@ jobs:
         with:
           name: test-results-${{ matrix.name }}
           path: |
-            ${{ env.TEST_RESULTS_DIR }}/**/*
+            ${{ env.BASE_TEST_RESULTS_DIR }}/**/*
           retention-days: 7
 
   continuous-deployment:
@@ -120,6 +124,7 @@ jobs:
        (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/')))
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+      TEST_RESULTS_DIR: ${{ github.workspace }}/TestResults
 
     permissions:
       contents: read
@@ -153,7 +158,27 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Test"
-        run: dotnet test --configuration Release --no-build"
+        run: |
+          # Get target frameworks from the test project
+          TEST_PROJECT="tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj"
+          FRAMEWORKS=$(dotnet msbuild "$TEST_PROJECT" -getProperty:TargetFrameworks)
+
+          if [ -z "$FRAMEWORKS" ]; then
+            echo "❌ Could not determine target frameworks"
+            exit 1
+          fi
+
+          echo "📋 Target Frameworks: $FRAMEWORKS"
+
+          # Split frameworks and run tests for each
+          IFS=';' read -ra FRAMEWORK_ARRAY <<< "$FRAMEWORKS"
+          for framework in "${FRAMEWORK_ARRAY[@]}"; do
+            framework=$(echo "$framework" | xargs)  # Trim whitespace
+            if [ -n "$framework" ]; then
+              echo "🧪 Running tests for $framework..."
+              dotnet test --configuration Release --framework "$framework" --no-build --logger "trx;logfilename=testResults-$framework.trx" --results-directory "${{ env.TEST_RESULTS_DIR }}"
+            fi
+          done
 
       - name: "Setup GitHub Packages Authentication"
         run: |

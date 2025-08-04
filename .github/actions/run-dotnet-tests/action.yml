@@ -1,0 +1,32 @@
+name: "Run .NET tests (multi-TFM)"
+description: "Build once, test each target framework, unique TRX per framework"
+inputs:
+  project-path:
+    description: "Path to the test .csproj file"
+    required: true
+  results-dir:
+    description: "Directory for test result artefacts"
+    required: true
+  configuration:
+    description: "Build configuration"
+    default: "Release"
+runs:
+  using: "composite"
+  steps:
+    # Windows step -----------------------------------------------------------
+    - if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        & "${{ github.action_path }}\run-win.ps1" `
+            -ProjectPath "${{ inputs.project-path }}" `
+            -ResultsDir  "${{ inputs.results-dir }}" `
+            -Configuration "${{ inputs.configuration }}"
+
+    # Linux/macOS step -------------------------------------------------------
+    - if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        "${{ github.action_path }}/run-unix.sh" \
+            "${{ inputs.project-path }}" \
+            "${{ inputs.results-dir }}" \
+            "${{ inputs.configuration }}"
