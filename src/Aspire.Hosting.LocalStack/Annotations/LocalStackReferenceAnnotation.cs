@@ -16,3 +16,11 @@ internal sealed class LocalStackReferenceAnnotation(string targetResource) : IRe
     /// </summary>
     public string TargetResource { get; } = targetResource ?? throw new ArgumentNullException(nameof(targetResource));
 }
+
+internal sealed class LocalStackReferenceAnnotationV2(IResource resource) : IResourceAnnotation
+{
+    /// <summary>
+    /// The LocalStack resource that this AWS resource is configured to use.
+    /// </summary>
+    public IResource Resource { get; } = resource ?? throw new ArgumentNullException(nameof(resource));
+}

@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalStack.Provisioning.CDK
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.Hosting.LocalStack.Unit.Tests", "tests\Aspire.Hosting.LocalStack.Unit.Tests\Aspire.Hosting.LocalStack.Unit.Tests.csproj", "{8CE23ADF-A6CB-482C-85FC-A7C540308241}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Aspire.Hosting.LocalStack.Integration.Tests", "tests\Aspire.Hosting.LocalStack.Integration.Tests\Aspire.Hosting.LocalStack.Integration.Tests.csproj", "{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -56,6 +58,10 @@ Global
 		{8CE23ADF-A6CB-482C-85FC-A7C540308241}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8CE23ADF-A6CB-482C-85FC-A7C540308241}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8CE23ADF-A6CB-482C-85FC-A7C540308241}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47} = {7FF6089A-D52B-438B-870A-69D1A9D4ECB5}
@@ -65,5 +71,6 @@ Global
 		{11318FBB-FCE6-4142-A7C9-18F2EB32152E} = {4500B2A9-1AD0-49F0-930A-D31D2733C57C}
 		{57C540C7-2A83-4CCF-BFA6-7F9C84F22F13} = {4500B2A9-1AD0-49F0-930A-D31D2733C57C}
 		{8CE23ADF-A6CB-482C-85FC-A7C540308241} = {D251C7DB-FD8B-4879-8C67-05411ADF899E}
+		{A6E1F4F5-C40C-49F6-AF0E-3E1E3542A7C5} = {D251C7DB-FD8B-4879-8C67-05411ADF899E}
 	EndGlobalSection
 EndGlobal

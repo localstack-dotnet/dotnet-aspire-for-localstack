@@ -18,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting"/>
     <PackageReference Include="Aspire.Hosting.AWS"/>
     <PackageReference Include="LocalStack.Client"/>
   </ItemGroup>

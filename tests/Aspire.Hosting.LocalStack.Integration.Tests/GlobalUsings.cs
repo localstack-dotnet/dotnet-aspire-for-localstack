@@ -1,0 +1,13 @@
+﻿global using System.Net;
+global using Amazon.DynamoDBv2;
+global using Amazon.S3;
+global using Amazon.S3.Util;
+global using Amazon.SimpleNotificationService;
+global using Amazon.SQS;
+global using Aspire.Hosting.ApplicationModel;
+global using Aspire.Hosting.AWS.CloudFormation;
+global using Aspire.Hosting.Testing;
+global using LocalStack.Client;
+global using LocalStack.Client.Options;
+global using Microsoft.Extensions.DependencyInjection;
+global using Xunit;

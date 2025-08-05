@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+    <IsTestProject>true</IsTestProject>
+    <NoWarn>$(NoWarn);CA2007</NoWarn>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="AWSSDK.Core"/>
+    <PackageReference Include="AWSSDK.DynamoDBv2"/>
+    <PackageReference Include="AWSSDK.SQS"/>
+    <PackageReference Include="AWSSDK.S3"/>
+    <PackageReference Include="AWSSDK.SimpleNotificationService"/>
+
+    <PackageReference Include="LocalStack.Client"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj" />
+    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj" />
+    <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
+  </ItemGroup>
+
+</Project>

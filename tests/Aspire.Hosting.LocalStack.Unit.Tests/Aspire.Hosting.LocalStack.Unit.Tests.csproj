@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <TargetFrameworks>$(AllTargetFrameworks)</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
     <IsTestProject>true</IsTestProject>

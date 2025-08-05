@@ -1,11 +1,9 @@
 #pragma warning disable IDE0130
 // ReSharper disable CheckNamespace
 
-using Amazon.CloudFormation;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS.CloudFormation;
 using Aspire.Hosting.LocalStack.Annotations;
-using LocalStack.Client;
 
 namespace Aspire.Hosting;
 
@@ -48,14 +46,14 @@ public static class LocalStackCloudFormationResourceExtensions
             return builder;
         }
 
-        var localStackOptions = localStackBuilder.Resource.Options;
+        // var localStackOptions = localStackBuilder.Resource.Options;
 
-        var session = SessionStandalone.Init()
-            .WithSessionOptions(localStackOptions.Session)
-            .WithConfigurationOptions(localStackOptions.Config)
-            .Create();
-
-        builder.Resource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
+        // var session = SessionStandalone.Init()
+        //     .WithSessionOptions(localStackOptions.Session)
+        //     .WithConfigurationOptions(localStackOptions.Config)
+        //     .Create();
+        //
+        // builder.Resource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
 
         builder.WaitFor(localStackBuilder);
         builder.WithAnnotation(new LocalStackEnabledAnnotation(localStackBuilder.Resource));
@@ -64,6 +62,7 @@ public static class LocalStackCloudFormationResourceExtensions
                 && string.Equals(referenceAnnotation.TargetResource, builder.Resource.Name, StringComparison.Ordinal)))
         {
             localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource.Name));
+            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotationV2(builder.Resource));
         }
 
         return builder;
