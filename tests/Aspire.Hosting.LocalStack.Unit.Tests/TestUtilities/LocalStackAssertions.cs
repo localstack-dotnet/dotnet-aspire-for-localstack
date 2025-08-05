@@ -2,8 +2,6 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.TestUtilities;
 
 internal static class LocalStackAssertions
 {
-    //private const string EnvironmentAnnotation = "Aspire.Hosting.ApplicationModel.EnvironmentAnnotation";
-
     public static void ShouldHaveLocalStackEnabledAnnotation(this IResource resource, ILocalStackResource expectedLocalStack)
     {
         ArgumentNullException.ThrowIfNull(resource);

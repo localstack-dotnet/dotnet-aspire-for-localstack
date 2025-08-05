@@ -39,7 +39,6 @@ public class LocalStackCDKHostTests
                 continue;
             }
 
-#pragma warning disable S1481
             var bucketName = resourceEvent.Snapshot.Properties
                 .Single(snapshot => string.Equals(snapshot.Name, "aws.cloudformation.output.BucketName", StringComparison.Ordinal)).Value as string;
             var chatTopicArn = resourceEvent.Snapshot.Properties
@@ -95,7 +94,6 @@ public class LocalStackCDKHostTests
             resourceChecksSucceeded = true;
 
             break;
-#pragma warning restore S1481
         }
 
         Assert.True(resourceChecksSucceeded);
