@@ -1,9 +1,7 @@
 #pragma warning disable IDE0130
 // ReSharper disable CheckNamespace
 
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using Amazon.CloudFormation;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS;
 using Aspire.Hosting.AWS.CDK;
@@ -13,7 +11,7 @@ using Aspire.Hosting.LocalStack.Annotations;
 using Aspire.Hosting.LocalStack.CDK;
 using Aspire.Hosting.LocalStack.Configuration;
 using Aspire.Hosting.LocalStack.Container;
-using LocalStack.Client;
+using Aspire.Hosting.LocalStack.Internal;
 using LocalStack.Client.Contracts;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Configuration;
@@ -25,10 +23,6 @@ namespace Aspire.Hosting;
 /// </summary>
 public static class LocalStackResourceBuilderExtensions
 {
-    // Internal port is always 4566.
-    private const int DefaultContainerPort = 4566;
-    private const string CloudFormationReferenceAnnotation = "Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation";
-
     /// <summary>
     /// Configures all AWS resources in the application to use the specified LocalStack instance.
     /// Automatically detects CloudFormation templates and CDK stacks and handles CDK bootstrap if needed.
@@ -108,7 +102,7 @@ public static class LocalStackResourceBuilderExtensions
             }
             else if (resource.Annotations.Any(a =>
                          a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
-                         && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
+                         && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
                      && resource is IResourceWithEnvironment and IResourceWithWaitSupport)
             {
                 switch (resource)
@@ -135,7 +129,6 @@ public static class LocalStackResourceBuilderExtensions
     /// <param name="awsConfig">Optional AWS SDK configuration to inherit region settings from.</param>
     /// <param name="configureContainer">Optional action to configure container-specific options such as lifetime, logging, and environment variables.</param>
     /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
-    [SuppressMessage("Design", "MA0051:Method is too long")]
     public static IResourceBuilder<ILocalStackResource>? AddLocalStack(
         this IDistributedApplicationBuilder builder,
         string name = "localstack",
@@ -169,7 +162,7 @@ public static class LocalStackResourceBuilderExtensions
             .WithImage(LocalStackContainerImageTags.Image)
             .WithImageRegistry(LocalStackContainerImageTags.Registry)
             .WithImageTag(LocalStackContainerImageTags.Tag)
-            .WithHttpEndpoint(targetPort: DefaultContainerPort, name: LocalStackResource.PrimaryEndpointName)
+            .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort, name: LocalStackResource.PrimaryEndpointName)
             .WithHttpHealthCheck("/_localstack/health", 200, LocalStackResource.PrimaryEndpointName)
             .WithLifetime(containerOptions.Lifetime)
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
@@ -184,61 +177,9 @@ public static class LocalStackResourceBuilderExtensions
             resourceBuilder = resourceBuilder.WithEnvironment(key, value);
         }
 
-        resourceBuilder.OnConnectionStringAvailable(async (localStackResource, _, ct) =>
-        {
-            var cnnString = await localStackResource.ConnectionStringExpression.GetValueAsync(ct).ConfigureAwait(false);
-
-            if (cnnString == null)
-            {
-                throw new DistributedApplicationException(
-                    $"ConnectionStringAvailableEvent was published for the '{localStackResource.Name}' resource but the connection string was null.");
-            }
-
-            var url = new Uri(cnnString);
-            var resourceBuilder1 = builder.CreateResourceBuilder(localStackResource);
-            resourceBuilder1.WithEnvironment("LOCALSTACK_HOST", $"{url.Host}:{url.Port.ToString(CultureInfo.InvariantCulture)}");
-
-            var localStackReferenceAnnotationV2S = localStackResource.Annotations.OfType<LocalStackReferenceAnnotationV2>();
-
-#pragma warning disable S3267
-            foreach (var ann in localStackReferenceAnnotationV2S)
-#pragma warning restore S3267
-            {
-                if (ann.Resource is ICloudFormationTemplateResource cft)
-                {
-                    var configOptions = new ConfigOptions(localStackHost: url.Host, useSsl: options.Config.UseSsl, useLegacyPorts: options.Config.UseLegacyPorts,
-                        edgePort: url.Port);
-                    var session = SessionStandalone.Init()
-                        .WithSessionOptions(options.Session)
-                        .WithConfigurationOptions(configOptions)
-                        .Create();
-
-                    cft!.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
-                }
-                else if (ann.Resource is ProjectResource pr)
-                {
-                    var prBuilder = builder.CreateResourceBuilder(pr);
-
-                    prBuilder.WithEnvironment(prContext =>
-                    {
-                        // Main LocalStack configuration
-                        prContext.EnvironmentVariables["LocalStack__UseLocalStack"] = options.UseLocalStack.ToString();
-
-                        // Session configuration - AWS credentials and region
-                        prContext.EnvironmentVariables["LocalStack__Session__AwsAccessKeyId"] = options.Session.AwsAccessKeyId;
-                        prContext.EnvironmentVariables["LocalStack__Session__AwsAccessKey"] = options.Session.AwsAccessKey;
-                        prContext.EnvironmentVariables["LocalStack__Session__AwsSessionToken"] = options.Session.AwsSessionToken;
-                        prContext.EnvironmentVariables["LocalStack__Session__RegionName"] = options.Session.RegionName;
-
-                        // Config configuration - LocalStack connection settings
-                        prContext.EnvironmentVariables["LocalStack__Config__LocalStackHost"] = url.Host;
-                        prContext.EnvironmentVariables["LocalStack__Config__UseSsl"] = options.Config.UseSsl.ToString();
-                        prContext.EnvironmentVariables["LocalStack__Config__UseLegacyPorts"] = options.Config.UseLegacyPorts.ToString();
-                        prContext.EnvironmentVariables["LocalStack__Config__EdgePort"] = url.Port.ToString(CultureInfo.InvariantCulture);
-                    });
-                }
-            }
-        });
+        // Configure callback for dynamic resource configuration
+        var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
+        resourceBuilder.OnConnectionStringAvailable(callback);
 
         return resourceBuilder;
     }

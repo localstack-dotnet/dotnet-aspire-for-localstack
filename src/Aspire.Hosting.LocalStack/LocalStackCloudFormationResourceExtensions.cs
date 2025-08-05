@@ -46,23 +46,15 @@ public static class LocalStackCloudFormationResourceExtensions
             return builder;
         }
 
-        // var localStackOptions = localStackBuilder.Resource.Options;
-
-        // var session = SessionStandalone.Init()
-        //     .WithSessionOptions(localStackOptions.Session)
-        //     .WithConfigurationOptions(localStackOptions.Config)
-        //     .Create();
-        //
-        // builder.Resource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
-
         builder.WaitFor(localStackBuilder);
         builder.WithAnnotation(new LocalStackEnabledAnnotation(localStackBuilder.Resource));
+
+        // Add bidirectional reference annotation if not already present
         if (!localStackBuilder.Resource.Annotations.Any(x =>
                 x is LocalStackReferenceAnnotation referenceAnnotation
-                && string.Equals(referenceAnnotation.TargetResource, builder.Resource.Name, StringComparison.Ordinal)))
+                && ReferenceEquals(referenceAnnotation.Resource, builder.Resource)))
         {
-            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource.Name));
-            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotationV2(builder.Resource));
+            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource));
         }
 
         return builder;

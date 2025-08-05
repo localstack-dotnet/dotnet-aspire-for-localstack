@@ -5,7 +5,7 @@ using LocalStack.Client.Contracts;
 
 namespace Aspire.Hosting.ApplicationModel;
 
-public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithConnectionString
+public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithConnectionString, IResourceWithEnvironment
 {
     /// <summary>
     /// Gets the LocalStack configuration options.
@@ -21,14 +21,9 @@ public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithCo
 public sealed class LocalStackResource(string name, ILocalStackOptions options) : ContainerResource(name), ILocalStackResource
 {
     /// <summary>
-    /// The well-known endpoint name for the LocalStack edge port.
+    /// The well-known endpoint name for the LocalStack
     /// </summary>
     internal const string PrimaryEndpointName = "http";
-
-    /// <summary>
-    /// The well-known endpoint name for the LocalStack health check port.
-    /// </summary>
-    internal const string HealthCheckEndpointName = "health-check";
 
     private EndpointReference? _primaryEndpoint;
 

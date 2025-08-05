@@ -5,9 +5,10 @@ public class LocalStackReferenceAnnotationTests
     [Fact]
     public void LocalStackReferenceAnnotation_Should_Implement_IResourceAnnotation()
     {
-        const string targetResource = "test-resource";
+        var testResource = Substitute.For<IResource>();
+        testResource.Name.Returns("test-resource");
 
-        var annotation = new LocalStackReferenceAnnotation(targetResource);
+        var annotation = new LocalStackReferenceAnnotation(testResource);
 
         Assert.IsType<IResourceAnnotation>(annotation, exactMatch: false);
     }
@@ -15,11 +16,12 @@ public class LocalStackReferenceAnnotationTests
     [Fact]
     public void LocalStackReferenceAnnotation_Should_Store_Target_Resource_Reference()
     {
-        const string targetResource = "test-resource";
+        var testResource = Substitute.For<IResource>();
+        testResource.Name.Returns("test-resource");
 
-        var annotation = new LocalStackReferenceAnnotation(targetResource);
+        var annotation = new LocalStackReferenceAnnotation(testResource);
 
-        Assert.Equal(targetResource, annotation.TargetResource);
+        Assert.Same(testResource, annotation.Resource);
     }
 
     [Fact]
@@ -29,28 +31,30 @@ public class LocalStackReferenceAnnotationTests
     }
 
     [Fact]
-    public void LocalStackReferenceAnnotation_Should_Maintain_Same_Target_Resource_Name()
+    public void LocalStackReferenceAnnotation_Should_Maintain_Same_Target_Resource_Reference()
     {
-        const string targetResource = "valid-resource-name";
+        var testResource = Substitute.For<IResource>();
+        testResource.Name.Returns("valid-resource-name");
 
-        var annotation = new LocalStackReferenceAnnotation(targetResource);
+        var annotation = new LocalStackReferenceAnnotation(testResource);
 
         Assert.NotNull(annotation);
-        Assert.Equal(targetResource, annotation.TargetResource);
+        Assert.Same(testResource, annotation.Resource);
 
-        // Multiple calls should return the same value
-        Assert.Equal(annotation.TargetResource, annotation.TargetResource);
+        // Multiple calls should return the same reference
+        Assert.Same(annotation.Resource, annotation.Resource);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void LocalStackReferenceAnnotation_Should_Accept_Empty_Or_Whitespace_Target_Resource_Names(string name)
+    [Fact]
+    public void LocalStackReferenceAnnotation_Should_Accept_Resource_With_Empty_Name()
     {
-        // The implementation actually accepts empty/whitespace strings
-        var annotation = new LocalStackReferenceAnnotation(name);
+        var testResource = Substitute.For<IResource>();
+        testResource.Name.Returns(string.Empty);
+
+        var annotation = new LocalStackReferenceAnnotation(testResource);
 
         Assert.NotNull(annotation);
-        Assert.Equal(name, annotation.TargetResource);
+        Assert.Same(testResource, annotation.Resource);
+        Assert.Equal(string.Empty, annotation.Resource.Name);
     }
 }
