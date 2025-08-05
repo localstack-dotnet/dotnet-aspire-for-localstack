@@ -90,9 +90,7 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-       // var localStackResource = app.GetResource<ILocalStackResource>("localstack");
         projectResource.ShouldHaveLocalStackEnabledAnnotation();
-        //projectResource.ShouldHaveLocalStackEnvironmentConfiguration(localStackResource);
     }
 
     [Fact]
