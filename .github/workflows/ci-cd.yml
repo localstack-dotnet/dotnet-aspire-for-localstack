@@ -89,7 +89,7 @@ jobs:
           max-annotations: 50
 
       - name: "Update Test Results Badge"
-        if: always() # Run even if tests failed or were skipped
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master' # Only update badge on master push
         continue-on-error: true # Don't fail workflow if badge update fails
         uses: ./.github/actions/update-test-badge
         with:

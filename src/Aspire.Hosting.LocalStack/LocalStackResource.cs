@@ -5,7 +5,7 @@ using LocalStack.Client.Contracts;
 
 namespace Aspire.Hosting.ApplicationModel;
 
-public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithConnectionString
+public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithConnectionString, IResourceWithEnvironment
 {
     /// <summary>
     /// Gets the LocalStack configuration options.
@@ -21,7 +21,7 @@ public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithCo
 public sealed class LocalStackResource(string name, ILocalStackOptions options) : ContainerResource(name), ILocalStackResource
 {
     /// <summary>
-    /// The well-known endpoint name for the LocalStack edge port.
+    /// The well-known endpoint name for the LocalStack
     /// </summary>
     internal const string PrimaryEndpointName = "http";
 
@@ -39,9 +39,7 @@ public sealed class LocalStackResource(string name, ILocalStackOptions options) 
 
     /// <summary>
     /// Gets the connection string expression for the LocalStack resource.
-    /// This provides the connection information in the format expected by LocalStack.Client.
-    /// Uses the configured LocalStack host and port for consistency with LocalStack.Client configuration.
     /// </summary>
-    public ReferenceExpression ConnectionStringExpression
-        => ReferenceExpression.Create($"http{(Options.Config.UseSsl ? "s" : string.Empty)}://{Options.Config.LocalStackHost}:{Options.Config.EdgePort.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
+    public ReferenceExpression ConnectionStringExpression => ReferenceExpression.Create(
+        $"{(Options.Config.UseSsl ? "https://" : "http://")}{PrimaryEndpoint.Property(EndpointProperty.Host)}:{PrimaryEndpoint.Property(EndpointProperty.Port)}");
 }

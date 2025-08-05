@@ -2,7 +2,6 @@
 <Project>
   <PropertyGroup>
     <DefaultTargetFramework>net8.0</DefaultTargetFramework>
-    <TargetFrameworks>$(DefaultTargetFramework)</TargetFrameworks>
     <AllTargetFrameworks>$(DefaultTargetFramework);net9.0</AllTargetFrameworks>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -16,7 +15,6 @@
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/localstack-dotnet/dotnet-aspire-for-localstack</PackageProjectUrl>
     <PackageIcon>localstack-dotnet-square.png</PackageIcon>
-    <PackageTags></PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <CheckEolTargetFramework>true</CheckEolTargetFramework>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>

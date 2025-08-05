@@ -7,12 +7,12 @@ namespace Aspire.Hosting.LocalStack.Annotations;
 /// Annotation to track which resources are referencing a LocalStack instance.
 /// This enables bidirectional relationship tracking for debugging and tooling support.
 /// </summary>
-/// <param name="targetResource">The name of the resource that is referencing LocalStack.</param>
-[DebuggerDisplay("Type = {GetType().Name,nq}, TargetResource = {TargetResource}")]
-internal sealed class LocalStackReferenceAnnotation(string targetResource) : IResourceAnnotation
+/// <param name="resource">The resource that is referencing LocalStack.</param>
+[DebuggerDisplay("Type = {GetType().Name,nq}, Resource = {Resource.Name,nq}")]
+internal sealed class LocalStackReferenceAnnotation(IResource resource) : IResourceAnnotation
 {
     /// <summary>
-    /// Gets the name of the resource that is referencing LocalStack.
+    /// Gets the resource that is referencing LocalStack.
     /// </summary>
-    public string TargetResource { get; } = targetResource ?? throw new ArgumentNullException(nameof(targetResource));
+    public IResource Resource { get; } = resource ?? throw new ArgumentNullException(nameof(resource));
 }

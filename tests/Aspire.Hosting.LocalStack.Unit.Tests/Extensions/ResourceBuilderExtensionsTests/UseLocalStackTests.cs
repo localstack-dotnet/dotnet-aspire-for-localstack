@@ -40,7 +40,7 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        cfResource.ShouldBeConfiguredForLocalStack();
+        cfResource.ShouldHaveLocalStackEnabledAnnotation();
         app.ShouldHaveResourceCount<ILocalStackResource>(1);
     }
 
@@ -66,14 +66,14 @@ public class UseLocalStackTests
 
         foreach (var cfResource in cfResources)
         {
-            cfResource.ShouldBeConfiguredForLocalStack();
+            cfResource.ShouldHaveLocalStackEnabledAnnotation();
         }
     }
 
     [Fact]
     public void UseLocalStack_Should_Configure_Projects_That_Reference_AWS_Resources()
     {
-        var (app, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>("test-project", builder =>
+        var (_, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>("test-project", builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -90,8 +90,7 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        var localStackResource = app.GetResource<ILocalStackResource>("localstack");
-        projectResource.ShouldHaveLocalStackEnvironmentConfiguration(localStackResource);
+        projectResource.ShouldHaveLocalStackEnabledAnnotation();
     }
 
     [Fact]
@@ -113,7 +112,7 @@ public class UseLocalStackTests
             .ToList();
 
         Assert.Single(bootstrapResources);
-        bootstrapResources[0].ShouldBeConfiguredForLocalStack();
+        bootstrapResources[0].ShouldHaveLocalStackEnabledAnnotation();
     }
 
     [Fact]
@@ -149,12 +148,12 @@ public class UseLocalStackTests
         });
 
         var cfResource = app.GetResource<ICloudFormationTemplateResource>("manually-configured");
-        cfResource.ShouldBeConfiguredForLocalStack();
+        cfResource.ShouldHaveLocalStackEnabledAnnotation();
 
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
         var referenceAnnotations = localStackResource.Annotations
             .OfType<LocalStackReferenceAnnotation>()
-            .Where(a => string.Equals(a.TargetResource, "manually-configured", StringComparison.Ordinal))
+            .Where(a => string.Equals(a.Resource.Name, "manually-configured", StringComparison.Ordinal))
             .ToList();
 
         Assert.Single(referenceAnnotations);
@@ -179,7 +178,7 @@ public class UseLocalStackTests
         var cfResource = app.GetResource<ICloudFormationTemplateResource>("test-resource");
 
         // LocalStack should reference the CloudFormation resource
-        localStackResource.ShouldHaveReferenceToResource("test-resource");
+        localStackResource.ShouldHaveReferenceToResource(cfResource);
 
         // CloudFormation resource should be enabled for LocalStack
         cfResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);

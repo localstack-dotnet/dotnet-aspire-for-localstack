@@ -32,28 +32,14 @@ public static class LocalStackProjectExtensions
         builder.WaitFor(localStackBuilder);
         builder.WithReference(localStackBuilder, connectionName: localStackBuilder.Resource.Name);
         builder.WithAnnotation(new LocalStackEnabledAnnotation(localStackBuilder.Resource));
+
+        // Add bidirectional reference annotation if not already present
         if (!localStackBuilder.Resource.Annotations.Any(x =>
                 x is LocalStackReferenceAnnotation referenceAnnotation
-                && string.Equals(referenceAnnotation.TargetResource, builder.Resource.Name, StringComparison.Ordinal)))
+                && ReferenceEquals(referenceAnnotation.Resource, builder.Resource)))
         {
-            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource.Name));
+            localStackBuilder.WithAnnotation(new LocalStackReferenceAnnotation(builder.Resource));
         }
-
-        var options = localStackBuilder.Resource.Options;
-
-        builder.WithEnvironment("LocalStack__UseLocalStack", options.UseLocalStack.ToString());
-
-        // Session configuration - AWS credentials and region
-        builder.WithEnvironment("LocalStack__Session__AwsAccessKeyId", options.Session.AwsAccessKeyId);
-        builder.WithEnvironment("LocalStack__Session__AwsAccessKey",options.Session.AwsAccessKey);
-        builder.WithEnvironment("LocalStack__Session__AwsSessionToken",options.Session.AwsSessionToken);
-        builder.WithEnvironment("LocalStack__Session__RegionName",options.Session.RegionName);
-
-        // Config configuration - LocalStack connection settings
-        builder.WithEnvironment("LocalStack__Config__LocalStackHost", options.Config.LocalStackHost);
-        builder.WithEnvironment("LocalStack__Config__UseSsl", options.Config.UseSsl.ToString());
-        builder.WithEnvironment("LocalStack__Config__UseLegacyPorts", options.Config.UseLegacyPorts.ToString());
-        builder.WithEnvironment("LocalStack__Config__EdgePort", options.Config.EdgePort.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         return builder;
     }

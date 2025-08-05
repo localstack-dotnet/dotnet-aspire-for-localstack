@@ -2,6 +2,7 @@
   <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0"/>
 
   <PropertyGroup>
+    <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsAspireHost>true</IsAspireHost>
     <NoWarn>$(NoWarn);CS8002</NoWarn> <!-- AWS CDK packages are not signed -->

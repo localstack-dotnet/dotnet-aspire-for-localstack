@@ -11,6 +11,7 @@ using Aspire.Hosting.LocalStack.Annotations;
 using Aspire.Hosting.LocalStack.CDK;
 using Aspire.Hosting.LocalStack.Configuration;
 using Aspire.Hosting.LocalStack.Container;
+using Aspire.Hosting.LocalStack.Internal;
 using LocalStack.Client.Contracts;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Configuration;
@@ -22,10 +23,6 @@ namespace Aspire.Hosting;
 /// </summary>
 public static class LocalStackResourceBuilderExtensions
 {
-    // Internal port is always 4566.
-    private const int DefaultContainerPort = 4566;
-    private const string CloudFormationReferenceAnnotation = "Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation";
-
     /// <summary>
     /// Configures all AWS resources in the application to use the specified LocalStack instance.
     /// Automatically detects CloudFormation templates and CDK stacks and handles CDK bootstrap if needed.
@@ -105,7 +102,7 @@ public static class LocalStackResourceBuilderExtensions
             }
             else if (resource.Annotations.Any(a =>
                          a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
-                         && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
+                         && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
                      && resource is IResourceWithEnvironment and IResourceWithWaitSupport)
             {
                 switch (resource)
@@ -165,12 +162,7 @@ public static class LocalStackResourceBuilderExtensions
             .WithImage(LocalStackContainerImageTags.Image)
             .WithImageRegistry(LocalStackContainerImageTags.Registry)
             .WithImageTag(LocalStackContainerImageTags.Tag)
-            .WithEndpoint(
-                port: options.Config.EdgePort,
-                targetPort: DefaultContainerPort,
-                scheme: "http",
-                name: LocalStackResource.PrimaryEndpointName,
-                isExternal: true)
+            .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort, name: LocalStackResource.PrimaryEndpointName)
             .WithHttpHealthCheck("/_localstack/health", 200, LocalStackResource.PrimaryEndpointName)
             .WithLifetime(containerOptions.Lifetime)
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
@@ -184,6 +176,10 @@ public static class LocalStackResourceBuilderExtensions
         {
             resourceBuilder = resourceBuilder.WithEnvironment(key, value);
         }
+
+        // Configure callback for dynamic resource configuration
+        var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
+        resourceBuilder.OnConnectionStringAvailable(callback);
 
         return resourceBuilder;
     }

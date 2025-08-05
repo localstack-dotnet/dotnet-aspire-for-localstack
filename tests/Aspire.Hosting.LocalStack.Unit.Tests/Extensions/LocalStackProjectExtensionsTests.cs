@@ -81,7 +81,7 @@ public class LocalStackProjectExtensionsTests
         var projectResource = app.GetResource<ProjectResource>(testProjectResourceName);
 
         projectResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
-        localStackResource.ShouldHaveReferenceToResource(testProjectResourceName);
+        localStackResource.ShouldHaveReferenceToResource(projectResource);
     }
 
     [Fact]
@@ -146,7 +146,7 @@ public class LocalStackProjectExtensionsTests
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
         var referenceAnnotations = localStackResource.Annotations
             .OfType<LocalStackReferenceAnnotation>()
-            .Where(a => string.Equals(a.TargetResource, testProjectResourceName, StringComparison.Ordinal))
+            .Where(a => string.Equals(a.Resource.Name, testProjectResourceName, StringComparison.Ordinal))
             .ToList();
 
         Assert.Single(referenceAnnotations);

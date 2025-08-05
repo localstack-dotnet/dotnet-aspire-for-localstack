@@ -19,7 +19,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         });
 
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
-        cfResource.ShouldBeConfiguredForLocalStack();
+        cfResource.ShouldHaveLocalStackEnabledAnnotation();
         cfResource.ShouldWaitFor(localStackResource);
     }
 
@@ -69,7 +69,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         cfResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
 
         // LocalStack should have reference to CloudFormation resource
-        localStackResource.ShouldHaveReferenceToResource(cfResourceName);
+        localStackResource.ShouldHaveReferenceToResource(cfResource);
     }
 
     [Fact]
@@ -162,7 +162,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
         var referenceAnnotations = localStackResource.Annotations
             .OfType<LocalStackReferenceAnnotation>()
-            .Where(a => string.Equals(a.TargetResource, cfResourceName, StringComparison.Ordinal))
+            .Where(a => string.Equals(a.Resource.Name, cfResourceName, StringComparison.Ordinal))
             .ToList();
 
         Assert.Single(referenceAnnotations);
@@ -190,13 +190,13 @@ public class LocalStackCloudFormationResourceExtensionsTests
         var cf2Resource = app.GetResource<ICloudFormationTemplateResource>("cf-2");
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
 
-        cf1Resource.ShouldBeConfiguredForLocalStack();
-        cf2Resource.ShouldBeConfiguredForLocalStack();
+        cf1Resource.ShouldHaveLocalStackEnabledAnnotation();
+        cf2Resource.ShouldHaveLocalStackEnabledAnnotation();
 
         cf1Resource.ShouldWaitFor(localStackResource);
         cf1Resource.ShouldWaitFor(localStackResource);
 
-        localStackResource.ShouldHaveReferenceToResource("cf-1");
-        localStackResource.ShouldHaveReferenceToResource("cf-2");
+        localStackResource.ShouldHaveReferenceToResource(cf1Resource);
+        localStackResource.ShouldHaveReferenceToResource(cf2Resource);
     }
 }
