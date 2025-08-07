@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
+using OpenTelemetry.Instrumentation.AWSLambda;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
@@ -16,7 +17,7 @@ namespace Microsoft.Extensions.Hosting;
 // Adds common .NET Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
 // This project should be referenced by each service project in your solution.
 // To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
-public static class LocalStackProvisioningExtensions
+public static class LocalStackPlaygroundExtensions
 {
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
@@ -58,6 +59,7 @@ public static class LocalStackProvisioningExtensions
                     .AddHttpClientInstrumentation()
                     // Add instrumentation for the AWS .NET SDK.
                     .AddAWSInstrumentation()
+                    .AddAWSLambdaConfigurations(options => options.DisableAwsXRayContextExtraction = true)
                     .AddAWSMessagingInstrumentation();
             });
 
@@ -81,7 +83,7 @@ public static class LocalStackProvisioningExtensions
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
-            // Add a default liveness check to ensure app is responsive
+            // Add a default liveness check to ensure the app is responsive
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
         return builder;
