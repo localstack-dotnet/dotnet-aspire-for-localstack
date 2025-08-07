@@ -59,13 +59,23 @@ jobs:
             8.0.x
             9.0.x
 
+      - name: "Setup Node.js"
+        if: runner.os == 'Linux'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: "Install AWS CDK CLI"
+        if: runner.os == 'Linux'
+        run: npm install -g aws-cdk@2.x
+
       - name: "Cache NuGet packages"
         uses: actions/cache@v4
         with:
           path: ${{ runner.os == 'Windows' && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nugetv2-
 
       - name: "Build"
         run: dotnet build --configuration Release
@@ -78,6 +88,7 @@ jobs:
           configuration: "Release"
 
       - name: "Run Integration Tests"
+        if: runner.os == 'Linux'
         uses: ./.github/actions/run-dotnet-tests
         with:
           project-path: ${{ env.INTEGRATION_TEST_PROJECT_PATH }}
@@ -155,9 +166,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nugetv2-
 
       - name: "Restore Dependencies"
         run: dotnet restore
@@ -166,7 +177,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Run Unit Tests"
-        run:  dotnet test tests\Aspire.Hosting.LocalStack.Unit.Tests --verbosity normal --configuration Release --no-build
+        run:  dotnet test ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build
 
       - name: "Setup GitHub Packages Authentication"
         run: |

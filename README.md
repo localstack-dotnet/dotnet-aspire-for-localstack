@@ -1,16 +1,22 @@
 # .NET Aspire Integrations for LocalStack
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Fpackages%2FAspire.Hosting.LocalStack%3Fsource%3Dgithub%26includeprerelease%3Dtrue%26label%3Dgithub)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/Aspire.Hosting.LocalStack) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Ftests%2Flinux%3Fpackage%3DAspire.Hosting.LocalStack%26label%3DTests)](https://yvfdbfas85.execute-api.eu-central-1.amazonaws.com/live/redirect/test-results/linux?package=Aspire.Hosting.LocalStack)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![NuGet Version](https://img.shields.io/nuget/vpre/Aspire.Hosting.LocalStack)](https://www.nuget.org/packages/Aspire.Hosting.LocalStack) [![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Fpackages%2FAspire.Hosting.LocalStack%3Fsource%3Dgithub%26includeprerelease%3Dtrue%26label%3Dgithub)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/Aspire.Hosting.LocalStack) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Ftests%2Flinux%3Fpackage%3DAspire.Hosting.LocalStack%26label%3DTests)](https://yvfdbfas85.execute-api.eu-central-1.amazonaws.com/live/redirect/test-results/linux?package=Aspire.Hosting.LocalStack)
 
----
+A .NET Aspire hosting integration for [LocalStack](https://localstack.cloud/) that enables local development and testing of cloud applications using AWS services. This package extends the official [AWS integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) to provide LocalStack-specific functionality.
 
-This repository contains the .NET Aspire hosting integration for [LocalStack](https://localstack.cloud/), enabling local development and testing of cloud applications using AWS services. This library is designed as an extension to the official [AWS integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) and builds upon that foundation to provide LocalStack-specific functionality.
+> **⚠️ Release Candidate**: This package is currently in Release Candidate (RC) status. While the core functionality is stable and production-ready, the API surface may still evolve based on community feedback before the final release.
 
-## 🚧 Work in Progress - Development Builds Available
+## Installation
 
-The core functionality is working and ready for testing! Development builds are automatically published to GitHub Packages from every commit, giving you access to the latest features and bug fixes.
+```bash
+dotnet add package Aspire.Hosting.LocalStack
+```
 
-For testing latest features and bug fixes:
+**Requirements**: .NET 8.0 or later (supports both .NET 8 and .NET 9)
+
+### Development Builds
+
+For access to the latest features and bug fixes:
 
 ```bash
 # Add GitHub Packages source
@@ -23,96 +29,140 @@ dotnet nuget add source https://nuget.pkg.github.com/localstack-dotnet/index.jso
 dotnet add package Aspire.Hosting.LocalStack --prerelease --source github-localstack-for-aspire
 ```
 
-> **🔑 GitHub Packages Authentication**: You'll need a GitHub account and [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
+> **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
 
-**📅 First Nuget Preview Release**: Mid-August 2025
+## Usage
+
+> **Production Ready**: When LocalStack is disabled in configuration, both host and client configurations automatically fall back to real AWS services without requiring code changes. The [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) automatically switches to AWS's official client factory when LocalStack is not enabled.
+
+### Host Configuration (AppHost)
+
+Configure LocalStack integration in your Aspire AppHost project using auto-configuration:
+
+```csharp
+var builder = DistributedApplication.CreateBuilder(args);
+
+// 1. Set up AWS SDK configuration (optional)
+var awsConfig = builder.AddAWSSDKConfig()
+    .WithProfile("default")
+    .WithRegion(RegionEndpoint.USWest2);
+
+// 2. Add LocalStack container
+var localstack = builder
+    .AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+    {
+        container.Lifetime = ContainerLifetime.Session;
+        container.DebugLevel = 1;
+        container.LogLevel = LocalStackLogLevel.Debug;
+    });
+
+// 3. Add your AWS resources as usual
+var awsResources = builder.AddAWSCloudFormationTemplate("resources", "template.yaml")
+    .WithReference(awsConfig);
+
+var project = builder.AddProject<Projects.MyService>("api")
+    .WithReference(awsResources);
+
+// 4. Auto-configure LocalStack for all AWS resources
+builder.UseLocalStack(localstack);
+
+builder.Build().Run();
+```
+
+The `UseLocalStack()` method automatically:
+
+- Detects all AWS resources (CloudFormation, CDK stacks)
+- Configures LocalStack endpoints for all AWS services and project resources
+- Sets up proper dependency ordering and CDK bootstrap if needed
+- Transfers LocalStack configuration to service projects via environment variables
+
+#### Manual Configuration
+
+For fine-grained control, you can manually configure each resource:
+
+```csharp
+var awsResources = builder.AddAWSCloudFormationTemplate("resources", "template.yaml")
+    .WithReference(localstack)  // Manual LocalStack reference
+    .WithReference(awsConfig);
+
+var project = builder.AddProject<Projects.MyService>("api")
+    .WithReference(localstack)  // Manual project reference
+    .WithReference(awsResources);
+```
+
+### Client Configuration (Service Projects)
+
+Configure AWS services in your service projects using [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) (2M+ downloads, production-tested):
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+// Add LocalStack configuration
+builder.Services.AddLocalStack(builder.Configuration);
+
+// Register AWS services - automatically configured for LocalStack when enabled
+builder.Services.AddAwsService<IAmazonS3>();
+builder.Services.AddAwsService<IAmazonDynamoDB>();
+builder.Services.AddAwsService<IAmazonSNS>();
+
+var app = builder.Build();
+```
+
+This configuration automatically detects if LocalStack is enabled and configures the AWS SDK clients accordingly. If LocalStack is not enabled, it falls back to the official AWS SDK configuration without requiring code changes.
+
+> (Alternatively, `AddAWSServiceLocalStack` method can be used to prevent mix-up with [AddAWSService](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/net-dg-config-netcore.html).
+
+For more details on client configuration options, see the [LocalStack.NET Client documentation](https://github.com/localstack-dotnet/localstack-dotnet-client).
+
+### Configuration Integration
+
+The `Aspire.Hosting.LocalStack` host automatically transfers LocalStack configuration to service projects via environment variables. This works with the standard [.NET configuration hierarchy](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#configuration-providers): appsettings.json files -> Environment variables (can override appsettings) -> Command line arguments
+
+**Important**: Ensure your service projects include the [EnvironmentVariablesConfigurationProvider](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#evcp) in the correct order for automatic configuration to work.
+
+## Features
+
+- **Auto-Configuration**: Single `UseLocalStack()` call automatically detects and configures all AWS resources
+- **Manual Configuration**: Fine-grained control with explicit `WithReference()` calls for each resource
+- **AWS Service Integration**: Works with CloudFormation templates, CDK stacks, and AWS service clients
+- **Automatic Fallback**: Falls back to real AWS services when LocalStack is disabled
+- **Container Lifecycle Management**: Configurable container with session/project lifetime options
+- **Extension-Based**: Works alongside official AWS integrations for .NET Aspire without code changes
+
+## Examples
+
+### Complete Working Examples
+
+- **[Provisioning Examples](playground/provisioning/)** - SNS, SQS, DynamoDB with CloudFormation & CDK
+- **[Serverless Examples](playground/lambda/)** - Lambda functions with API Gateway and hybrid emulators
+
+Both examples demonstrate auto-configuration and manual configuration approaches.
 
 ## What is LocalStack?
 
 [LocalStack](https://localstack.cloud/) is a cloud service emulator that runs in a single container on your laptop or in your CI environment. It provides a fully functional local AWS cloud stack, allowing you to develop and test your cloud applications offline.
 
-## What is LocalStack.NET Client?
-
-[LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) is a .NET client library for LocalStack. It provides extensions and utilities to configure AWS SDK for .NET to work with LocalStack, including service registration, endpoint configuration, and development-time helpers. This Aspire integration builds upon the LocalStack.NET Client to provide container orchestration and resource management capabilities.
-
-## What is .NET Aspire?
-
-[.NET Aspire](https://learn.microsoft.com/en-us/dotnet/aspire/get-started/aspire-overview) is an opinionated, cloud-ready stack for building observable, production-ready, distributed applications. It provides a consistent, opinionated set of tools and patterns to help you build and run distributed apps.
-
-## Aspire.Hosting.LocalStack Features
-
-- ✅ **Extension-Only Approach**: Works alongside official [AWS
-integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) with simple extension methods -
-no drastic code changes required
-- ✅ **Auto-Configure Mode (Still Experimental)**: Single `UseLocalStack()` call automatically detects and configures all AWS and project resources.
-- ✅ **Manual Mode**: Fine-grained control with explicit `WithReference()` calls for each resource
-- ✅ **LocalStack Container as Resource**: Configurable container with session/project lifetime options, debug levels, and logging configuration
-- ✅ **No Additional Client Library**: Leverages existing [LocalStack.Client.Extensions](https://github.com/localstack-dotnet/localstack-dotnet-client) - no Aspire-specific client needed
-- ✅ **Automatic Fallback**: When LocalStack is disabled, applications seamlessly work with real AWS services without code modifications
-- ✅ **Resource Provisioning**: Both `AddAWSCloudFormationTemplate` and `AddAWSCDKStack` automatically configured for LocalStack endpoints
-
-## Quick Start
-
-Ready to try it out? We have **complete working examples** adapted from the official AWS Aspire integration examples:
-
-### 🎮 Provisioning Examples
-
-The provisioning examples includes a complete messaging flow
-demonstration with real-time UI components.
-
-**Features two configuration approaches:**
-
-- ⚡ **Auto-Configure**: `UseLocalStack()` - Experimental but recommended
-- 🔧 **Manual**: `WithReference()` - Fine-grained control
-
-For detailed examples and configuration approaches, see the [provisioning folder README](playground/provisioning/README.md).
-
-## What's Coming Next
-
-### 🔄 Active Development (Next Few Weeks)
-
-- **Comprehensive Testing Suite**: Unit and integration tests with full coverage
-- **CI/CD Pipeline**: Automated testing, validation, and package publishing workflows
-- **Additional Example Projects**: More scenarios and use cases
-- **Documentation**: Complete API documentation and guides
-
-### 📦 First Preview Release: Mid-August 2025
-
-- NuGet package publication
-- Stable API surface
-- Production-ready documentation
-
 ## Contributing
 
 We welcome contributions from the community! Here's how you can get involved:
 
-### 🧪 Try It Out
+- **Try it out**: Clone the repository and test the playground examples
+- **Report issues**: Share bugs or feature requests via GitHub issues
+- **Submit improvements**: Pull requests for enhancements and bug fixes
+- **Share feedback**: [Join discussions](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/discussions) about the implementation and roadmap
 
-- Clone the repository and test the playground examples
-- Report bugs or issues you encounter
-- Share your use cases and requirements
+For detailed contribution guidelines, development setup, and coding standards, see our [Contributing Guide](.github/CONTRIBUTING.md).
 
-### 🔨 Contribute Code
+## Changelog
 
-- Submit pull requests for improvements
-- Help with documentation and examples
-- Add support for additional AWS services
-
-### 💬 Join the Discussion
-
-- Open issues for feature requests
-- Share feedback on the current implementation
-- Propose architectural improvements
+See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes, new features, and breaking changes for each release.
 
 ## Related Projects
 
+- [Aspire](https://github.com/dotnet/aspire) - Aspire is a unified toolchain that simplifies building, debugging, and deploying observable, production-ready distributed apps through a code-first app model.
 - [AWS Integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) - Official AWS integrations that this project extends
 - [LocalStack .NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) - The .NET client library for LocalStack that we integrate with
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-*⭐ Star this repository to stay updated on our progress toward the mid-August preview release!*

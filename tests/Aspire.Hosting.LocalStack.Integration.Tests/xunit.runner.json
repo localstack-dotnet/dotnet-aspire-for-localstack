@@ -1,0 +1,9 @@
+{
+    "$schema": "https://xunit.net/schema/current/xunit.runner.schema.json",
+    "diagnosticMessages": false,
+    "methodDisplay": "classAndMethod",
+    "parallelizeTestCollections": false,
+    "showLiveOutput": true,
+    "stopOnFail": false,
+    "longRunningTestSeconds": 300
+}

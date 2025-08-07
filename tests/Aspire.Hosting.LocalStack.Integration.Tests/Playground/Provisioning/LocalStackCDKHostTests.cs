@@ -1,5 +1,6 @@
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning;
 
+[Collection("CdkSequential")]
 public class LocalStackCDKHostTests
 {
     [Fact]

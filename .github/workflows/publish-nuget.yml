@@ -46,15 +46,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
+          key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-
+            ${{ runner.os }}-nugetv2-
 
-      - name: "Build & Test"
-        run: |
-          dotnet restore
-          dotnet build --configuration Release --no-restore
-          dotnet test --configuration Release --no-build
+      - name: "Restore Dependencies"
+        run: dotnet restore
+
+      - name: "Build"
+        run: dotnet build --configuration Release --no-restore
+
+      - name: "Run Unit Tests"
+        run:  dotnet test ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build
 
       - name: "Print Package Information"
         run: |

@@ -1,5 +1,6 @@
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda;
 
+[Collection("CdkSequential")]
 public class LocalStackLambdaHostTests
 {
     [Fact]
