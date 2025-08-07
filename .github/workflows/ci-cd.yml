@@ -62,7 +62,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ runner.os == 'Windows' && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/Directory.Packages.props') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
@@ -147,7 +147,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json', '**/*.csproj', '**/Directory.Packages.props') }}
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
           restore-keys: |
             ${{ runner.os }}-nuget-
 
