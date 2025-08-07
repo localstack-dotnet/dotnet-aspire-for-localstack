@@ -46,7 +46,7 @@ Both projects create **identical AWS resources** but use different provisioning 
 
 This integration provides **two ways** to configure LocalStack with your AWS resources:
 
-### ⚡ Auto-Configure Approach (Experimental - Recommended)
+### ⚡ Auto-Configure Approach (Recommended)
 
 **Single method configures everything automatically**
 
@@ -210,24 +210,26 @@ Both provisioning approaches create these resources:
 
 For manual testing and verification, you can use AWS CLI commands to test the SNS→SQS→DynamoDB integration:
 
+> **💡 Get LocalStack Endpoint**: Aspire dynamically assigns host and port numbers. Get the actual LocalStack endpoint URL from the Aspire Dashboard.
+
 #### Quick Test Commands
 
 1. **List all resources**
 
    ```bash
-   aws sns list-topics --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   aws sqs list-queues --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
-   aws dynamodb list-tables --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+   aws sns list-topics --endpoint-url {LOCALSTACK_ENDPOINT} --region us-west-2
+   aws sqs list-queues --endpoint-url {LOCALSTACK_ENDPOINT} --region us-west-2
+   aws dynamodb list-tables --endpoint-url {LOCALSTACK_ENDPOINT} --region us-west-2
    ```
 
 2. **Test message flow**
 
    ```bash
    # Publish to SNS (replace <topic_arn> with actual ARN from Aspire dashboard)
-   aws sns publish --topic-arn <topic_arn> --message "Test message from CLI" --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+   aws sns publish --topic-arn <topic_arn> --message "Test message from CLI" --endpoint-url {LOCALSTACK_ENDPOINT} --region us-west-2
 
    # Check DynamoDB for processed message
-   aws dynamodb scan --table-name ChatMessages --endpoint-url http://localhost.localstack.cloud:4566 --region us-west-2
+   aws dynamodb scan --table-name ChatMessages --endpoint-url {LOCALSTACK_ENDPOINT} --region us-west-2
    ```
 
 ## Development Benefits
