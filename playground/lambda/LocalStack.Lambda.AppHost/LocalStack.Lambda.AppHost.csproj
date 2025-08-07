@@ -5,7 +5,7 @@
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <IsAspireHost>true</IsAspireHost>
-    <NoWarn>$(NoWarn);CS8002</NoWarn> <!-- AWS CDK packages are not signed -->
+    <NoWarn>$(NoWarn);CS8002;ASPIRE004</NoWarn> <!-- AWS CDK packages are not signed --> <!-- Is referenced by an Aspire Host project, but it is not an executable -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -18,6 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" IsAspireProjectResource="false"/>
+    <ProjectReference Include="..\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj"/>
     <ProjectReference Include="..\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj"/>
   </ItemGroup>
 </Project>

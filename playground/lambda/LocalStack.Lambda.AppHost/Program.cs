@@ -34,9 +34,15 @@ var urlShortenerLambda = builder
         lambdaHandler: "LocalStack.Lambda.UrlShortener::LocalStack.Lambda.UrlShortener.Function::FunctionHandler")
     .WithReference(urlShortenerStack);
 
+var redirectorLambda = builder
+    .AddAWSLambdaFunction<Projects.LocalStack_Lambda_Redirector>(
+        name: "RedirectorLambda",
+        lambdaHandler: "LocalStack.Lambda.Redirector::LocalStack.Lambda.Redirector.Function::FunctionHandler")
+    .WithReference(urlShortenerStack);
+
 builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
-    // Add the Web API calculator routes
-    .WithReference(urlShortenerLambda, Method.Post, "/shorten");
+    .WithReference(urlShortenerLambda, Method.Post, "/shorten")
+    .WithReference(redirectorLambda, Method.Get, "/{slug}");
 
 // Autoconfigures the LocalStack for both AWS Cloudformation and CDK resources adds LocalStack reference to all resources that uses AWS references
 builder.UseLocalStack(localstack);

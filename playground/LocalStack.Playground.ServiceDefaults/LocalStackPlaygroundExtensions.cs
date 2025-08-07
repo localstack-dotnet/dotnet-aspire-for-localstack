@@ -62,7 +62,8 @@ public static class LocalStackPlaygroundExtensions
                     .AddAWSInstrumentation()
                     .AddAWSLambdaConfigurations(options => options.DisableAwsXRayContextExtraction = true)
                     .AddAWSMessagingInstrumentation()
-                    .AddSource(UrlShortenerActivitySource.ActivitySourceName);
+                    .AddSource(UrlShortenerActivitySource.ActivitySourceName)
+                    .AddSource(RedirectorActivitySource.ActivitySourceName);
             });
 
         builder.AddOpenTelemetryExporters();

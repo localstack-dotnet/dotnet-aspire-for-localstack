@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.AppHost\LocalStack.Lambda.AppHost.csproj" />
     <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj" />
     <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj" />
     <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>

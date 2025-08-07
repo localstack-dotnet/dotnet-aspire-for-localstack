@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalStack.Lambda.AppHost",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalStack.Lambda.UrlShortener", "playground\lambda\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj", "{BDC4A1A1-F9AA-470E-A416-577D319BEAED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalStack.Lambda.Redirector", "playground\lambda\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj", "{84F96D01-34AB-4C73-96DB-CEC3F03EC192}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -76,6 +78,10 @@ Global
 		{BDC4A1A1-F9AA-470E-A416-577D319BEAED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BDC4A1A1-F9AA-470E-A416-577D319BEAED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BDC4A1A1-F9AA-470E-A416-577D319BEAED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84F96D01-34AB-4C73-96DB-CEC3F03EC192}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84F96D01-34AB-4C73-96DB-CEC3F03EC192}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84F96D01-34AB-4C73-96DB-CEC3F03EC192}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84F96D01-34AB-4C73-96DB-CEC3F03EC192}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1D6CF6B7-D87E-4E3C-A7AD-E2B000642F47} = {7FF6089A-D52B-438B-870A-69D1A9D4ECB5}
@@ -89,5 +95,6 @@ Global
 		{30B5EF00-0793-447C-AB29-5A3234ED6C68} = {6265915E-CA6A-4F50-97AF-A4989C95300D}
 		{BFD7D3ED-B36A-4247-9F0C-5677F07C57D5} = {7E4F6513-FC4D-45F3-8A8D-348156DDD6B6}
 		{BDC4A1A1-F9AA-470E-A416-577D319BEAED} = {7E4F6513-FC4D-45F3-8A8D-348156DDD6B6}
+		{84F96D01-34AB-4C73-96DB-CEC3F03EC192} = {7E4F6513-FC4D-45F3-8A8D-348156DDD6B6}
 	EndGlobalSection
 EndGlobal
