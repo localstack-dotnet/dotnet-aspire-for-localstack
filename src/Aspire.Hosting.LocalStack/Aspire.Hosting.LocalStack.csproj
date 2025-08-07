@@ -4,7 +4,7 @@
     <TargetFrameworks>$(AllTargetFrameworks)</TargetFrameworks>
     <Version>9.4.0-rc.1</Version>
     <IsPackable>true</IsPackable>
-    <PackageTags>aspire,integration,hosting,aws,localstack</PackageTags>
+    <PackageTags>aspire hosting,aspire,localstack,aws,integration,docker,cloud</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <Description>
       .NET Aspire integration for LocalStack - enables local AWS service development and testing with auto-configuration,

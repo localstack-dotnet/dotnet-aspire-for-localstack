@@ -1,6 +1,6 @@
 # LocalStack Provisioning Examples
 
-This directory contains examples demonstrating how to use the `Aspire.Hosting.LocalStack` package to develop AWS applications locally using LocalStack with .NET Aspire.
+This directory contains examples demonstrating how to use the `LocalStack.Aspire.Hosting` package to develop AWS applications locally using LocalStack with .NET Aspire.
 
 ## Overview
 
@@ -110,9 +110,9 @@ dotnet run --project LocalStack.Provisioning.CDK.AppHost
 
 Both create the same messaging infrastructure and provide identical frontend functionality.
 
-## Aspire.Hosting.LocalStack Integration
+## LocalStack.Aspire.Hosting Integration
 
-The `Aspire.Hosting.LocalStack` package provides seamless integration between .NET Aspire and LocalStack, enabling local development of AWS applications.
+The `LocalStack.Aspire.Hosting` package provides seamless integration between .NET Aspire and LocalStack, enabling local development of AWS applications.
 
 ### Key Features
 

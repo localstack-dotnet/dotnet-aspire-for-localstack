@@ -1,6 +1,6 @@
 # LocalStack .NET Aspire Playground
 
-This directory contains complete working examples demonstrating how to use `Aspire.Hosting.LocalStack` for local AWS development with .NET Aspire.
+This directory contains complete working examples demonstrating how to use `LocalStack.Aspire.Hosting` for local AWS development with .NET Aspire.
 
 ## Available Examples
 

@@ -37,9 +37,9 @@ builder.Build().Run();
 
 ## 📋 Environment Information
 
-**Aspire.Hosting.LocalStack Version:**
+**LocalStack.Aspire.Hosting Version:**
 
-- Version: (e.g., 9.2.0)
+- Version: (e.g., 9.4.0)
 
 **.NET Aspire Information:**
 

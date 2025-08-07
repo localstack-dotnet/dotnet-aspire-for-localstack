@@ -55,7 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Release Notes
 
-This is the first Release Candidate of Aspire.Hosting.LocalStack. The package provides a complete integration between .NET Aspire and LocalStack, enabling local development and testing of AWS applications.
+This is the first Release Candidate of LocalStack.Aspire.Hosting. The package provides a complete integration between .NET Aspire and LocalStack, enabling local development and testing of AWS applications.
 
 **Feedback Welcome:**
 This RC release is feature-complete and ready for production use. Community feedback is encouraged to help finalize the API surface before the release.

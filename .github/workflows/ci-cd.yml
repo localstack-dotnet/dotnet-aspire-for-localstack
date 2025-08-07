@@ -222,12 +222,13 @@ jobs:
 
       - name: "Pack NuGet Package"
         run: |
-          echo "� Packing Aspire.Hosting.LocalStack package..."
+          echo "📦 Packing LocalStack.Aspire.Hosting package..."
           dotnet pack src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj \
             --configuration Release \
             --no-build \
             --output ./artifacts \
-            /p:PackageVersion=${{ steps.version.outputs.version }}
+            /p:PackageVersion=${{ steps.version.outputs.version }} \
+            /p:PackageId=LocalStack.Aspire.Hosting
 
       - name: "Push to GitHub Packages"
         run: |
@@ -250,7 +251,7 @@ jobs:
         run: |
           echo "📦 Generating build summary..."
           echo "## 📦 Package Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Package**: Aspire.Hosting.LocalStack" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package**: LocalStack.Aspire.Hosting" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY

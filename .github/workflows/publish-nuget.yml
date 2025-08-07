@@ -61,7 +61,7 @@ jobs:
 
       - name: "Print Package Information"
         run: |
-          echo "📦 Package: Aspire.Hosting.LocalStack"
+          echo "📦 Package: LocalStack.Aspire.Hosting"
           echo "🏷️ Version: ${{ github.event.inputs.package-version }}"
           echo "🎯 Target: ${{ github.event.inputs.package-source }}"
           echo "🔗 Repository: ${{ github.repository }}"
@@ -84,11 +84,12 @@ jobs:
 
       - name: "Pack NuGet Package"
         run: |
-          echo "🔨 Packing Aspire.Hosting.LocalStack package..."
+          echo "🔨 Packing LocalStack.Aspire.Hosting package..."
           dotnet pack src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj \
             --configuration Release \
             --output ./artifacts \
-            /p:PackageVersion=${{ github.event.inputs.package-version }}
+            /p:PackageVersion=${{ github.event.inputs.package-version }} \
+            /p:PackageId=LocalStack.Aspire.Hosting
 
       - name: "Publish to GitHub Packages"
         if: ${{ github.event.inputs.package-source == 'github' }}
@@ -111,7 +112,7 @@ jobs:
       - name: "Upload Package Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: "packages-aspire-hosting-localstack-${{ github.event.inputs.package-version }}"
+          name: "packages-localstack-aspire-hosting-${{ github.event.inputs.package-version }}"
           path: |
             artifacts/*.nupkg
             artifacts/*.snupkg

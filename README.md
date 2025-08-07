@@ -1,6 +1,6 @@
 # .NET Aspire Integrations for LocalStack
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![NuGet Version](https://img.shields.io/nuget/vpre/Aspire.Hosting.LocalStack)](https://www.nuget.org/packages/Aspire.Hosting.LocalStack) [![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Fpackages%2FAspire.Hosting.LocalStack%3Fsource%3Dgithub%26includeprerelease%3Dtrue%26label%3Dgithub)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/Aspire.Hosting.LocalStack) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Ftests%2Flinux%3Fpackage%3DAspire.Hosting.LocalStack%26label%3DTests)](https://yvfdbfas85.execute-api.eu-central-1.amazonaws.com/live/redirect/test-results/linux?package=Aspire.Hosting.LocalStack)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![NuGet Version](https://img.shields.io/nuget/vpre/LocalStack.Aspire.Hosting)](https://www.nuget.org/packages/LocalStack.Aspire.Hosting) [![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Fpackages%2FLocalStack.Aspire.Hosting%3Fsource%3Dgithub%26includeprerelease%3Dtrue%26label%3Dgithub)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/LocalStack.Aspire.Hosting) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fyvfdbfas85.execute-api.eu-central-1.amazonaws.com%2Flive%2Fbadge%2Ftests%2Flinux%3Fpackage%3DLocalStack.Aspire.Hosting%26label%3DTests)](https://yvfdbfas85.execute-api.eu-central-1.amazonaws.com/live/redirect/test-results/linux?package=LocalStack.Aspire.Hosting)
 
 A .NET Aspire hosting integration for [LocalStack](https://localstack.cloud/) that enables local development and testing of cloud applications using AWS services. This package extends the official [AWS integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) to provide LocalStack-specific functionality.
 
@@ -9,8 +9,10 @@ A .NET Aspire hosting integration for [LocalStack](https://localstack.cloud/) th
 ## Installation
 
 ```bash
-dotnet add package Aspire.Hosting.LocalStack
+dotnet add package LocalStack.Aspire.Hosting
 ```
+
+> **Package Note**: The package is named `LocalStack.Aspire.Hosting` but uses the namespace `Aspire.Hosting.LocalStack` to align with .NET Aspire hosting conventions. This ensures consistency with other Aspire hosting integrations while maintaining a unique package identity.
 
 **Requirements**: .NET 8.0 or later (supports both .NET 8 and .NET 9)
 
@@ -26,14 +28,14 @@ dotnet nuget add source https://nuget.pkg.github.com/localstack-dotnet/index.jso
   --password YOUR_GITHUB_TOKEN
 
 # Install development packages
-dotnet add package Aspire.Hosting.LocalStack --prerelease --source github-localstack-for-aspire
+dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-localstack-for-aspire
 ```
 
 > **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
 
 ## Usage
 
-> **Production Ready**: When LocalStack is disabled in configuration, both host and client configurations automatically fall back to real AWS services without requiring code changes. The [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) automatically switches to AWS's official client factory when LocalStack is not enabled.
+When LocalStack is disabled in configuration, both host and client configurations automatically fall back to real AWS services without requiring code changes. The [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) automatically switches to AWS's official client factory when LocalStack is not enabled.
 
 ### Host Configuration (AppHost)
 
@@ -116,7 +118,7 @@ For more details on client configuration options, see the [LocalStack.NET Client
 
 ### Configuration Integration
 
-The `Aspire.Hosting.LocalStack` host automatically transfers LocalStack configuration to service projects via environment variables. This works with the standard [.NET configuration hierarchy](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#configuration-providers): appsettings.json files -> Environment variables (can override appsettings) -> Command line arguments
+The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configuration to service projects via environment variables. This works with the standard [.NET configuration hierarchy](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#configuration-providers): appsettings.json files -> Environment variables (can override appsettings) -> Command line arguments
 
 **Important**: Ensure your service projects include the [EnvironmentVariablesConfigurationProvider](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#evcp) in the correct order for automatic configuration to work.
 
