@@ -2,6 +2,7 @@
 // ReSharper disable CheckNamespace
 
 using AWS.Messaging.Telemetry.OpenTelemetry;
+using LocalStack.Playground.ServiceDefaults.ActivitySources;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -60,7 +61,8 @@ public static class LocalStackPlaygroundExtensions
                     // Add instrumentation for the AWS .NET SDK.
                     .AddAWSInstrumentation()
                     .AddAWSLambdaConfigurations(options => options.DisableAwsXRayContextExtraction = true)
-                    .AddAWSMessagingInstrumentation();
+                    .AddAWSMessagingInstrumentation()
+                    .AddSource(UrlShortenerActivitySource.ActivitySourceName);
             });
 
         builder.AddOpenTelemetryExporters();

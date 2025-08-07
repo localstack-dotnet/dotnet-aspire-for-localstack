@@ -1,0 +1,30 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /shorten",
+  "rawPath": "/shorten",
+  "rawQueryString": "",
+  "headers": {
+    "content-type": "application/json",
+    "user-agent": "curl/7.81.0"
+  },
+  "requestContext": {
+    "accountId": "123456789012",
+    "apiId": "local",
+    "domainName": "localhost",
+    "domainPrefix": "",
+    "http": {
+      "method": "POST",
+      "path": "/shorten",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "127.0.0.1",
+      "userAgent": "curl/7.81.0"
+    },
+    "requestId": "offline-request",
+    "routeKey": "POST /shorten",
+    "stage": "$default",
+    "time": "01/Aug/2025:12:00:00 +0000",
+    "timeEpoch": 1690891200000
+  },
+  "body": "{ \"Url\": \"https://aws.amazon.com\", \"Format\": \"qr\" }",
+  "isBase64Encoded": false
+}
