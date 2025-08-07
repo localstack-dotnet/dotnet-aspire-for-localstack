@@ -135,8 +135,8 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 
 ### Complete Working Examples
 
-- **[Provisioning Examples](playground/provisioning/)** - SNS, SQS, DynamoDB with CloudFormation & CDK
-- **[Serverless Examples](playground/lambda/)** - Lambda functions with API Gateway and hybrid emulators
+- **[Provisioning Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning)** - SNS, SQS, DynamoDB with CloudFormation & CDK
+- **[Serverless Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/lambda)** - Lambda functions with API Gateway and hybrid emulators
 
 Both examples demonstrate auto-configuration and manual configuration approaches.
 

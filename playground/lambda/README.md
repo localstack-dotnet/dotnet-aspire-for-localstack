@@ -10,7 +10,7 @@ This example builds a **URL Shortener service** that leverages the best of both 
 - **LocalStack**: Full-featured DynamoDB and S3 for data persistence and storage
 - **Auto-Configuration**: Uses the recommended `UseLocalStack()` approach for automatic resource discovery
 
-> 💡 **Configuration Approach**: This example uses the **auto-configuration feature** (`UseLocalStack()`) which is the recommended approach. For manual configuration examples with explicit `WithReference()` calls, see the [provisioning examples](../provisioning/README.md).
+> 💡 **Configuration Approach**: This example uses the **auto-configuration feature** (`UseLocalStack()`) which is the recommended approach. For manual configuration examples with explicit `WithReference()` calls, see the [provisioning examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/README.md).
 
 ## Architecture
 
@@ -128,4 +128,4 @@ The auto-configuration feature automatically detects and configures all these re
 - [AWS Lambda with Aspire - Part 1](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-1/)
 - [AWS Lambda with Aspire - Part 2](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-2/)
 - [.NET Aspire Lambda Local Development Feature Tracker](https://github.com/aws/integrations-on-dotnet-aspire-for-aws/issues/17)
-- [Manual Configuration Examples](../provisioning/README.md)
+- [Manual Configuration Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/README.md)

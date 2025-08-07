@@ -4,7 +4,7 @@ This directory contains complete working examples demonstrating how to use `Loca
 
 ## Available Examples
 
-### 🎮 [Provisioning Examples](./provisioning/)
+### 🎮 [Provisioning Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning)
 
 Complete messaging flow with real-time UI
 
@@ -15,7 +15,7 @@ Demonstrates AWS resource provisioning using CloudFormation templates and CDK st
 - **Configuration**: Auto-configure vs manual reference management
 - **UI**: Real-time Blazor frontend with live DynamoDB monitoring
 
-### 🚀 [Lambda Examples](./lambda/)
+### 🚀 [Lambda Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/lambda)
 
 Serverless development with hybrid emulators
 
@@ -30,9 +30,9 @@ Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for se
 
 | If you want to learn... | Go to... |
 |------------------------|----------|
-| **Resource provisioning** (CloudFormation, CDK) | [Provisioning Examples](./provisioning/) |
-| **Serverless development** (Lambda, API Gateway) | [Lambda Examples](./lambda/) |
-| **Manual configuration** examples | [Provisioning Examples](./provisioning/) |
+| **Resource provisioning** (CloudFormation, CDK) | [Provisioning Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning) |
+| **Serverless development** (Lambda, API Gateway) | [Lambda Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/lambda) |
+| **Manual configuration** examples | [Provisioning Examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning) |
 | **Auto-configuration** examples | Both examples use this approach |
 
 ## Prerequisites

@@ -20,8 +20,8 @@ The application demonstrates a typical AWS messaging flow: messages are publishe
 
 Both projects create **identical AWS resources** but use different provisioning approaches:
 
-- **`LocalStack.Provisioning.CloudFormation.AppHost`** - Uses [CloudFormation template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) for AWS resource provisioning
-- **`LocalStack.Provisioning.CDK.AppHost`** - Uses [AWS CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) for AWS resource provisioning
+- **`LocalStack.Provisioning.CloudFormation.AppHost`** - Uses [CloudFormation template](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) for AWS resource provisioning
+- **`LocalStack.Provisioning.CDK.AppHost`** - Uses [AWS CDK Stack](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) for AWS resource provisioning
 
 ### Application Projects
 
@@ -34,8 +34,8 @@ Both projects create **identical AWS resources** but use different provisioning 
 
 | Aspect | CloudFormation AppHost | CDK AppHost |
 |--------|----------------------|-------------|
-| **Provisioning** | [JSON Template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) | [C# CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) |
-| **Configuration** | See [Program.cs](./LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | See [Program.cs](./LocalStack.Provisioning.CDK.AppHost/Program.cs) |
+| **Provisioning** | [JSON Template](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) | [C# CDK Stack](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) |
+| **Configuration** | See [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | See [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/Program.cs) |
 | **Resources Created** | SNS, SQS, DynamoDB | SNS, SQS, DynamoDB, S3 |
 | **Frontend Behavior** | Identical | Identical |
 | **Learning Focus** | CloudFormation templates | CDK programmatic approach |
@@ -98,7 +98,7 @@ Choose your preferred provisioning method:
 dotnet run --project LocalStack.Provisioning.CloudFormation.AppHost
 ```
 
-👀 **Explore**: [Program.cs](./LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | [Template](./LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template)
+👀 **Explore**: [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | [Template](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template)
 
 #### Option 2: AWS CDK Approach
 
@@ -106,7 +106,7 @@ dotnet run --project LocalStack.Provisioning.CloudFormation.AppHost
 dotnet run --project LocalStack.Provisioning.CDK.AppHost
 ```
 
-👀 **Explore**: [Program.cs](./LocalStack.Provisioning.CDK.AppHost/Program.cs) | [CDK Stack](./LocalStack.Provisioning.CDK.AppHost/CustomStack.cs)
+👀 **Explore**: [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/Program.cs) | [CDK Stack](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs)
 
 Both create the same messaging infrastructure and provide identical frontend functionality.
 
