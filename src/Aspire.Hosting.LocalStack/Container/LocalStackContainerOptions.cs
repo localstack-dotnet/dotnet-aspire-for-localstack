@@ -3,6 +3,7 @@
 
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.LocalStack.Container;
+using LocalStack.Client.Enums;
 
 namespace Aspire.Hosting.LocalStack;
 
@@ -17,7 +18,6 @@ public sealed class LocalStackContainerOptions
     /// <remarks>
     /// - <see cref="ContainerLifetime.Persistent"/>: Container survives application restarts (default for databases)
     /// - <see cref="ContainerLifetime.Session"/>: Container is cleaned up when application stops (recommended for LocalStack)
-    /// - <see cref="ContainerLifetime.Transient"/>: Container is recreated on each run
     /// </remarks>
     public ContainerLifetime Lifetime { get; set; } = ContainerLifetime.Persistent;
 
@@ -49,4 +49,7 @@ public sealed class LocalStackContainerOptions
     /// Gets or sets additional environment variables to pass to the LocalStack container.
     /// </summary>
     public IDictionary<string, string> AdditionalEnvironmentVariables { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
+
+    /// <summary>A collection of services to eagerly start.</summary>
+    public IReadOnlyCollection<AwsService> EagerLoadedServices { get; set; } = [];
 }

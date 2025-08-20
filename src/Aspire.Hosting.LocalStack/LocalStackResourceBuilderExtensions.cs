@@ -13,8 +13,11 @@ using Aspire.Hosting.LocalStack.Configuration;
 using Aspire.Hosting.LocalStack.Container;
 using Aspire.Hosting.LocalStack.Internal;
 using LocalStack.Client.Contracts;
+using LocalStack.Client.Enums;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Aspire.Hosting;
 
@@ -163,7 +166,6 @@ public static class LocalStackResourceBuilderExtensions
             .WithImageRegistry(LocalStackContainerImageTags.Registry)
             .WithImageTag(LocalStackContainerImageTags.Tag)
             .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort, name: LocalStackResource.PrimaryEndpointName)
-            .WithHttpHealthCheck("/_localstack/health", 200, LocalStackResource.PrimaryEndpointName)
             .WithLifetime(containerOptions.Lifetime)
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
             .WithEnvironment("LS_LOG", containerOptions.LogLevel.ToEnvironmentValue())
@@ -175,6 +177,31 @@ public static class LocalStackResourceBuilderExtensions
         foreach (var (key, value) in containerOptions.AdditionalEnvironmentVariables)
         {
             resourceBuilder = resourceBuilder.WithEnvironment(key, value);
+        }
+
+        if (containerOptions.EagerLoadedServices.Count == 0)
+        {
+            resourceBuilder = resourceBuilder.WithHttpHealthCheck("/_localstack/health", 200, LocalStackResource.PrimaryEndpointName);
+        }
+        else
+        {
+            resourceBuilder = resourceBuilder.WithEnvironment("EAGER_SERVICE_LOADING", "1");
+
+            List<string> serviceNames = [];
+            foreach (var awsService in containerOptions.EagerLoadedServices)
+            {
+                var serviceName = AwsServiceEndpointMetadata.ByEnum(awsService)!.CliName;
+                if (serviceName is null)
+                {
+                    throw new InvalidOperationException($"Eager loaded service '{awsService}' is not supported by LocalStack.");
+                }
+                serviceNames.Add(serviceName);
+            }
+
+            var servicesValue = string.Join(',', serviceNames);
+            resourceBuilder = resourceBuilder
+                .WithEnvironment("SERVICES", servicesValue)
+                .WithLocalStackHealthCheck(serviceNames.ToArray());
         }
 
         // Configure callback for dynamic resource configuration
@@ -257,5 +284,55 @@ public static class LocalStackResourceBuilderExtensions
         localStackSection.Bind(options, c => c.BindNonPublicProperties = true);
 
         return options;
+    }
+
+    private static IResourceBuilder<T> WithLocalStackHealthCheck<T>(this IResourceBuilder<T> builder, string[] services) where T : IResourceWithEndpoints
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        var endpoint = builder.Resource.GetEndpoint("http");
+        if (endpoint.Scheme != "http")
+        {
+            throw new DistributedApplicationException($"Could not create HTTP health check for resource '{builder.Resource.Name}' as the endpoint with name '{endpoint.EndpointName}' and scheme '{endpoint.Scheme}' is not an HTTP endpoint.");
+        }
+
+        builder.EnsureEndpointIsAllocated(endpoint);
+
+        Uri? baseUri = null;
+        builder.ApplicationBuilder.Eventing.Subscribe<BeforeResourceStartedEvent>(builder.Resource, (@event, ct) =>
+        {
+            baseUri = new Uri(endpoint.Url, UriKind.Absolute);
+            return Task.CompletedTask;
+        });
+
+        var healthCheckKey = $"{builder.Resource.Name}_localstack_check";
+
+        builder.ApplicationBuilder.Services.AddHealthChecks().Add(new HealthCheckRegistration(healthCheckKey,
+            _ =>
+            {
+                return baseUri switch
+                {
+                    null => throw new DistributedApplicationException(
+                        "The URI for the health check is not set. Ensure that the resource has been allocated before the health check is executed."),
+                    _ => new LocalStackHealthCheck(baseUri!, services)
+                };
+            }, failureStatus: null, tags: null));
+
+        builder.WithHealthCheck(healthCheckKey);
+
+        return builder;
+    }
+
+    private static void EnsureEndpointIsAllocated<T>(this IResourceBuilder<T> builder, EndpointReference endpoint)  where T : IResourceWithEndpoints
+    {
+        var endpointName = endpoint.EndpointName;
+
+        builder.OnResourceEndpointsAllocated((_, _, _) =>
+            endpoint.Exists switch
+            {
+                true => Task.CompletedTask,
+                false => throw new DistributedApplicationException(
+                    $"The endpoint '{endpointName}' does not exist on the resource '{builder.Resource.Name}'.")
+            });
     }
 }

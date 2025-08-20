@@ -1,14 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0" />
+
   <PropertyGroup>
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
     <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+    <IsAspireHost>false</IsAspireHost>
     <IsTestProject>true</IsTestProject>
     <NoWarn>$(NoWarn);CA2007</NoWarn>
   </PropertyGroup>
-  
+
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="AWSSDK.Core"/>
     <PackageReference Include="AWSSDK.DynamoDBv2"/>
     <PackageReference Include="AWSSDK.SQS"/>
