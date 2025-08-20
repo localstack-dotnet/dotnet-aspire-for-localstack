@@ -290,7 +290,7 @@ public static class LocalStackResourceBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        var endpoint = builder.Resource.GetEndpoint("http");
+        var endpoint = builder.Resource.GetEndpoint(LocalStackResource.PrimaryEndpointName);
         if (endpoint.Scheme != "http")
         {
             throw new DistributedApplicationException($"Could not create HTTP health check for resource '{builder.Resource.Name}' as the endpoint with name '{endpoint.EndpointName}' and scheme '{endpoint.Scheme}' is not an HTTP endpoint.");
