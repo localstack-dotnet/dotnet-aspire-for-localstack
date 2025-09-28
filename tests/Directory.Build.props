@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Testing"/>
+    <PackageReference Include="Aspire.Hosting.AWS"/>
     <PackageReference Include="Microsoft.NET.Test.Sdk"/>
     <PackageReference Include="NSubstitute"/>
     <PackageReference Include="xunit.v3"/>

@@ -149,4 +149,98 @@ public class LocalStackResourceConfiguratorTests
         Assert.NotNull(options.Session);
         Assert.NotNull(options.Config);
     }
+
+    [Fact]
+    public void ConfigureSqsEventSourceResource_Should_Add_Environment_Annotation_With_AWS_Endpoint_URL()
+    {
+        // Arrange
+        var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
+        var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
+        mockBuilder.Resource.Returns(mockExecutableResource);
+
+        var localStackUrl = new Uri("http://localhost:4566");
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+
+        // Act
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+
+        // Assert
+        // Verify that an EnvironmentCallbackAnnotation was added to the resource
+        var envAnnotations = mockExecutableResource.Annotations
+            .OfType<EnvironmentCallbackAnnotation>()
+            .ToList();
+
+        Assert.NotEmpty(envAnnotations);
+        Assert.True(envAnnotations.Count > 0, "SQS Event Source resource should have environment callback annotation");
+    }
+
+    [Fact]
+    public void ConfigureSqsEventSourceResource_Should_Insert_Annotation_At_Correct_Index()
+    {
+        // Arrange
+        var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
+        var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
+        mockBuilder.Resource.Returns(mockExecutableResource);
+
+        // Add some existing annotations to test insertion logic
+        var dummyResource = new ExecutableResource("dummy", "dummy-command", "dummy-workdir");
+        mockExecutableResource.Annotations.Add(new ResourceRelationshipAnnotation(dummyResource, "test"));
+        var existingEnvAnnotation = new EnvironmentCallbackAnnotation((EnvironmentCallbackContext _) => { });
+        mockExecutableResource.Annotations.Add(existingEnvAnnotation);
+
+        var initialAnnotationCount = mockExecutableResource.Annotations.Count;
+        var localStackUrl = new Uri("http://localhost:4566");
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+
+        // Act
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+
+        // Assert
+        // Should have one more annotation
+        Assert.Equal(initialAnnotationCount + 1, mockExecutableResource.Annotations.Count);
+
+        // Should insert after the existing EnvironmentCallbackAnnotation (rule 2)
+        var envAnnotations = mockExecutableResource.Annotations
+            .OfType<EnvironmentCallbackAnnotation>()
+            .ToList();
+        Assert.Equal(2, envAnnotations.Count); // Original + our new one
+    }
+
+    [Fact]
+    public void ConfigureSqsEventSourceResource_Should_Handle_Empty_Annotations_Collection()
+    {
+        // Arrange
+        var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
+        var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
+        mockBuilder.Resource.Returns(mockExecutableResource);
+
+        var localStackUrl = new Uri("http://localhost:4566");
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+
+        // Act
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+
+        // Assert
+        // Should insert at index 0 (fallback rule 6)
+        Assert.Equal(2, mockExecutableResource.Annotations.Count); // Original + our new one
+        Assert.IsType<EnvironmentCallbackAnnotation>(mockExecutableResource.Annotations[0]);
+    }
+
+    [Fact]
+    public void ConfigureSqsEventSourceResource_Should_Handle_Different_LocalStack_URLs()
+    {
+        // Arrange
+        var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
+        var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
+        mockBuilder.Resource.Returns(mockExecutableResource);
+
+        var customLocalStackUrl = new Uri("https://custom-host:9999");
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+
+        // Act & Assert - Should handle custom URLs without exception
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, customLocalStackUrl, options);
+
+        var envAnnotation = mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().FirstOrDefault();
+        Assert.NotNull(envAnnotation);
+    }
 }

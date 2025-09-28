@@ -100,6 +100,11 @@ public static class LocalStackResourceBuilderExtensions
                     awsResourceBuilder.WaitFor(cdkBootstrap);
                 }
             }
+            else if (resource is ExecutableResource sqsResource &&
+                     string.Equals(sqsResource.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
+            {
+                builder.CreateResourceBuilder(sqsResource).WithReference(localStack);
+            }
             else if (resource.Annotations.Any(a =>
                          a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
                          && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
