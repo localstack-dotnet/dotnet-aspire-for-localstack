@@ -65,59 +65,11 @@ internal static class LocalStackResourceConfigurator
     /// <summary>
     /// Configures an SQS Event Source resource with LocalStack environment variables.
     /// This enables AWS Lambda Tools to redirect AWS SDK calls to LocalStack for SQS event sources.
-    /// Uses surgical annotation insertion to ensure proper timing in the annotation processing pipeline.
     /// </summary>
     /// <param name="resourceBuilder">The SQS Event Source resource to configure.</param>
     /// <param name="localStackUrl">The LocalStack URL.</param>
-    /// <param name="options">The LocalStack configuration options.</param>
-    internal static void ConfigureSqsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl, ILocalStackOptions options)
+    internal static void ConfigureSqsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl)
     {
-        var executableResource = resourceBuilder.Resource;
-
-        // Create environment callback annotation for AWS_ENDPOINT_URL
-        var localStackEnvCallback = new EnvironmentCallbackAnnotation(context =>
-        {
-            // Set AWS_ENDPOINT_URL to redirect AWS SDK calls to LocalStack
-            // This is the standard AWS SDK environment variable that Lambda Tools respect
-            context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString();
-        });
-
-        // Calculate the precise index for our new annotation based on priority rules
-        var insertionIndex = GetInsertionIndex(executableResource.Annotations);
-
-        // Perform surgical insert instead of just adding to the end
-        executableResource.Annotations.Insert(insertionIndex, localStackEnvCallback);
-    }
-
-    /// <summary>
-    /// Calculates the correct index to insert our environment annotation based on a prioritized list of rules.
-    /// This ensures our environment is set before other critical lifecycle annotations are processed.
-    /// </summary>
-    /// <param name="annotations">The existing collection of annotations on the resource.</param>
-    /// <returns>The calculated index for insertion.</returns>
-    private static int GetInsertionIndex(ResourceAnnotationCollection annotations)
-    {
-        // Rule 1: Insert right before DcpInstancesAnnotation (commented out for now)
-        // int index = annotations.ToList().FindIndex(a => a.GetType().Name == "DcpInstancesAnnotation");
-        // if (index != -1) return index;
-
-        // Rule 2: Insert after the first existing EnvironmentCallbackAnnotation
-        var index = annotations.ToList().FindLastIndex(a => a is EnvironmentCallbackAnnotation);
-        if (index != -1) return index + 1;
-
-        // Rule 3: Insert after CommandLineArgsCallbackAnnotation
-        index = annotations.ToList().FindLastIndex(a => a is CommandLineArgsCallbackAnnotation);
-        if (index != -1) return index + 1;
-
-        // Rule 4: Insert after ManifestPublishingCallbackAnnotation
-        index = annotations.ToList().FindLastIndex(a => a is ManifestPublishingCallbackAnnotation);
-        if (index != -1) return index + 1;
-
-        // Rule 5: Insert after ResourceRelationshipAnnotation
-        index = annotations.ToList().FindLastIndex(a => a is ResourceRelationshipAnnotation);
-        if (index != -1) return index + 1;
-
-        // Rule 6 (Fallback): If none of the above markers are found, insert at the beginning
-        return 0;
+        resourceBuilder.WithEnvironment(context => context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString());
     }
 }

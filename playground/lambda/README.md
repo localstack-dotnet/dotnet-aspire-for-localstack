@@ -19,28 +19,53 @@ This example builds a **URL Shortener service** that leverages the best of both 
 │  API Gateway  ├─────────────────────────────▶│  ShortenFn    │
 │   Emulator    │                              │   (Lambda)    │
 └──────┬────────┘                              └──────┬────────┘
-       │                                              │ write
+       │                                              │ write & analytics
  GET /{id} 302                                        │ id → URL
        ▼                                              ▼
 ┌───────────────┐   lookup id            ┌────────────────────┐
-│  RedirectFn   ├───────────────────────▶│ DynamoDB table     │
+│  RedirectFn   ├───────────────────────▶│ DynamoDB (Urls)    │
 │   (Lambda)    │                        │   (LocalStack)     │
 └──────┬────────┘                        └────────────────────┘
-       │ 302                                  ▲       ▲
+       │ 302 & analytics                      ▲       ▲
        │                                      │       │ presign
        │                           PNG bytes  │       │ URL
        ▼                                      │       │
  User Browser ◀────── download ───────────────┘   S3 bucket
                                               (LocalStack)
+
+                   Analytics Event Flow
+┌─────────────┐                    ┌─────────────┐
+│ ShortenFn   │──url_created──────▶│             │
+└─────────────┘                    │ SQS Queue   │
+                                   │ (LocalStack)│
+┌─────────────┐                    │             │
+│ RedirectFn  │──url_accessed─────▶│             │
+└─────────────┘                    └──────┬──────┘
+                                          │
+                                          │ SQS Event Source
+                                          ▼
+                                   ┌─────────────┐
+                                   │ AnalyzerFn  │
+                                   │  (Lambda)   │
+                                   └──────┬──────┘
+                                          │ write
+                                          ▼
+                                   ┌────────────────────┐
+                                   │ DynamoDB           │
+                                   │ (UrlAnalytics)     │
+                                   │ (LocalStack)       │
+                                   └────────────────────┘
 ```
 
 ## Resource Inventory
 
 | Layer | Service | Local Runtime | Provisioned via |
 |-------|---------|---------------|-----------------|
-| **Compute & Edge** | 2 × Lambda Functions | **AWS Lambda Emulator** | `AddAWSLambdaFunction()` |
+| **Compute & Edge** | 3 × Lambda Functions | **AWS Lambda Emulator** | `AddAWSLambdaFunction()` |
 | | HTTP API Gateway | **API Gateway Emulator** | `AddAWSAPIGatewayEmulator()` |
 | **Data** | DynamoDB table `Urls` | **LocalStack** | CDK Stack |
+| | DynamoDB table `UrlAnalytics` | **LocalStack** | CDK Stack |
+| **Messaging** | SQS Queue `url-analytics-events` | **LocalStack** | CDK Stack |
 | **Storage** | S3 bucket `qr-bucket` | **LocalStack** | CDK Stack |
 
 ## Projects Structure
@@ -48,6 +73,7 @@ This example builds a **URL Shortener service** that leverages the best of both 
 - **`LocalStack.Lambda.AppHost`** - Aspire orchestration with auto-configuration
 - **`LocalStack.Lambda.UrlShortener`** - Lambda function for creating short URLs with QR codes
 - **`LocalStack.Lambda.Redirector`** - Lambda function for redirecting short URLs to original URLs
+- **`LocalStack.Lambda.Analyzer`** - Lambda function for processing analytics events from SQS (demonstrates SQS Event Source with LocalStack)
 
 ## Quick Demo
 
@@ -89,11 +115,17 @@ The [Lambda Test Tool](https://github.com/aws/integrations-on-dotnet-aspire-for-
 For advanced testing, you can use AWS CLI commands (get LocalStack endpoint from Aspire Dashboard):
 
 ```bash
-# Inspect DynamoDB table
+# Inspect URLs table
 aws dynamodb scan --table-name Urls --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+
+# Check analytics events
+aws dynamodb scan --table-name UrlAnalytics --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
 
 # List S3 objects
 aws s3api list-objects --bucket "qr-bucket" --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+
+# Check SQS queue (see pending messages)
+aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names All --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
 ```
 
 ## Request Flow
@@ -101,27 +133,38 @@ aws s3api list-objects --bucket "qr-bucket" --endpoint-url {LOCALSTACK_ENDPOINT}
 > **💡 Base URL**: Get the APIGatewayEmulator base URL from the Aspire Dashboard to make requests to your Lambda functions.
 
 1. **POST {GATEWAY_BASE_URL}/shorten**
-   *Validate & slugify* → store `{ slug, originalUrl }` in DynamoDB.
-   If `format=qr`, generate PNG via **[QrCodeGenerator](https://github.com/manuelbl/QrCodeGenerator)** and **[SkiaSharp](https://github.com/mono/SkiaSharp)**, upload to S3, return URL.
+   - *Validate & slugify* → store `{ slug, originalUrl }` in DynamoDB
+   - Send `url_created` analytics event to SQS queue
+   - If `format=qr`, generate PNG via **[QrCodeGenerator](https://github.com/manuelbl/QrCodeGenerator)** and **[SkiaSharp](https://github.com/mono/SkiaSharp)**, upload to S3, return URL
 
 2. **GET {GATEWAY_BASE_URL}/{slug}**
-   Lookup in DynamoDB → respond *302 Found* to the original URL.## AWS Emulator Integration
+   - Lookup in DynamoDB → respond *302 Found* to the original URL
+   - Send `url_accessed` analytics event to SQS queue
+
+3. **Analytics Processing (Background)**
+   - Analyzer Lambda triggered by SQS Event Source
+   - Processes both `url_created` and `url_accessed` events
+   - Stores analytics data in UrlAnalytics DynamoDB table
+
+## AWS Emulator Integration
 
 This example demonstrates how LocalStack works seamlessly with the new AWS emulators introduced in [.NET Aspire 9.x](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-1/):
 
 - **Lambda Emulator**: Provides sub-second feedback for Lambda development
 - **API Gateway Emulator**: Local HTTP API Gateway for routing
-- **LocalStack Services**: DynamoDB and S3 with full AWS API compatibility
+- **LocalStack Services**: DynamoDB, S3, and SQS with full AWS API compatibility
+- **SQS Event Source**: Demonstrates Lambda triggers from SQS queues with LocalStack
 
-The auto-configuration feature automatically detects and configures all these resources with a single `UseLocalStack(localstack)` call.
+The auto-configuration feature automatically detects and configures all these resources with a single `UseLocalStack(localstack)` call, including the critical `AWS_ENDPOINT_URL` environment variable for SQS Event Sources.
 
 ## Development Benefits
 
-- **Hybrid Architecture**: Best-in-class emulators for compute, LocalStack for data
+- **Hybrid Architecture**: Best-in-class emulators for compute, LocalStack for data and messaging
 - **Zero AWS Costs**: Complete local development without cloud resources
 - **Fast Feedback**: Lambda changes reflect instantly via emulators
 - **Production Parity**: Same AWS APIs, locally emulated
 - **Auto-Configuration**: Minimal setup with automatic resource discovery
+- **Event-Driven Testing**: Test SQS Event Sources and async processing locally
 
 ## Related Resources
 

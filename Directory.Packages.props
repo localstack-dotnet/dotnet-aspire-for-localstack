@@ -27,6 +27,7 @@
     <PackageVersion Include="AWS.Messaging.Telemetry.OpenTelemetry" Version="1.0.0"/>
     <PackageVersion Include="Amazon.Lambda.Core" Version="2.7.1"/>
     <PackageVersion Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1"/>
+    <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="2.2.0"/>
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.4.4"/>
     <!-- localstack packages -->
     <PackageVersion Include="LocalStack.Client" Version="2.0.0"/>

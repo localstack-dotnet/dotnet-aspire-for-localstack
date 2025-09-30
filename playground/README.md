@@ -19,12 +19,12 @@ Demonstrates AWS resource provisioning using CloudFormation templates and CDK st
 
 Serverless development with hybrid emulators
 
-Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for serverless development. Builds a URL shortener service with QR code generation.
+Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for serverless development. Builds a URL shortener service with QR code generation and analytics processing.
 
-- **Technologies**: Lambda, API Gateway, DynamoDB, S3
+- **Technologies**: Lambda, API Gateway, DynamoDB, S3, SQS
 - **Architecture**: Hybrid (AWS emulators + LocalStack services)
 - **Configuration**: Auto-configure approach (recommended)
-- **Demo**: Complete URL shortener with QR codes
+- **Demo**: Complete URL shortener with QR codes and event-driven analytics
 
 ## Choose Your Path
 
