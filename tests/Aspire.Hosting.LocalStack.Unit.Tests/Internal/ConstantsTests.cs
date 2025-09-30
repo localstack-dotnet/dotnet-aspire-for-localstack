@@ -1,4 +1,4 @@
-using Aspire.Hosting.AWS.Utils.Internal;
+using System.Reflection;
 
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
@@ -6,11 +6,10 @@ public class ConstantsTests
 {
     public ConstantsTests()
     {
-#pragma warning disable CS0219 // Variable is assigned but its value is never used
-#pragma warning disable S1481
-        IProcessCommandService? commandService = null;
-#pragma warning restore S1481
-#pragma warning restore CS0219 // Variable is assigned but its value is never used
+        // Force load AWS assembly for type validation tests
+        // This ensures the assembly is in the AppDomain before we try to find types
+        var awsAssembly = Assembly.Load("Aspire.Hosting.AWS");
+        _ = awsAssembly; // Suppress unused warning
     }
 
     [Fact]
