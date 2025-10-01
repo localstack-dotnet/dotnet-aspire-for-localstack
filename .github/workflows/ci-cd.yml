@@ -203,22 +203,26 @@ jobs:
           echo "📦 Base Version: $BASE_VERSION"
 
           # Generate build metadata
-          BUILD_DATE=$(date -u '+%Y%m%d')
           RUN_NUMBER="${{ github.run_number }}"     # monotonic
           COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
 
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # Feature branches: 9.2.0-feature-name.20250804.abc12345
+            # Feature branches: 9.5.0-feature-name.buildnumber (NuGet SemVer 2.0.0)
             BRANCH_NAME="${{ github.head_ref }}"
+            # Sanitize branch name for use in version and artifact names
             SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
             VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${RUN_NUMBER}"
+            ARTIFACT_SUFFIX="${SAFE_BRANCH}-${RUN_NUMBER}"
           else
-            # Master nightlies: 9.2.0.20250804.abc12345
-            VERSION="${BASE_VERSION}.${RUN_NUMBER}"
+            # Master CI builds: 9.5.0-ci.buildnumber (NuGet SemVer 2.0.0 pre-release)
+            VERSION="${BASE_VERSION}-ci.${RUN_NUMBER}"
+            ARTIFACT_SUFFIX="ci-${RUN_NUMBER}"
           fi
 
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "artifact_suffix=${ARTIFACT_SUFFIX}" >> $GITHUB_OUTPUT
           echo "📦 Final Package Version: ${VERSION}"
+          echo "📦 Artifact Suffix: ${ARTIFACT_SUFFIX}"
 
       - name: "Pack NuGet Package"
         run: |
@@ -241,7 +245,7 @@ jobs:
       - name: "Upload Package Artifacts"
         uses: actions/upload-artifact@v4
         with:
-          name: "packages-${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}-${{ github.run_number }}"
+          name: "packages-${{ steps.version.outputs.artifact_suffix }}"
           path: |
             artifacts/*.nupkg
             artifacts/*.snupkg
@@ -252,7 +256,8 @@ jobs:
           echo "📦 Generating build summary..."
           echo "## 📦 Package Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Package**: LocalStack.Aspire.Hosting" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }} (NuGet SemVer 2.0.0)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch/Ref**: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Published to**: GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact**: packages-${{ steps.version.outputs.artifact_suffix }}" >> $GITHUB_STEP_SUMMARY
