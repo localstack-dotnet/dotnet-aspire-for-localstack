@@ -112,7 +112,8 @@ public class Function
             MessageBody = JsonSerializer.Serialize(analyticsEvent),
         }).ConfigureAwait(false);
 
-        context.Logger.LogInformation($"Sent analytics event for slug: {slug}");
+        var sanitizedSlug = slug.Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal);
+        context.Logger.LogInformation($"Sent analytics event for slug: {sanitizedSlug}");
     }
 
     private static APIGatewayHttpApiV2ProxyResponse Found(string originalUrl) => new()

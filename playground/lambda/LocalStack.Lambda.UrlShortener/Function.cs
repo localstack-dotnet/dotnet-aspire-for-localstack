@@ -197,7 +197,8 @@ public class Function
             MessageBody = JsonSerializer.Serialize(analyticsEvent),
         }).ConfigureAwait(false);
 
-        context.Logger.LogInformation($"Sent analytics event for slug: {slug}");
+        var sanitizedSlug = slug.Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal);
+        context.Logger.LogInformation($"Sent analytics event for slug: {sanitizedSlug}");
     }
 
     private static APIGatewayHttpApiV2ProxyResponse BadRequest(string msg) => new()
@@ -224,7 +225,7 @@ public class Function
 }
 
 public sealed record AnalyticsEvent(
-    string EventType,  // "url_created" or "url_accessed"
+    string EventType, // "url_created" or "url_accessed"
     string Slug,
     string OriginalUrl,
     string? UserAgent = null,
