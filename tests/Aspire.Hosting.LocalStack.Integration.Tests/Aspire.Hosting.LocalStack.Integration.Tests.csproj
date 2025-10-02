@@ -5,9 +5,10 @@
     <OutputType>Exe</OutputType>
     <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
     <IsTestProject>true</IsTestProject>
-    <NoWarn>$(NoWarn);CA2007</NoWarn>
+    <NoWarn>$(NoWarn);CA2007;CA1515</NoWarn>
+    <NoError>$(NoWarn);CA2007;CA1515</NoError>
   </PropertyGroup>
-  
+
   <ItemGroup>
     <PackageReference Include="AWSSDK.Core"/>
     <PackageReference Include="AWSSDK.DynamoDBv2"/>
