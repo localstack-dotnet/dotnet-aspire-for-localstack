@@ -1,4 +1,5 @@
 using LocalStack.Client.Contracts;
+using LocalStack.Client;
 
 namespace Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
 
@@ -32,6 +33,33 @@ internal static class LocalStackTestHelpers
             .WithSessionOptions(sessionOptions)
             .WithConfigurationOptions(configOptions)
             .Create();
+    }
+
+    /// <summary>
+    /// Creates an AWS SQS client configured for LocalStack.
+    /// </summary>
+    public static IAmazonSQS CreateSqsClient(string connectionString, string regionName)
+    {
+        var session = CreateLocalStackSession(connectionString, regionName);
+        return session.CreateClientByImplementation<AmazonSQSClient>();
+    }
+
+    /// <summary>
+    /// Creates an AWS DynamoDB client configured for LocalStack.
+    /// </summary>
+    public static IAmazonDynamoDB CreateDynamoDbClient(string connectionString, string regionName)
+    {
+        var session = CreateLocalStackSession(connectionString, regionName);
+        return session.CreateClientByImplementation<AmazonDynamoDBClient>();
+    }
+
+    /// <summary>
+    /// Creates an AWS S3 client configured for LocalStack.
+    /// </summary>
+    public static IAmazonS3 CreateS3Client(string connectionString, string regionName)
+    {
+        var session = CreateLocalStackSession(connectionString, regionName);
+        return session.CreateClientByImplementation<AmazonS3Client>();
     }
 
     /// <summary>

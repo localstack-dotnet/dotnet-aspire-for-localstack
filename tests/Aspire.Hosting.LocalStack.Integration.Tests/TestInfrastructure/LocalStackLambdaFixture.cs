@@ -21,6 +21,11 @@ public sealed class LocalStackLambdaFixture : IAsyncLifetime
     public CloudFormationStackOutputs StackOutputs =>
         _stackOutputs ?? throw new InvalidOperationException("Stack outputs not initialized");
 
+    /// <summary>
+    /// Creates an HTTP client for the API Gateway emulator.
+    /// </summary>
+    public HttpClient CreateApiGatewayClient() => App.CreateHttpClient("APIGatewayEmulator");
+
     public async ValueTask InitializeAsync()
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));

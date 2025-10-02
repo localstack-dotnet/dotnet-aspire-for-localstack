@@ -5,8 +5,8 @@
     <OutputType>Exe</OutputType>
     <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
     <IsTestProject>true</IsTestProject>
-    <NoWarn>$(NoWarn);CA2007;CA1515</NoWarn>
-    <NoError>$(NoWarn);CA2007;CA1515</NoError>
+    <NoWarn>$(NoWarn);CA2007;CA1515;CA5399</NoWarn>
+    <NoError>$(NoWarn);CA2007;CA1515;CA5399</NoError>
   </PropertyGroup>
 
   <ItemGroup>
