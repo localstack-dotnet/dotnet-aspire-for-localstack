@@ -51,6 +51,7 @@
     <!-- test packages -->
     <PackageVersion Include="Aspire.Hosting.Testing" Version="9.5.0"/>
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1"/>
+    <PackageVersion Include="MartinCostello.Logging.XUnit.v3" Version="0.6.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0"/>
     <PackageVersion Include="xunit.v3" Version="3.0.1"/>
     <PackageVersion Include="xunit.v3.runner.console" Version="3.0.1"/>

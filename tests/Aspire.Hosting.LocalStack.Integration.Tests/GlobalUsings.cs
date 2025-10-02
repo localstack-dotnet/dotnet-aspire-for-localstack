@@ -10,4 +10,5 @@ global using Aspire.Hosting.Testing;
 global using LocalStack.Client;
 global using LocalStack.Client.Options;
 global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
 global using Xunit;

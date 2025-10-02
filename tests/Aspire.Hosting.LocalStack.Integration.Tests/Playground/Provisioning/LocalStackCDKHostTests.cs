@@ -1,7 +1,7 @@
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning;
 
 [Collection("CdkSequential")]
-public class LocalStackCDKHostTests
+public class LocalStackCDKHostTests(ITestOutputHelper outputHelper)
 {
     [Fact]
 #pragma warning disable MA0051
@@ -13,6 +13,13 @@ public class LocalStackCDKHostTests
 
         var appHost = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.LocalStack_Provisioning_CDK_AppHost>(["LocalStack:UseLocalStack=true"], cts.Token);
+
+        // Configure logging to capture test output
+        appHost.Services.AddLogging(logging => logging
+            .AddXUnit(outputHelper)
+            .SetMinimumLevel(LogLevel.Information)
+            .AddFilter("Aspire.Hosting.Dcp", LogLevel.Warning));
+
         await using var app = await appHost.BuildAsync(cts.Token);
         await app.StartAsync(cts.Token);
 
@@ -98,18 +105,5 @@ public class LocalStackCDKHostTests
         }
 
         Assert.True(resourceChecksSucceeded);
-
-//         var stackResource = (IStackResource)appHost.Resources.Single(resource => string.Equals(resource.Name, "custom", StringComparison.Ordinal));
-// #pragma warning disable S1481
-//         var stackResourceStack = (CustomStack)stackResource.Stack;
-// #pragma warning restore S1481
-
-        // using var frontendClient = app.CreateHttpClient("Frontend");
-        //
-        // var dynamoHealthCheckResult = await frontendClient.GetStringAsync(new Uri("/healthcheck/dynamodb", UriKind.Relative), cts.Token);
-        // var cfHealthCheckResult = await frontendClient.GetStringAsync(new Uri("/healthcheck/cloudformation", UriKind.Relative), cts.Token);
-        //
-        // Assert.Contains("Healthy", dynamoHealthCheckResult, StringComparison.Ordinal);
-        // Assert.Equal("\"Success\"", cfHealthCheckResult);
     }
 }
