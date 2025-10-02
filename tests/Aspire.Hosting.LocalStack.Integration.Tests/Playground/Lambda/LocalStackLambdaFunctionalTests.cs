@@ -131,7 +131,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
 
         // Wait for SQS Event Source to trigger Analyzer Lambda and process the event
         outputHelper.WriteLine("Waiting for Analyzer Lambda to process event...");
-        await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         // Assert: Verify event was written to AnalyticsTable by Analyzer Lambda
         var scanResponse = await dynamoDbClient.ScanAsync(new ScanRequest
