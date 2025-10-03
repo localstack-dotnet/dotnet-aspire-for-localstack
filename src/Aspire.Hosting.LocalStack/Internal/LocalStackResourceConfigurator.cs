@@ -68,8 +68,16 @@ internal static class LocalStackResourceConfigurator
     /// </summary>
     /// <param name="resourceBuilder">The SQS Event Source resource to configure.</param>
     /// <param name="localStackUrl">The LocalStack URL.</param>
-    internal static void ConfigureSqsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl)
+    /// <param name="options">The LocalStack configuration options.</param>
+    internal static void ConfigureSqsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl, ILocalStackOptions options)
     {
-        resourceBuilder.WithEnvironment(context => context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString());
+        resourceBuilder.WithEnvironment(context =>
+        {
+            context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString();
+            context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
+            context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsSessionToken;
+            context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
+            context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
+        });
     }
 }
