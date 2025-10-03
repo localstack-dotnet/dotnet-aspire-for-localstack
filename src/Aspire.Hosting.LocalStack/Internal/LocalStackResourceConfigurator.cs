@@ -61,4 +61,23 @@ internal static class LocalStackResourceConfigurator
             context.EnvironmentVariables["LocalStack__Config__EdgePort"] = localStackUrl.Port.ToString(CultureInfo.InvariantCulture);
         });
     }
+
+    /// <summary>
+    /// Configures an SQS Event Source resource with LocalStack environment variables.
+    /// This enables AWS Lambda Tools to redirect AWS SDK calls to LocalStack for SQS event sources.
+    /// </summary>
+    /// <param name="resourceBuilder">The SQS Event Source resource to configure.</param>
+    /// <param name="localStackUrl">The LocalStack URL.</param>
+    /// <param name="options">The LocalStack configuration options.</param>
+    internal static void ConfigureSqsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl, ILocalStackOptions options)
+    {
+        resourceBuilder.WithEnvironment(context =>
+        {
+            context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString();
+            context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
+            context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
+            context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
+            context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
+        });
+    }
 }

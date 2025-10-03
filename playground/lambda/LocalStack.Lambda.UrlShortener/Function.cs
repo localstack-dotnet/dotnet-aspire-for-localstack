@@ -1,6 +1,7 @@
 #pragma warning disable CA1822 // Member 'FunctionHandler' does not access instance data and can be marked as static
 #pragma warning disable S2325 // Make 'FunctionHandler' a static method.
 #pragma warning disable CA1812 // Error CA1812 : 'Function.ShortenRequest' is an internal class that is apparently never instantiated.
+#pragma warning disable CA1031 // Modify 'FunctionHandler' to catch a more specific allowed exception type, or rethrow the exception
 
 using System.Diagnostics;
 using System.Globalization;
@@ -12,6 +13,8 @@ using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Amazon.SQS;
+using Amazon.SQS.Model;
 using LocalStack.Client.Extensions;
 using LocalStack.Playground.ServiceDefaults.ActivitySources;
 using Microsoft.Extensions.DependencyInjection;
@@ -31,11 +34,13 @@ public class Function
 
     private readonly IAmazonDynamoDB _amazonDynamoDb;
     private readonly IAmazonS3 _amazonS3;
+    private readonly IAmazonSQS _amazonSqs;
 
     private readonly IS3UrlService _s3UrlService;
 
     private readonly string _qrBucketName;
     private readonly string _urlsTable;
+    private readonly string _analyticsQueueUrl;
 
     public Function()
     {
@@ -46,6 +51,7 @@ public class Function
         builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddAwsService<IAmazonDynamoDB>();
         builder.Services.AddAwsService<IAmazonS3>();
+        builder.Services.AddAwsService<IAmazonSQS>();
 
         builder.Services.AddTransient<IS3UrlService, S3UrlService>();
 
@@ -54,15 +60,17 @@ public class Function
         _traceProvider = host.Services.GetRequiredService<TracerProvider>();
         _amazonDynamoDb = host.Services.GetRequiredService<IAmazonDynamoDB>();
         _amazonS3 = host.Services.GetRequiredService<IAmazonS3>();
+        _amazonSqs = host.Services.GetRequiredService<IAmazonSQS>();
         _s3UrlService = host.Services.GetRequiredService<IS3UrlService>();
 
         _qrBucketName = builder.Configuration["AWS:Resources:QrBucketName"] ?? throw new InvalidOperationException("Missing AWS:Resources:QrBucketName");
         _urlsTable = builder.Configuration["AWS:Resources:UrlsTableName"] ?? throw new InvalidOperationException("Missing AWS:Resources:UrlsTableName");
+        _analyticsQueueUrl = builder.Configuration["AWS:Resources:AnalyticsQueueUrl"] ?? throw new InvalidOperationException("Missing AWS:Resources:AnalyticsQueueUrl");
     }
 
     public Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandler(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
     {
-        return AWSLambdaWrapper.TraceAsync(_traceProvider, async (proxyRequest, _) =>
+        return AWSLambdaWrapper.TraceAsync(_traceProvider, async (proxyRequest, lambdaContext) =>
         {
             using var activity = UrlShortenerActivitySource.ActivitySource.StartActivity(nameof(FunctionHandler));
 
@@ -83,6 +91,17 @@ public class Function
             var slug = SlugGenerator.Create();
 
             await InsertRecordAsync(slug, payload.Url).ConfigureAwait(false);
+
+            // Send analytics event (fire-and-forget, don't block URL creation)
+            try
+            {
+                await SendAnalyticsEventAsync(slug, payload.Url, proxyRequest, lambdaContext).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Log but don't throw - analytics shouldn't break URL creation
+                lambdaContext.Logger.LogWarning($"Failed to send analytics event: {ex.Message}");
+            }
 
             string? qrUrl = null;
 
@@ -163,6 +182,25 @@ public class Function
         return s3Url;
     }
 
+    private async Task SendAnalyticsEventAsync(string slug, string originalUrl, APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
+    {
+        using var activity = UrlShortenerActivitySource.ActivitySource.StartActivity(nameof(SendAnalyticsEventAsync));
+
+        var userAgent = request.RequestContext?.Http?.UserAgent ?? "unknown";
+        var ipAddress = request.RequestContext?.Http?.SourceIp ?? "unknown";
+
+        var analyticsEvent = new AnalyticsEvent("url_created", slug, originalUrl, userAgent, ipAddress);
+
+        await _amazonSqs.SendMessageAsync(new SendMessageRequest
+        {
+            QueueUrl = _analyticsQueueUrl,
+            MessageBody = JsonSerializer.Serialize(analyticsEvent),
+        }).ConfigureAwait(false);
+
+        var sanitizedSlug = slug.Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal);
+        context.Logger.LogInformation($"Sent analytics event for slug: {sanitizedSlug}");
+    }
+
     private static APIGatewayHttpApiV2ProxyResponse BadRequest(string msg) => new()
     {
         StatusCode = (int)HttpStatusCode.BadRequest,
@@ -185,3 +223,10 @@ public class Function
 
     private sealed record ShortenResponse(string Id, string? QrUrl);
 }
+
+public sealed record AnalyticsEvent(
+    string EventType, // "url_created" or "url_accessed"
+    string Slug,
+    string OriginalUrl,
+    string? UserAgent = null,
+    string? IpAddress = null);

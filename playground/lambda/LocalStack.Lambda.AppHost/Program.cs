@@ -25,6 +25,8 @@ var urlShortenerStack = builder
 
 urlShortenerStack.AddOutput("QrBucketName", stack => stack.QrBucket.BucketName);
 urlShortenerStack.AddOutput("UrlsTableName", stack => stack.UrlsTable.TableName);
+urlShortenerStack.AddOutput("AnalyticsQueueUrl", stack => stack.AnalyticsQueue.QueueUrl);
+urlShortenerStack.AddOutput("AnalyticsTableName", stack => stack.AnalyticsTable.TableName);
 
 urlShortenerStack.WithTag("aws-repo", "integrations-on-dotnet-aspire-for-aws");
 
@@ -38,6 +40,12 @@ var redirectorLambda = builder
     .AddAWSLambdaFunction<Projects.LocalStack_Lambda_Redirector>(
         name: "RedirectorLambda",
         lambdaHandler: "LocalStack.Lambda.Redirector::LocalStack.Lambda.Redirector.Function::FunctionHandler")
+    .WithReference(urlShortenerStack);
+
+builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_Analyzer>(
+        name: "AnalyzerLambda",
+        lambdaHandler: "LocalStack.Lambda.Analyzer::LocalStack.Lambda.Analyzer.Function::FunctionHandler")
+    .WithSQSEventSource(urlShortenerStack.GetOutput("AnalyticsQueueUrl"))
     .WithReference(urlShortenerStack);
 
 builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)

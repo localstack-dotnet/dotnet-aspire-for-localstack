@@ -55,6 +55,12 @@ internal static class LocalStackConnectionStringAvailableCallback
                 {
                     LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, localStackOptions);
                 }
+                else if (resource is ExecutableResource er &&
+                         string.Equals(er.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
+                {
+                    var executableResourceBuilder = builder.CreateResourceBuilder(er);
+                    LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);
+                }
                 else if (resource.Annotations.Any(a =>
                              a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
                              && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))

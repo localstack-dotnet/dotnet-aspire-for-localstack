@@ -48,7 +48,7 @@ internal sealed class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfig
                     ["Timestamp"] = new() { N = timestamp.ToString(CultureInfo.InvariantCulture) },
                     ["Message"] = new() { S = chatMessage.Message ?? string.Empty },
                     ["Recipient"] = new() { S = chatMessage.Recipient ?? "Unknown" },
-                    ["ProcessedAt"] = new() { S = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC", CultureInfo.InvariantCulture) },
+                    ["ProcessedAt"] = new() { S = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) },
                     ["SourceQueue"] = new() { S = messageEnvelope.Source.ToString() },
                 },
             };
