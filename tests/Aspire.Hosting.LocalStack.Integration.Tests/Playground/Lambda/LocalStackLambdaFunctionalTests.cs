@@ -78,7 +78,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
     {
         // Arrange: First create a short URL
         using var httpClient = fixture.CreateApiGatewayClient();
-        httpClient.Timeout = TimeSpan.FromSeconds(30); // Give enough time for Lambda cold start
+        httpClient.Timeout = TimeSpan.FromSeconds(60);
 
         var createRequest = new { Url = "https://docs.localstack.cloud", Format = (string?)null };
         var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, TestContext.Current.CancellationToken);
@@ -93,7 +93,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         handler.AllowAutoRedirect = false;
         using var redirectClient = new HttpClient(handler);
         redirectClient.BaseAddress = httpClient.BaseAddress;
-        redirectClient.Timeout = TimeSpan.FromSeconds(30);
+        redirectClient.Timeout = TimeSpan.FromSeconds(60);
 
         var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
 
@@ -162,7 +162,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
     {
         // Arrange: First create a short URL
         using var httpClient = fixture.CreateApiGatewayClient();
-        httpClient.Timeout = TimeSpan.FromSeconds(30);
+        httpClient.Timeout = TimeSpan.FromSeconds(60);
 
         using var dynamoDbClient = LocalStackTestHelpers.CreateDynamoDbClient(fixture.LocalStackConnectionString, fixture.RegionName);
         var analyticsTableName = fixture.StackOutputs.GetOutput("AnalyticsTableName")
@@ -185,7 +185,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         handler.AllowAutoRedirect = false;
         using var redirectClient = new HttpClient(handler);
         redirectClient.BaseAddress = httpClient.BaseAddress;
-        redirectClient.Timeout = TimeSpan.FromSeconds(30);
+        redirectClient.Timeout = TimeSpan.FromSeconds(60);
 
         var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
         Assert.Equal(HttpStatusCode.Found, redirectResponse.StatusCode);
