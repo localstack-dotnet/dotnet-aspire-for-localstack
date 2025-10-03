@@ -75,7 +75,7 @@ internal static class LocalStackResourceConfigurator
         {
             context.EnvironmentVariables["AWS_ENDPOINT_URL"] = localStackUrl.ToString();
             context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
-            context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsSessionToken;
+            context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
             context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
             context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
         });
