@@ -29,22 +29,19 @@ jobs:
       BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\test-results', github.workspace) || format('{0}/test-results', github.workspace) }}
       UNIT_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\tests\Aspire.Hosting.LocalStack.Unit.Tests\Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) }}
       INTEGRATION_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\tests\Aspire.Hosting.LocalStack.Integration.Tests\Aspire.Hosting.LocalStack.Integration.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj', github.workspace) }}
-      BADGE_GIST_ID: "f2b8df60871ea8cd0fa6b746798690b4"
+      BADGE_API_ENDPOINT: "https://api.localstackfor.net"
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: windows-latest
             name: "Windows"
-            filename: "test-results-windows.json"
 
           - os: ubuntu-22.04
             name: "Linux"
-            filename: "test-results-linux.json"
 
           - os: macos-latest
             name: "macOS"
-            filename: "test-results-macos.json"
 
     steps:
       - name: "Checkout"
@@ -107,23 +104,22 @@ jobs:
           fail-on-error: true
           max-annotations: 50
 
-      - name: "Update Test Results Badge"
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master' # Only update badge on master push
-        continue-on-error: true # Don't fail workflow if badge update fails
-        uses: ./.github/actions/update-test-badge
+      - name: Update test badge via BadgeSmith API
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        continue-on-error: true
+        uses: ./.github/workflows/update-test-badge
         with:
           platform: ${{ matrix.name }}
-          gist_id: ${{ env.BADGE_GIST_ID }}
-          filename: ${{ matrix.filename }}
-          gist_token: ${{ secrets.GIST_SECRET }}
-          test_passed: ${{ steps.test-results.outputs.passed || 0 }}
-          test_failed: ${{ steps.test-results.outputs.failed || 0 }}
-          test_skipped: ${{ steps.test-results.outputs.skipped || 0 }}
+          test_passed: '${{ steps.test-results.outputs.passed || 0 }}'
+          test_failed: '${{ steps.test-results.outputs.failed || 0 }}'
+          test_skipped: '${{ steps.test-results.outputs.skipped || 0 }}'
           test_url_html: ${{ steps.test-results.outputs.url_html || '' }}
-          commit_sha: ${{ github.sha }}
-          run_id: ${{ github.run_id }}
-          repository: ${{ github.repository }}
-          server_url: ${{ github.server_url }}
+          commit_sha: '${{ github.sha }}'
+          run_id: '${{ github.run_id }}'
+          repository: '${{ github.repository }}'
+          server_url: '${{ github.server_url }}'
+          api_domain: 'api.localstackfor.net'
+          hmac_secret: '${{ secrets.TESTDATASECRET }}'
 
       - name: "Upload Test Artifacts"
         uses: actions/upload-artifact@v4

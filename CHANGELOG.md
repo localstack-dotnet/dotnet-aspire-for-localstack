@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.5.0] - 2025-10-03
+
+### Added
+
+- **Eager Service Loading**: New `EagerLoadedServices` property on `LocalStackContainerOptions` for pre-starting specific AWS services
+  - Disables lazy loading and pre-starts configured services for faster startup
+  - Updated health check to wait for eagerly-loaded services to reach 'running' state
+  - Example: `container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB];`
+  - Contributed by [@slang25](https://github.com/slang25) ([#7](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/7), [#8](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/8))
+
+### Fixed
+
+- **Lambda SQS Event Source Support**: Fixed "Invalid URL" error when Lambda functions use SQS Event Sources with LocalStack ([#6](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/6), [#9](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/9))
+  - Root cause: AWS Lambda Tools process rejected LocalStack endpoints as invalid URLs
+  - Solution: Auto-inject `AWS_ENDPOINT_URL` environment variable into SQS Event Source resources
+  - Impact: Enables full LocalStack support for Lambda SQS Event Source triggers
+  - Enhanced Lambda playground example with analytics event processing to validate the fix
+
+### Changed
+
+- **LocalStack Container**: Updated from `4.6.0` → `4.9.1`
+- **Aspire.Hosting**: Updated to `9.5.0` (aligns with release version)
+- **Aspire.Hosting.AWS**: Updated to `9.2.6` (latest stable AWS integration)
+- **Aspire.Hosting.Testing**: Updated to `9.5.0`
+- **Badge System**: Migrated from Gist-based storage to Badge Smith API for dynamic badge generation
+- **Package Status**: Graduated from Release Candidate (RC) to stable release
+- **All Dependencies**: Updated AWSSDK packages, analyzers, and third-party dependencies to latest stable versions
+
+### Examples
+
+- **Enhanced Lambda Playground**: Added comprehensive event-driven analytics example
+  - New `AnalyzerFn` Lambda function for SQS event processing
+  - Architecture: URL Shortener/Redirector → SQS Queue → Analyzer → DynamoDB (UrlAnalytics table)
+  - Demonstrates: Event-driven serverless patterns, async processing, LocalStack SQS integration
+  - Integration tests: `LocalStackLambdaFunctionalTests.cs`, `LocalStackLambdaResourceTests.cs`
+  - Real-world use case: Analytics tracking with url_created and url_accessed events
+  - See [Lambda Playground README](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/lambda) for details
+
+### Contributors
+
+We'd like to thank the following contributors for their work on this release:
+
+- [@slang25](https://github.com/slang25) - Eager service loading feature
+- [@Blind-Striker](https://github.com/Blind-Striker) - Bug fixes, playground enhancements, infrastructure updates
+
+### Breaking Changes
+
+- None
+
+### Dependencies
+
+- Aspire.Hosting: 9.5.0
+- Aspire.Hosting.AWS: 9.2.6
+- LocalStack.Client: 2.0.0
+- .NET 8.0 and .NET 9.0
+
+---
+
 ## [9.4.0-rc.1] - 2025-08-07
 
 ### Added
@@ -73,4 +131,5 @@ This RC release is feature-complete and ready for production use. Community feed
 
 ---
 
+[9.5.0]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.0
 [9.4.0-rc.1]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.4.0-rc.1
