@@ -42,107 +42,42 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: "Post Test Results to BadgeSmith API"
+    - name: "Update Badge (Unix/macOS)"
+      if: runner.os != 'Windows'
       shell: bash
-      run: |
-        # Extract owner and repo from repository input
-        IFS='/' read -ra REPO_PARTS <<< "${{ inputs.repository }}"
-        OWNER="${REPO_PARTS[0]}"
-        REPO="${REPO_PARTS[1]}"
+      env:
+        INPUT_PLATFORM: ${{ inputs.platform }}
+        INPUT_TEST_PASSED: ${{ inputs.test_passed }}
+        INPUT_TEST_FAILED: ${{ inputs.test_failed }}
+        INPUT_TEST_SKIPPED: ${{ inputs.test_skipped }}
+        INPUT_TEST_URL_HTML: ${{ inputs.test_url_html }}
+        INPUT_COMMIT_SHA: ${{ inputs.commit_sha }}
+        INPUT_RUN_ID: ${{ inputs.run_id }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_SERVER_URL: ${{ inputs.server_url }}
+        INPUT_API_DOMAIN: ${{ inputs.api_domain }}
+        INPUT_HMAC_SECRET: ${{ inputs.hmac_secret }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_HEAD_REF: ${{ github.head_ref }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+      run: ${{ github.action_path }}/update-badge-unix.sh
 
-        # Normalize platform name
-        PLATFORM_LOWER=$(echo "${{ inputs.platform }}" | tr '[:upper:]' '[:lower:]')
-
-        # Extract branch from GitHub context
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          BRANCH="${{ github.head_ref }}"
-        else
-          BRANCH="${{ github.ref_name }}"
-        fi
-
-        # Calculate totals
-        TOTAL=$((${{ inputs.test_passed }} + ${{ inputs.test_failed }} + ${{ inputs.test_skipped }}))
-
-        # Create JSON payload for BadgeSmith API
-        cat > test-results.json << EOF
-        {
-          "platform": "${{ inputs.platform }}",
-          "passed": ${{ inputs.test_passed }},
-          "failed": ${{ inputs.test_failed }},
-          "skipped": ${{ inputs.test_skipped }},
-          "total": ${TOTAL},
-          "url_html": "${{ inputs.test_url_html }}",
-          "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-          "commit": "${{ inputs.commit_sha }}",
-          "run_id": "${{ inputs.run_id }}",
-          "workflow_run_url": "${{ inputs.server_url }}/${{ inputs.repository }}/actions/runs/${{ inputs.run_id }}"
-        }
-        EOF
-
-        echo "📊 Generated test results JSON for ${{ inputs.platform }}:"
-        cat test-results.json | jq '.' 2>/dev/null || cat test-results.json
-
-        # Prepare HMAC authentication
-        PAYLOAD_JSON=$(cat test-results.json)
-        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
-        NONCE=$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')
-
-        # Compute HMAC-SHA256 signature
-        SIGNATURE="sha256=$(echo -n "$PAYLOAD_JSON" | openssl dgst -sha256 -hmac "${{ inputs.hmac_secret }}" -binary | xxd -p -c 256)"
-
-        # Build BadgeSmith API URL
-        API_URL="https://${{ inputs.api_domain }}/tests/results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
-
-        echo "🚀 Posting to BadgeSmith API: ${API_URL}"
-
-        # Send request to BadgeSmith API
-        HTTP_CODE=$(curl -s -w "%{http_code}" -o response.tmp \
-          -X POST "${API_URL}" \
-          -H "Content-Type: application/json" \
-          -H "X-Signature: ${SIGNATURE}" \
-          -H "X-Timestamp: ${TIMESTAMP}" \
-          -H "X-Nonce: ${NONCE}" \
-          -d "$PAYLOAD_JSON")
-
-        RESPONSE_BODY=$(cat response.tmp)
-        rm -f response.tmp
-
-        if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
-          echo "✅ Successfully posted test results to BadgeSmith API (HTTP $HTTP_CODE)"
-          echo "Response:"
-          echo "$RESPONSE_BODY" | jq . 2>/dev/null || echo "$RESPONSE_BODY"
-        else
-          echo "⚠️ Failed to post test results to BadgeSmith API (HTTP $HTTP_CODE)"
-          echo "Response:"
-          echo "$RESPONSE_BODY" | jq . 2>/dev/null || echo "$RESPONSE_BODY"
-          # Don't fail the build for badge update failures
-        fi
-
-    - name: "Display Badge URLs"
-      shell: bash
-      run: |
-        # Extract owner and repo from repository input
-        IFS='/' read -ra REPO_PARTS <<< "${{ inputs.repository }}"
-        OWNER="${REPO_PARTS[0]}"
-        REPO="${REPO_PARTS[1]}"
-
-        PLATFORM_LOWER=$(echo "${{ inputs.platform }}" | tr '[:upper:]' '[:lower:]')
-
-        # Extract branch from GitHub context
-        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-          BRANCH="${{ github.head_ref }}"
-        else
-          BRANCH="${{ github.ref_name }}"
-        fi
-
-        echo "🎯 BadgeSmith URLs for ${{ inputs.platform }}:"
-        echo ""
-        echo "**${{ inputs.platform }} Badge:**"
-        echo "[![Test Results (${{ inputs.platform }})](https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH})](https://${{ inputs.api_domain }}/redirect/test-results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH})"
-        echo ""
-        echo "**Raw URLs:**"
-        echo "- Badge: https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
-        echo "- Redirect: https://${{ inputs.api_domain }}/redirect/test-results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
-        echo ""
-        echo "**API Test:**"
-        echo "curl \"https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}\""
+    - name: "Update Badge (Windows)"
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        INPUT_PLATFORM: ${{ inputs.platform }}
+        INPUT_TEST_PASSED: ${{ inputs.test_passed }}
+        INPUT_TEST_FAILED: ${{ inputs.test_failed }}
+        INPUT_TEST_SKIPPED: ${{ inputs.test_skipped }}
+        INPUT_TEST_URL_HTML: ${{ inputs.test_url_html }}
+        INPUT_COMMIT_SHA: ${{ inputs.commit_sha }}
+        INPUT_RUN_ID: ${{ inputs.run_id }}
+        INPUT_REPOSITORY: ${{ inputs.repository }}
+        INPUT_SERVER_URL: ${{ inputs.server_url }}
+        INPUT_API_DOMAIN: ${{ inputs.api_domain }}
+        INPUT_HMAC_SECRET: ${{ inputs.hmac_secret }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_HEAD_REF: ${{ github.head_ref }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+      run: ${{ github.action_path }}/update-badge-win.ps1
