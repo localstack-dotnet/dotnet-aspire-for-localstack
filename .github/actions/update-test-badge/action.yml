@@ -1,68 +1,74 @@
-name: 'Update Test Results Badge'
-description: 'Updates test results badge data in GitHub Gist and displays badge URLs'
-author: 'LocalStack .NET Team'
+name: "Update Test Results Badge"
+description: "Posts test results to BadgeSmith API with HMAC authentication"
+author: "LocalStack .NET Team"
 
 inputs:
   platform:
-    description: 'Platform name (Linux, Windows, macOS)'
-    required: true
-  gist_id:
-    description: 'GitHub Gist ID for storing test results'
-    required: true
-  filename:
-    description: 'Filename for the platform-specific JSON file (e.g., test-results-linux.json)'
-    required: true
-  gist_token:
-    description: 'GitHub token with gist permissions'
+    description: "Platform name (Linux, Windows, macOS)"
     required: true
   test_passed:
-    description: 'Number of passed tests'
+    description: "Number of passed tests"
     required: true
   test_failed:
-    description: 'Number of failed tests'
+    description: "Number of failed tests"
     required: true
   test_skipped:
-    description: 'Number of skipped tests'
+    description: "Number of skipped tests"
     required: true
   test_url_html:
-    description: 'URL to test results page'
+    description: "URL to test results page"
     required: false
-    default: ''
+    default: ""
   commit_sha:
-    description: 'Git commit SHA'
+    description: "Git commit SHA"
     required: true
   run_id:
-    description: 'GitHub Actions run ID'
+    description: "GitHub Actions run ID"
     required: true
   repository:
-    description: 'Repository in owner/repo format'
+    description: "Repository in owner/repo format"
     required: true
   server_url:
-    description: 'GitHub server URL'
+    description: "GitHub server URL"
     required: true
   api_domain:
-    description: 'Badge API domain for displaying URLs'
+    description: "BadgeSmith API domain"
     required: false
-    default: 'your-api-domain'
+    default: "api.localstackfor.net"
+  hmac_secret:
+    description: "HMAC secret for BadgeSmith authentication"
+    required: true
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
-    - name: 'Update Test Results Badge Data'
+    - name: "Post Test Results to BadgeSmith API"
       shell: bash
       run: |
-        # Use explicit filename from input
-        FILENAME="${{ inputs.filename }}"
-        
+        # Extract owner and repo from repository input
+        IFS='/' read -ra REPO_PARTS <<< "${{ inputs.repository }}"
+        OWNER="${REPO_PARTS[0]}"
+        REPO="${REPO_PARTS[1]}"
+
+        # Normalize platform name
+        PLATFORM_LOWER=$(echo "${{ inputs.platform }}" | tr '[:upper:]' '[:lower:]')
+
+        # Extract branch from GitHub context
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          BRANCH="${{ github.head_ref }}"
+        else
+          BRANCH="${{ github.ref_name }}"
+        fi
+
         # Calculate totals
         TOTAL=$((${{ inputs.test_passed }} + ${{ inputs.test_failed }} + ${{ inputs.test_skipped }}))
-        
-        # Create JSON payload for badge API
+
+        # Create JSON payload for BadgeSmith API
         cat > test-results.json << EOF
         {
           "platform": "${{ inputs.platform }}",
           "passed": ${{ inputs.test_passed }},
-          "failed": ${{ inputs.test_failed }}, 
+          "failed": ${{ inputs.test_failed }},
           "skipped": ${{ inputs.test_skipped }},
           "total": ${TOTAL},
           "url_html": "${{ inputs.test_url_html }}",
@@ -72,54 +78,71 @@ runs:
           "workflow_run_url": "${{ inputs.server_url }}/${{ inputs.repository }}/actions/runs/${{ inputs.run_id }}"
         }
         EOF
-        
+
         echo "📊 Generated test results JSON for ${{ inputs.platform }}:"
         cat test-results.json | jq '.' 2>/dev/null || cat test-results.json
-        
-        # Upload to single Gist with platform-specific filename
-        echo "📤 Uploading to Gist: ${{ inputs.gist_id }} (file: ${FILENAME})"
-        
-        # Create gist update payload - only update the specific platform file
-        cat > gist-payload.json << EOF
-        {
-          "files": {
-            "${FILENAME}": {
-              "content": $(cat test-results.json | jq -R -s '.')
-            }
-          }
-        }
-        EOF
-        
-        # Update Gist using GitHub API
-        HTTP_STATUS=$(curl -s -X PATCH \
-          -H "Accept: application/vnd.github.v3+json" \
-          -H "Authorization: token ${{ inputs.gist_token }}" \
-          "https://api.github.com/gists/${{ inputs.gist_id }}" \
-          -d @gist-payload.json \
-          -w "%{http_code}" \
-          -o response.json)
-        
-        if [ "$HTTP_STATUS" -eq 200 ]; then
-          echo "✅ Successfully updated Gist file ${FILENAME} (HTTP $HTTP_STATUS)"
-        else
-          echo "⚠️ Failed to update Gist file ${FILENAME} (HTTP $HTTP_STATUS)"
+
+        # Prepare HMAC authentication
+        PAYLOAD_JSON=$(cat test-results.json)
+        TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")
+        NONCE=$(uuidgen | tr -d '-' | tr '[:upper:]' '[:lower:]')
+
+        # Compute HMAC-SHA256 signature
+        SIGNATURE="sha256=$(echo -n "$PAYLOAD_JSON" | openssl dgst -sha256 -hmac "${{ inputs.hmac_secret }}" -binary | xxd -p -c 256)"
+
+        # Build BadgeSmith API URL
+        API_URL="https://${{ inputs.api_domain }}/tests/results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
+
+        echo "🚀 Posting to BadgeSmith API: ${API_URL}"
+
+        # Send request to BadgeSmith API
+        HTTP_CODE=$(curl -s -w "%{http_code}" -o response.tmp \
+          -X POST "${API_URL}" \
+          -H "Content-Type: application/json" \
+          -H "X-Signature: ${SIGNATURE}" \
+          -H "X-Timestamp: ${TIMESTAMP}" \
+          -H "X-Nonce: ${NONCE}" \
+          -d "$PAYLOAD_JSON")
+
+        RESPONSE_BODY=$(cat response.tmp)
+        rm -f response.tmp
+
+        if [[ "$HTTP_CODE" -ge 200 && "$HTTP_CODE" -lt 300 ]]; then
+          echo "✅ Successfully posted test results to BadgeSmith API (HTTP $HTTP_CODE)"
           echo "Response:"
-          cat response.json 2>/dev/null || echo "No response body"
+          echo "$RESPONSE_BODY" | jq . 2>/dev/null || echo "$RESPONSE_BODY"
+        else
+          echo "⚠️ Failed to post test results to BadgeSmith API (HTTP $HTTP_CODE)"
+          echo "Response:"
+          echo "$RESPONSE_BODY" | jq . 2>/dev/null || echo "$RESPONSE_BODY"
+          # Don't fail the build for badge update failures
         fi
 
-    - name: 'Display Badge URLs'
+    - name: "Display Badge URLs"
       shell: bash
       run: |
+        # Extract owner and repo from repository input
+        IFS='/' read -ra REPO_PARTS <<< "${{ inputs.repository }}"
+        OWNER="${REPO_PARTS[0]}"
+        REPO="${REPO_PARTS[1]}"
+
         PLATFORM_LOWER=$(echo "${{ inputs.platform }}" | tr '[:upper:]' '[:lower:]')
-        FILENAME="${{ inputs.filename }}"
-        
-        echo "🎯 Badge URL for ${{ inputs.platform }}:"
+
+        # Extract branch from GitHub context
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          BRANCH="${{ github.head_ref }}"
+        else
+          BRANCH="${{ github.ref_name }}"
+        fi
+
+        echo "🎯 BadgeSmith URLs for ${{ inputs.platform }}:"
         echo ""
         echo "**${{ inputs.platform }} Badge:**"
-        echo "[![Test Results (${{ inputs.platform }})](https://${{ inputs.api_domain }}/badge/tests/${PLATFORM_LOWER})](https://${{ inputs.api_domain }}/redirect/tests/${PLATFORM_LOWER})"
+        echo "[![Test Results (${{ inputs.platform }})](https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH})](https://${{ inputs.api_domain }}/redirect/test-results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH})"
         echo ""
         echo "**Raw URLs:**"
-        echo "- Badge: https://${{ inputs.api_domain }}/badge/tests/${PLATFORM_LOWER}"
-        echo "- Redirect: https://${{ inputs.api_domain }}/redirect/tests/${PLATFORM_LOWER}"
-        echo "- Gist: https://gist.github.com/${{ inputs.gist_id }}"
-        echo "- Gist File: https://gist.githubusercontent.com/Blind-Striker/${{ inputs.gist_id }}/raw/${FILENAME}" 
+        echo "- Badge: https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
+        echo "- Redirect: https://${{ inputs.api_domain }}/redirect/test-results/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}"
+        echo ""
+        echo "**API Test:**"
+        echo "curl \"https://${{ inputs.api_domain }}/badges/tests/${PLATFORM_LOWER}/${OWNER}/${REPO}/${BRANCH}\""
