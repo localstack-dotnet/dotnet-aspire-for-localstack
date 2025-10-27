@@ -220,4 +220,72 @@ public class AddLocalStackTests
 
         Assert.Contains("not supported by LocalStack", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
+
+    [Fact]
+    public void AddLocalStack_Should_Mount_Docker_Socket_When_EnableDockerSocket_Is_True()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.EnableDockerSocket = true
+        );
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Verify the Docker socket bind mount annotation exists
+        var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
+        var dockerSocketMount = mountAnnotations.FirstOrDefault
+            (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", Type: ContainerMountType.BindMount });
+
+        Assert.NotNull(dockerSocketMount);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Not_Mount_Docker_Socket_When_EnableDockerSocket_Is_False()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.EnableDockerSocket = false
+        );
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Verify no Docker socket bind mount annotation exists
+        var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
+        var dockerSocketMount = mountAnnotations.FirstOrDefault
+            (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock" });
+
+        Assert.Null(dockerSocketMount);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Not_Mount_Docker_Socket_By_Default()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack(localStackOptions: localStackOptions);
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Verify no Docker socket bind mount annotation exists when not configured
+        var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
+        var dockerSocketMount = mountAnnotations.FirstOrDefault
+            (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock" });
+
+        Assert.Null(dockerSocketMount);
+    }
 }

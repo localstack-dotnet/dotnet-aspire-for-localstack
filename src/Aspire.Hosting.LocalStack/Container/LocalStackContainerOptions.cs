@@ -52,4 +52,14 @@ public sealed class LocalStackContainerOptions
 
     /// <summary>A collection of services to eagerly start.</summary>
     public IReadOnlyCollection<AwsService> EagerLoadedServices { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets whether to mount the Docker socket to enable container-based features like Lambda.
+    /// </summary>
+    /// <remarks>
+    /// When enabled, mounts /var/run/docker.sock to allow LocalStack to create containers.
+    /// Required for LocalStack Lambda support. Has security implications - use only when needed.
+    /// Default: false
+    /// </remarks>
+    public bool EnableDockerSocket { get; set; }
 }

@@ -8,6 +8,7 @@ This guide covers configuration options for customizing LocalStack container beh
 |--------|------|---------|-------------|
 | `EagerLoadedServices` | `IReadOnlyCollection<AwsService>` | `[]` (empty) | AWS services to pre-load at container startup |
 | `Lifetime` | `ContainerLifetime` | `Persistent` | Container lifecycle behavior |
+| `EnableDockerSocket` | `bool` | `false` | Mount Docker socket for Lambda support |
 | `DebugLevel` | `int` | `0` | LocalStack DEBUG flag (0 or 1) |
 | `LogLevel` | `LocalStackLogLevel` | `Error` | LocalStack LS_LOG level |
 | `AdditionalEnvironmentVariables` | `IDictionary<string, string>` | `{}` (empty) | Custom environment variables |
@@ -139,6 +140,31 @@ container.LogLevel = LocalStackLogLevel.Debug;
 **Note:** `LS_LOG` currently overrides the `DEBUG` configuration in LocalStack.
 
 For more details on LocalStack logging, see the [official logging documentation](https://docs.localstack.cloud/aws/capabilities/config/logging/).
+
+## Docker Socket Access
+
+LocalStack Lambda requires access to Docker on the host to create containers for function execution.
+
+### Enabling Docker Socket
+
+```csharp
+container.EnableDockerSocket = true;
+```
+
+This mounts `/var/run/docker.sock` from the host into the LocalStack container, allowing it to manage Docker containers.
+
+### When to use
+
+- Running Lambda functions with LocalStack Lambda emulator
+- Using container-based LocalStack features
+
+### Security considerations
+
+- Grants the LocalStack container access to Docker on the host
+- Only enable when specifically needed for Lambda or other container-based features
+- Default is `false` for security best practices
+
+**Note:** The [playground Lambda examples](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/lambda) use the AWS Lambda emulator (hybrid approach) and do not require this setting. Enable this only if you specifically need LocalStack's Lambda emulator.
 
 ## Advanced Environment Variables
 

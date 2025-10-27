@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example: `container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB];`
   - Contributed by [@slang25](https://github.com/slang25) ([#7](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/7), [#8](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/8))
 
+- **Docker Socket Access**: New `EnableDockerSocket` property on `LocalStackContainerOptions` for Lambda container support
+  - Mounts `/var/run/docker.sock` to enable LocalStack Lambda container-based features
+  - Security-first: opt-in with default `false` (principle of least privilege)
+  - Example: `container.EnableDockerSocket = true;`
+  - Closes [#11](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/11)
+
 ### Fixed
 
 - **Lambda SQS Event Source Support**: Fixed "Invalid URL" error when Lambda functions use SQS Event Sources with LocalStack ([#6](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/6), [#9](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/9))

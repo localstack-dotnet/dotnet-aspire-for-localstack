@@ -16,6 +16,7 @@ public class LocalStackContainerOptionsTests
         Assert.Equal(LocalStackLogLevel.Error, options.LogLevel);
         Assert.NotNull(options.AdditionalEnvironmentVariables);
         Assert.Empty(options.AdditionalEnvironmentVariables);
+        Assert.False(options.EnableDockerSocket);
     }
 
     [Fact]
@@ -77,5 +78,24 @@ public class LocalStackContainerOptionsTests
         Assert.Contains(AwsService.Sqs, options.EagerLoadedServices);
         Assert.Contains(AwsService.DynamoDb, options.EagerLoadedServices);
         Assert.Contains(AwsService.S3, options.EagerLoadedServices);
+    }
+
+    [Fact]
+    public void EnableDockerSocket_Should_Default_To_False()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.False(options.EnableDockerSocket);
+    }
+
+    [Fact]
+    public void EnableDockerSocket_Should_Be_Settable()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            EnableDockerSocket = true,
+        };
+
+        Assert.True(options.EnableDockerSocket);
     }
 }

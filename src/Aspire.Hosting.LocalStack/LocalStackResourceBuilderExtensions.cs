@@ -179,6 +179,12 @@ public static class LocalStackResourceBuilderExtensions
             .WithExternalHttpEndpoints()
             .ExcludeFromManifest(); // LocalStack is for local development only
 
+        // Mount Docker socket if enabled (required for LocalStack Lambda support)
+        if (containerOptions.EnableDockerSocket)
+        {
+            resourceBuilder = resourceBuilder.WithBindMount("/var/run/docker.sock", "/var/run/docker.sock");
+        }
+
         // Add any additional environment variables
         foreach (var (key, value) in containerOptions.AdditionalEnvironmentVariables)
         {
