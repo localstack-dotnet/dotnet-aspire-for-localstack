@@ -103,4 +103,120 @@ public class EagerLoadedServicesTests
         Assert.True(servicesNode.ContainsKey("sqs"));
         Assert.Equal("running", servicesNode["sqs"]?.ToString());
     }
+
+    [Fact]
+    public async Task LocalStack_Should_Eagerly_Load_Multiple_Services_Async()
+    {
+        using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+
+#pragma warning disable CA1849
+        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+#pragma warning restore CA1849
+
+        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        {
+            container.Lifetime = ContainerLifetime.Session;
+            container.DebugLevel = 1;
+            container.LogLevel = LocalStackLogLevel.Debug;
+            container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
+        });
+
+        await using var app = await builder.BuildAsync(cts.Token);
+        await app.StartAsync(cts.Token);
+
+        var resourceNotificationService = app.Services.GetRequiredService<ResourceNotificationService>();
+        await resourceNotificationService.WaitForResourceHealthyAsync("localstack", cts.Token);
+
+        using var httpClient = app.CreateHttpClient("localstack", "http");
+        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
+        var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
+        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+
+        var servicesNode = healthContent?["services"]?.AsObject();
+        Assert.NotNull(servicesNode);
+
+        // All three services should be running
+        Assert.True(servicesNode.ContainsKey("sqs"));
+        Assert.Equal("running", servicesNode["sqs"]?.ToString());
+        Assert.True(servicesNode.ContainsKey("dynamodb"));
+        Assert.Equal("running", servicesNode["dynamodb"]?.ToString());
+        Assert.True(servicesNode.ContainsKey("s3"));
+        Assert.Equal("running", servicesNode["s3"]?.ToString());
+    }
+
+    [Fact]
+    public async Task LocalStack_Should_Handle_Empty_EagerLoadedServices_Like_Lazy_Loading_Async()
+    {
+        using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+
+#pragma warning disable CA1849
+        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+#pragma warning restore CA1849
+
+        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        {
+            container.Lifetime = ContainerLifetime.Session;
+            container.DebugLevel = 1;
+            container.LogLevel = LocalStackLogLevel.Debug;
+            container.EagerLoadedServices = []; // Explicitly empty
+        });
+
+        await using var app = await builder.BuildAsync(cts.Token);
+        await app.StartAsync(cts.Token);
+
+        var resourceNotificationService = app.Services.GetRequiredService<ResourceNotificationService>();
+        await resourceNotificationService.WaitForResourceHealthyAsync("localstack", cts.Token);
+
+        using var httpClient = app.CreateHttpClient("localstack", "http");
+        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
+        var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
+        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+
+        var servicesNode = healthContent?["services"]?.AsObject();
+        Assert.NotNull(servicesNode);
+
+        // Services should not be running by default (lazy loading)
+        if (servicesNode.ContainsKey("sqs"))
+        {
+            Assert.NotEqual("running", servicesNode["sqs"]?.ToString());
+        }
+    }
+
+    [Fact]
+    public void LocalStack_Should_Throw_When_Env_Var_Collision_With_SERVICES()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+            {
+                container.AdditionalEnvironmentVariables["SERVICES"] = "lambda,s3";
+                container.EagerLoadedServices = [AwsService.Sqs];
+            }));
+
+        Assert.Contains("Cannot set 'SERVICES'", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void LocalStack_Should_Throw_When_Env_Var_Collision_With_EAGER_SERVICE_LOADING()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+            {
+                container.AdditionalEnvironmentVariables["EAGER_SERVICE_LOADING"] = "1";
+                container.EagerLoadedServices = [AwsService.Sqs];
+            }));
+
+        Assert.Contains("EAGER_SERVICE_LOADING", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
 }

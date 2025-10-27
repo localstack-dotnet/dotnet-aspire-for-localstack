@@ -1,3 +1,5 @@
+using LocalStack.Client.Enums;
+
 #pragma warning disable S4143
 
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Container;
@@ -40,5 +42,40 @@ public class LocalStackContainerOptionsTests
         Assert.Equal(2, options.AdditionalEnvironmentVariables.Count);
         Assert.Equal("value1", options.AdditionalEnvironmentVariables["TestKey"]);
         Assert.Equal("value2", options.AdditionalEnvironmentVariables["testkey"]);
+    }
+
+    [Fact]
+    public void EagerLoadedServices_Should_Default_To_Empty_Collection()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.NotNull(options.EagerLoadedServices);
+        Assert.Empty(options.EagerLoadedServices);
+    }
+
+    [Fact]
+    public void EagerLoadedServices_Should_Accept_Single_Service()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            EagerLoadedServices = [AwsService.Sqs],
+        };
+
+        Assert.Single(options.EagerLoadedServices);
+        Assert.Contains(AwsService.Sqs, options.EagerLoadedServices);
+    }
+
+    [Fact]
+    public void EagerLoadedServices_Should_Accept_Multiple_Services()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3],
+        };
+
+        Assert.Equal(3, options.EagerLoadedServices.Count);
+        Assert.Contains(AwsService.Sqs, options.EagerLoadedServices);
+        Assert.Contains(AwsService.DynamoDb, options.EagerLoadedServices);
+        Assert.Contains(AwsService.S3, options.EagerLoadedServices);
     }
 }

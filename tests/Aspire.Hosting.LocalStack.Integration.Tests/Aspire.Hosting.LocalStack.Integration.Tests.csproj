@@ -1,7 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0" />
-
   <PropertyGroup>
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -13,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.AppHost"/>
     <PackageReference Include="AWSSDK.Core"/>
     <PackageReference Include="AWSSDK.DynamoDBv2"/>
     <PackageReference Include="AWSSDK.SQS"/>
@@ -24,14 +22,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.AppHost\LocalStack.Lambda.AppHost.csproj" />
-    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj" />
-    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj" />
+    <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.AppHost\LocalStack.Lambda.AppHost.csproj"/>
+    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj"/>
+    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
     <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="xunit.runner.json" />
+    <None Remove="xunit.runner.json"/>
     <Content Include="xunit.runner.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

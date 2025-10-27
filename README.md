@@ -33,6 +33,8 @@ dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-locals
 
 ## Usage
 
+> 💡 **Prefer learning by example?** Check out our [complete working examples](#examples) in the playground (CloudFormation, CDK, Lambda). Clone, run, explore - then come back here for configuration details.
+
 When LocalStack is disabled in configuration, both host and client configurations automatically fall back to real AWS services without requiring code changes. The [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) automatically switches to AWS's official client factory when LocalStack is not enabled.
 
 ### Host Configuration (AppHost)
@@ -75,6 +77,35 @@ The `UseLocalStack()` method automatically:
 - Configures LocalStack endpoints for all AWS services and project resources
 - Sets up proper dependency ordering and CDK bootstrap if needed
 - Transfers LocalStack configuration to service projects via environment variables
+
+#### Container Configuration
+
+The `configureContainer` parameter allows you to customize LocalStack container behavior. By default, LocalStack uses lazy loading - services start only when first accessed. For faster startup in CI or when you know which services you need, configure eager loading:
+
+```csharp
+builder.AddLocalStack(configureContainer: container =>
+{
+    // Eagerly load specific services for faster startup
+    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
+
+    // Recommended: Clean up container when application stops
+    container.Lifetime = ContainerLifetime.Session;
+
+    // Optional: Enable verbose logging for troubleshooting
+    container.DebugLevel = 1;
+    container.LogLevel = LocalStackLogLevel.Debug;
+});
+```
+
+**Available Options:**
+
+- **`EagerLoadedServices`** - Pre-load specific AWS services at startup (reduces cold start latency)
+- **`Lifetime`** - Container lifecycle: `Persistent` (survives restarts) or `Session` (cleaned up on stop)
+- **`DebugLevel`** - LocalStack debug verbosity (0 = default, 1 = verbose)
+- **`LogLevel`** - Log level control (Error, Warn, Info, Debug, Trace, etc.)
+- **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
+
+For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).
 
 #### Manual Configuration
 
@@ -126,7 +157,8 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 - **Manual Configuration**: Fine-grained control with explicit `WithReference()` calls for each resource
 - **AWS Service Integration**: Works with CloudFormation templates, CDK stacks, and AWS service clients
 - **Automatic Fallback**: Falls back to real AWS services when LocalStack is disabled
-- **Container Lifecycle Management**: Configurable container with session/project lifetime options
+- **Container Lifecycle Management**: Configurable container with session/persistent lifetime options
+- **Eager Service Loading**: Pre-load specific AWS services for faster startup in CI/CD environments
 - **Extension-Based**: Works alongside official AWS integrations for .NET Aspire without code changes
 
 ## Examples

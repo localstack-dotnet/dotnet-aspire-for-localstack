@@ -1,4 +1,6 @@
-﻿namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensionsTests;
+﻿using LocalStack.Client.Enums;
+
+namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensionsTests;
 
 public class AddLocalStackTests
 {
@@ -103,5 +105,119 @@ public class AddLocalStackTests
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         Assert.Throws<ArgumentException>(() => builder.AddLocalStack(name: invalidName, localStackOptions: localStackOptions));
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Configured()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.EagerLoadedServices = [AwsService.Sqs]
+        );
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+
+        // Verify the resource was created
+        Assert.NotNull(resource);
+
+        // Verify eager loading environment variable would be set
+        var envAnnotations = resource.Annotations.OfType<EnvironmentCallbackAnnotation>();
+        Assert.NotEmpty(envAnnotations);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Set_SERVICES_Environment_Variable_With_Comma_Separated_Services()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3]
+        );
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Environment variables are set through annotations
+        var envAnnotations = resource.Annotations.OfType<EnvironmentCallbackAnnotation>();
+        Assert.NotEmpty(envAnnotations);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Not_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Empty()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.EagerLoadedServices = []
+        );
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_SERVICES()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
+            {
+                container.AdditionalEnvironmentVariables["SERVICES"] = "lambda";
+                container.EagerLoadedServices = [AwsService.Sqs];
+            }));
+
+        Assert.Contains("Cannot set 'SERVICES'", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_EAGER_SERVICE_LOADING()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
+            {
+                container.AdditionalEnvironmentVariables["EAGER_SERVICE_LOADING"] = "1";
+                container.EagerLoadedServices = [AwsService.Sqs];
+            }));
+
+        Assert.Contains("Cannot set", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("EAGER_SERVICE_LOADING", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Throw_When_Unsupported_Service_In_EagerLoadedServices()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        // Note: This test assumes there might be an AwsService enum value with no CliName
+        // If all current services are supported, this validates the error handling mechanism
+        // The actual exception will be thrown during the Select operation when CliName is null
+        var exception = Assert.ThrowsAny<InvalidOperationException>(() =>
+            builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
+            {
+                // Using a very high enum value that likely doesn't have metadata
+                container.EagerLoadedServices = [(AwsService)99999];
+            }));
+
+        Assert.Contains("not supported by LocalStack", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 }

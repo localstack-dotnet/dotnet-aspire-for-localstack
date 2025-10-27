@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **LocalStack Container**: Updated from `4.6.0` → `4.9.1`
+- **LocalStack Container**: Updated from `4.6.0` → `4.9.2`
 - **Aspire.Hosting**: Updated to `9.5.0` (aligns with release version)
 - **Aspire.Hosting.AWS**: Updated to `9.2.6` (latest stable AWS integration)
 - **Aspire.Hosting.Testing**: Updated to `9.5.0`
