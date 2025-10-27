@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [9.5.0] - 2025-10-03
+## [9.5.2] - 2025-10-27
 
 ### Added
 
@@ -32,9 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **LocalStack Container**: Updated from `4.6.0` → `4.9.2`
-- **Aspire.Hosting**: Updated to `9.5.0` (aligns with release version)
+- **Aspire.Hosting**: Updated to `9.5.2` (aligns with release version)
 - **Aspire.Hosting.AWS**: Updated to `9.2.6` (latest stable AWS integration)
-- **Aspire.Hosting.Testing**: Updated to `9.5.0`
+- **Aspire.Hosting.Testing**: Updated to `9.5.2`
 - **Badge System**: Migrated from Gist-based storage to Badge Smith API for dynamic badge generation
 - **Package Status**: Graduated from Release Candidate (RC) to stable release
 - **All Dependencies**: Updated AWSSDK packages, analyzers, and third-party dependencies to latest stable versions
@@ -62,7 +62,7 @@ We'd like to thank the following contributors for their work on this release:
 
 ### Dependencies
 
-- Aspire.Hosting: 9.5.0
+- Aspire.Hosting: 9.5.2
 - Aspire.Hosting.AWS: 9.2.6
 - LocalStack.Client: 2.0.0
 - .NET 8.0 and .NET 9.0
@@ -137,5 +137,5 @@ This RC release is feature-complete and ready for production use. Community feed
 
 ---
 
-[9.5.0]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.0
+[9.5.2]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.2
 [9.4.0-rc.1]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.4.0-rc.1
