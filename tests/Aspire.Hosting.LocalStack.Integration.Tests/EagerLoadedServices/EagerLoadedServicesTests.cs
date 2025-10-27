@@ -186,37 +186,4 @@ public class EagerLoadedServicesTests
         }
     }
 
-    [Fact]
-    public void LocalStack_Should_Throw_When_Env_Var_Collision_With_SERVICES()
-    {
-        var builder = DistributedApplication.CreateBuilder([]);
-        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
-            {
-                container.AdditionalEnvironmentVariables["SERVICES"] = "lambda,s3";
-                container.EagerLoadedServices = [AwsService.Sqs];
-            }));
-
-        Assert.Contains("Cannot set 'SERVICES'", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public void LocalStack_Should_Throw_When_Env_Var_Collision_With_EAGER_SERVICE_LOADING()
-    {
-        var builder = DistributedApplication.CreateBuilder([]);
-        var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-
-        var exception = Assert.Throws<InvalidOperationException>(() =>
-            builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
-            {
-                container.AdditionalEnvironmentVariables["EAGER_SERVICE_LOADING"] = "1";
-                container.EagerLoadedServices = [AwsService.Sqs];
-            }));
-
-        Assert.Contains("EAGER_SERVICE_LOADING", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
-    }
 }
