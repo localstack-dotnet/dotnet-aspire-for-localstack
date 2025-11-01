@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Aspire.Hosting.ApplicationModel;
+﻿using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS.CloudFormation;
 using Aspire.Hosting.LocalStack.Annotations;
 
@@ -37,9 +36,6 @@ internal static class LocalStackConnectionStringAvailableCallback
             }
 
             var localStackUrl = new Uri(connectionString);
-
-            var resourceBuilder = builder.CreateResourceBuilder(localStackResource);
-            resourceBuilder.WithEnvironment("LOCALSTACK_HOST", $"{localStackUrl.Host}:{localStackUrl.Port.ToString(CultureInfo.InvariantCulture)}");
 
             var referencedResources = localStackResource.Annotations.OfType<LocalStackReferenceAnnotation>();
             foreach (var resource in referencedResources.Select(annotation => annotation.Resource))
