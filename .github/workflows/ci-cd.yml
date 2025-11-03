@@ -96,6 +96,8 @@ jobs:
         id: test-results
         uses: dorny/test-reporter@v1
         if: success() || failure()
+        # Allow fork PRs to fail gracefully (permission error) without breaking the workflow
+        continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
         with:
           name: "Test Results (${{ matrix.name }})"
           path: "${{ env.BASE_TEST_RESULTS_DIR }}/**/*.trx"
@@ -123,9 +125,10 @@ jobs:
 
       - name: "Upload Test Artifacts"
         uses: actions/upload-artifact@v4
-        if: failure()
+        if: always()
+        continue-on-error: true
         with:
-          name: test-results-${{ matrix.name }}
+          name: test-results-${{ matrix.name }}-${{ github.event.pull_request.number || github.run_number }}
           path: |
             ${{ env.BASE_TEST_RESULTS_DIR }}/**/*
           retention-days: 7
