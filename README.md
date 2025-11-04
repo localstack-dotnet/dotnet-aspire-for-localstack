@@ -31,6 +31,15 @@ dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-locals
 
 > **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
 
+## Version Policy
+
+This package follows Aspire's **major.minor** versioning but releases **patch versions** independently.
+
+- `9.5.x` works with Aspire 9.5.x
+- `9.6.x` works with Aspire 9.6.x
+
+We may ship features and fixes between Aspire releases. When upgrading Aspire's minor version, upgrade this package to match.
+
 ## Usage
 
 > 💡 **Prefer learning by example?** Check out our [complete working examples](#examples) in the playground (CloudFormation, CDK, Lambda). Clone, run, explore - then come back here for configuration details.
