@@ -5,6 +5,85 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [9.5.3] - 2025-11-04
+
+### Added
+
+- **Custom Container Registry Support**: New properties on `LocalStackContainerOptions` for pulling images from private registries ([#16](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/16), [#17](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/17))
+  - `ContainerRegistry` - Specify custom registry (e.g., `artifactory.company.com`, `mycompany.azurecr.io`)
+  - `ContainerImage` - Custom image name (e.g., `docker-local/localstack/localstack`)
+  - `ContainerImageTag` - Specific version tag (e.g., `4.10.0`)
+  - All properties optional with backward-compatible defaults (`docker.io/localstack/localstack:4.10.0`)
+  - Enables enterprise scenarios: Artifactory, Azure Container Registry, AWS ECR, GitHub Container Registry
+  - Example: `container.ContainerRegistry = "artifactory.company.com";`
+  - Closes [#16](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/16)
+
+- **Static Port Mapping Option**: New `Port` property on `LocalStackContainerOptions` for explicit port control ([#13](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/13), [#15](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/15))
+  - Fixes container recreation issue with `ContainerLifetime.Persistent`
+  - Allows predictable endpoint URLs for debugging and external tool integration
+  - Defaults to dynamic port for Session lifetime, static 4566 for Persistent lifetime
+  - Example: `container.Port = 4566;`
+  - Contributed by [@nazarii-piontko](https://github.com/nazarii-piontko) ([#15](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/15))
+  - Closes [#13](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/13)
+
+### Changed
+
+- **LocalStack Container**: Updated from `4.9.2` → `4.10.0`
+- **Aspire.Hosting.AWS**: Updated from `9.2.6` → `9.3.0`
+- **SDK Centralization**: Aspire.AppHost.Sdk version now centralized in `Directory.Build.props` for easier maintenance
+- **CI/CD**: Fork PR workflow improvements - test reporter now handles permission errors gracefully
+
+### Documentation
+
+- **Version Policy**: Added clear versioning alignment with Aspire (major.minor matching, independent patch releases)
+- **Configuration Guide**: Extensive updates to `CONFIGURATION.md`
+  - New "Port Configuration" section with default behavior explanations
+  - New "Custom Container Registry" section with common scenarios and authentication guidance
+  - Updated Container Lifetime section to reflect new defaults
+  - Updated Configuration Patterns for development, CI/CD, debugging, and integration testing
+- **README**: Updated with new container configuration options
+
+### Breaking Changes
+
+- **Default Container Lifetime Changed**: `ContainerLifetime.Session` is now the default (was `Persistent`)
+  - **Impact**:
+    - Containers are now cleaned up when the application stops (instead of persisting)
+    - Dynamic port assignment by default (instead of static port 4566)
+    - Better CI/CD experience out of the box with clean state and no port conflicts
+  - **Rationale**:
+    - Aligns with .NET Aspire's default convention (Session is Aspire's standard default)
+    - LocalStack is a development/testing tool, not a stateful database - ephemeral behavior is more appropriate
+    - Our documentation already recommended Session while defaulting to Persistent (confusing)
+  - **Migration Path**:
+
+    ```csharp
+    // To restore previous Persistent behavior, explicitly set:
+    builder.AddLocalStack(configureContainer: container =>
+    {
+        container.Lifetime = ContainerLifetime.Persistent;
+    });
+    ```
+
+### Contributors
+
+We'd like to thank the following contributors for their work and feedback on this release:
+
+- [@nazarii-piontko](https://github.com/nazarii-piontko) - Static port mapping feature ([#15](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/15))
+- [@Blind-Striker](https://github.com/Blind-Striker) - Custom registry implementation, lifetime alignment, documentation updates [#17](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/17)
+- [@ArturasPCodes](https://github.com/ArturasPCodes) - Feature request for custom registry support ([#16](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/16))
+- [@brendonparker](https://github.com/brendonparker) - Reported persistent container issue ([#13](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/13))
+- [@slang25](https://github.com/slang25) - Technical insights and feedback on port mapping and container lifetime discussions ([#13](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/13), [#15](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/15))
+
+### Dependencies
+
+- Aspire.Hosting: 9.5.2
+- Aspire.Hosting.AWS: 9.3.0
+- LocalStack.Client: 2.0.0
+- LocalStack Container: 4.10.0
+- .NET 8.0 and .NET 9.0
+
+---
+
 ## [9.5.2] - 2025-10-27
 
 ### Added
@@ -137,5 +216,6 @@ This RC release is feature-complete and ready for production use. Community feed
 
 ---
 
+[9.5.3]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.3
 [9.5.2]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.2
 [9.4.0-rc.1]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.4.0-rc.1
