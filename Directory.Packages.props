@@ -15,7 +15,7 @@
     <!-- aspire packages -->
     <PackageVersion Include="Aspire.Hosting" Version="9.5.2"/>
     <PackageVersion Include="Aspire.Hosting.AppHost" Version="9.5.2"/>
-    <PackageVersion Include="Aspire.Hosting.AWS" Version="9.2.6"/>
+    <PackageVersion Include="Aspire.Hosting.AWS" Version="9.3.0"/>
     <!-- aws packages -->
     <PackageVersion Include="AWSSDK.Core" Version="4.0.1.2"/>
     <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.9.1"/>
