@@ -168,12 +168,12 @@ public static class LocalStackResourceBuilderExtensions
         var resource = new LocalStackResource(name, options);
 
         var resourceBuilder = builder.AddResource(resource)
-            .WithImage(LocalStackContainerImageTags.Image)
-            .WithImageRegistry(LocalStackContainerImageTags.Registry)
-            .WithImageTag(LocalStackContainerImageTags.Tag)
-            .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort,
-                // Map to a static port if specified or if using a persistent lifetime; otherwise, use dynamic port mapping
+            .WithImage(containerOptions.ContainerImage ?? LocalStackContainerImageTags.Image)
+            .WithImageRegistry(containerOptions.ContainerRegistry ?? LocalStackContainerImageTags.Registry)
+            .WithImageTag(containerOptions.ContainerImageTag ?? LocalStackContainerImageTags.Tag)
+            .WithHttpEndpoint( // Map to a static port if specified or if using a persistent lifetime; otherwise, use dynamic port mapping
                 port: containerOptions.Port ?? (containerOptions.Lifetime == ContainerLifetime.Persistent ? Constants.DefaultContainerPort : null),
+                targetPort: Constants.DefaultContainerPort,
                 name: LocalStackResource.PrimaryEndpointName)
             .WithLifetime(containerOptions.Lifetime)
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))

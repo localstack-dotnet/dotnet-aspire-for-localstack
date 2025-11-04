@@ -319,4 +319,114 @@ public class AddLocalStackTests
         Assert.NotNull(httpEndpoint);
         Assert.Equal(expectedPort, httpEndpoint.Port);
     }
+
+    [Fact]
+    public void AddLocalStack_Should_Use_Default_Container_Image_Values_When_Not_Specified()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack(localStackOptions: localStackOptions);
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Verify default image annotations
+        var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
+        Assert.Equal("docker.io", imageAnnotation.Registry);
+        Assert.Equal("localstack/localstack", imageAnnotation.Image);
+        Assert.Equal("4.10.0", imageAnnotation.Tag);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Use_Custom_Container_Registry_When_Specified()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+        const string customRegistry = "artifactory.company.com";
+
+        var result = builder.AddLocalStack(
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.ContainerRegistry = customRegistry);
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
+        Assert.Equal(customRegistry, imageAnnotation.Registry);
+        Assert.Equal("localstack/localstack", imageAnnotation.Image); // Default image
+        Assert.Equal("4.10.0", imageAnnotation.Tag); // Default tag
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Use_Custom_Container_Image_When_Specified()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+        const string customImage = "custom/localstack";
+
+        var result = builder.AddLocalStack(
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.ContainerImage = customImage);
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
+        Assert.Equal("docker.io", imageAnnotation.Registry); // Default registry
+        Assert.Equal(customImage, imageAnnotation.Image);
+        Assert.Equal("4.10.0", imageAnnotation.Tag); // Default tag
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Use_Custom_Container_ImageTag_When_Specified()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+        const string customTag = "4.9.2";
+
+        var result = builder.AddLocalStack(
+            localStackOptions: localStackOptions,
+            configureContainer: container => container.ContainerImageTag = customTag);
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
+        Assert.Equal("docker.io", imageAnnotation.Registry); // Default registry
+        Assert.Equal("localstack/localstack", imageAnnotation.Image); // Default image
+        Assert.Equal(customTag, imageAnnotation.Tag);
+    }
+
+    [Fact]
+    public void AddLocalStack_Should_Use_All_Custom_Container_Image_Values_When_Specified()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+        const string customRegistry = "artifactory.company.com";
+        const string customImage = "docker-mirrors/localstack/localstack";
+        const string customTag = "4.9.2";
+
+        var result = builder.AddLocalStack(
+            localStackOptions: localStackOptions,
+            configureContainer: container =>
+            {
+                container.ContainerRegistry = customRegistry;
+                container.ContainerImage = customImage;
+                container.ContainerImageTag = customTag;
+            });
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
+        Assert.Equal(customRegistry, imageAnnotation.Registry);
+        Assert.Equal(customImage, imageAnnotation.Image);
+        Assert.Equal(customTag, imageAnnotation.Tag);
+    }
 }

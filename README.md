@@ -97,8 +97,9 @@ builder.AddLocalStack(configureContainer: container =>
     // Eagerly load specific services for faster startup
     container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
 
-    // Recommended: Clean up container when application stops
-    container.Lifetime = ContainerLifetime.Session;
+    // Optional: Use Persistent lifetime for container reuse between runs
+    // (Default is Session - container cleaned up when application stops)
+    container.Lifetime = ContainerLifetime.Persistent;
 
     // Optional: Enable verbose logging for troubleshooting
     container.DebugLevel = 1;
@@ -112,10 +113,13 @@ builder.AddLocalStack(configureContainer: container =>
 **Available Options:**
 
 - **`EagerLoadedServices`** - Pre-load specific AWS services at startup (reduces cold start latency)
-- **`Lifetime`** - Container lifecycle: `Persistent` (survives restarts) or `Session` (cleaned up on stop)
+- **`Lifetime`** - Container lifecycle: `Session` (default - cleaned up on stop) or `Persistent` (survives restarts)
 - **`DebugLevel`** - LocalStack debug verbosity (0 = default, 1 = verbose)
 - **`LogLevel`** - Log level control (Error, Warn, Info, Debug, Trace, etc.)
-- **`Port`** - Static port mapping for LocalStack container. If set, LocalStack will be mapped to this static port on the host. If not set, a dynamic port will be used unless the container lifetime is persistent, in which case the default LocalStack port (4566) is used. Useful for avoiding port conflicts or for predictable endpoint URLs
+- **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
+- **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
+- **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
+- **`ContainerImageTag`** - Custom image tag/version (default: package version). Use to pin to specific LocalStack version
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).

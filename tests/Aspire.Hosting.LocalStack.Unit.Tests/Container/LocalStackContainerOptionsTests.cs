@@ -11,7 +11,7 @@ public class LocalStackContainerOptionsTests
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Equal(ContainerLifetime.Persistent, options.Lifetime);
+        Assert.Equal(ContainerLifetime.Session, options.Lifetime);
         Assert.Equal(0, options.DebugLevel);
         Assert.Equal(LocalStackLogLevel.Error, options.LogLevel);
         Assert.NotNull(options.AdditionalEnvironmentVariables);
@@ -116,5 +116,62 @@ public class LocalStackContainerOptionsTests
         };
 
         Assert.Equal(1234, options.Port);
+    }
+
+    [Fact]
+    public void ContainerRegistry_Should_Default_To_Null()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.Null(options.ContainerRegistry);
+    }
+
+    [Fact]
+    public void ContainerRegistry_Should_Be_Settable()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            ContainerRegistry = "artifactory.company.com",
+        };
+
+        Assert.Equal("artifactory.company.com", options.ContainerRegistry);
+    }
+
+    [Fact]
+    public void ContainerImage_Should_Default_To_Null()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.Null(options.ContainerImage);
+    }
+
+    [Fact]
+    public void ContainerImage_Should_Be_Settable()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            ContainerImage = "custom/localstack",
+        };
+
+        Assert.Equal("custom/localstack", options.ContainerImage);
+    }
+
+    [Fact]
+    public void ContainerImageTag_Should_Default_To_Null()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.Null(options.ContainerImageTag);
+    }
+
+    [Fact]
+    public void ContainerImageTag_Should_Be_Settable()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            ContainerImageTag = "4.9.2",
+        };
+
+        Assert.Equal("4.9.2", options.ContainerImageTag);
     }
 }

@@ -16,10 +16,50 @@ public sealed class LocalStackContainerOptions
     /// Gets or sets the container lifetime behavior.
     /// </summary>
     /// <remarks>
-    /// - <see cref="ContainerLifetime.Persistent"/>: Container survives application restarts (default for databases)
-    /// - <see cref="ContainerLifetime.Session"/>: Container is cleaned up when application stops (recommended for LocalStack)
+    /// <para><see cref="ContainerLifetime.Session"/> (Default - Recommended):</para>
+    /// <list type="bullet">
+    /// <item><description>Container is cleaned up when application stops</description></item>
+    /// <item><description>Uses dynamic port assignment by default (unless <see cref="Port"/> is explicitly set)</description></item>
+    /// <item><description>Best for: CI/CD pipelines, integration tests, clean state guarantees</description></item>
+    /// </list>
+    /// <para><see cref="ContainerLifetime.Persistent"/>:</para>
+    /// <list type="bullet">
+    /// <item><description>Container survives application restarts</description></item>
+    /// <item><description>Uses static port 4566 by default (unless <see cref="Port"/> is explicitly set)</description></item>
+    /// <item><description>Best for: Local development with container reuse</description></item>
+    /// </list>
     /// </remarks>
-    public ContainerLifetime Lifetime { get; set; } = ContainerLifetime.Persistent;
+    public ContainerLifetime Lifetime { get; set; } = ContainerLifetime.Session;
+
+    /// <summary>
+    /// Gets or sets the container registry to pull the LocalStack image from.
+    /// </summary>
+    /// <remarks>
+    /// <para>Defaults to "docker.io" if not specified.</para>
+    /// <para>Override this when using a private registry or mirror (e.g., Artifactory, Azure Container Registry).</para>
+    /// <para>Examples: "artifactory.company.com", "myregistry.azurecr.io", "ghcr.io"</para>
+    /// </remarks>
+    public string? ContainerRegistry { get; set; }
+
+    /// <summary>
+    /// Gets or sets the LocalStack container image name.
+    /// </summary>
+    /// <remarks>
+    /// <para>Defaults to "localstack/localstack" if not specified.</para>
+    /// <para>Override when using a custom image path in your registry.</para>
+    /// <para>Examples: "my-team/localstack", "mirrors/localstack/localstack", "docker-local/localstack"</para>
+    /// </remarks>
+    public string? ContainerImage { get; set; }
+
+    /// <summary>
+    /// Gets or sets the LocalStack container image tag/version.
+    /// </summary>
+    /// <remarks>
+    /// <para>Defaults to the version bundled with this package if not specified.</para>
+    /// <para>Override to use a specific version.</para>
+    /// <para>Examples: "latest", "4.9.2", "4.10.0", "custom-build-123"</para>
+    /// </remarks>
+    public string? ContainerImageTag { get; set; }
 
     /// <summary>
     /// Gets or sets the DEBUG environment variable value for LocalStack.
@@ -67,8 +107,13 @@ public sealed class LocalStackContainerOptions
     /// Gets or sets the port to expose LocalStack on the host machine.
     /// </summary>
     /// <remarks>
-    /// If set, LocalStack will be mapped to this static port on the host. If not set, a dynamic port will be used unless the container lifetime is persistent,
-    /// in which case the default LocalStack port is used. Useful for avoiding port conflicts or for predictable endpoint URLs.
+    /// <para>Controls the host port mapping for the LocalStack container. Interacts with <see cref="Lifetime"/>:</para>
+    /// <list type="bullet">
+    /// <item><description><c>Port = null</c> + <c>Lifetime = Session</c> (Default): Uses dynamic port assignment (avoids conflicts)</description></item>
+    /// <item><description><c>Port = null</c> + <c>Lifetime = Persistent</c>: Uses static port 4566 (default LocalStack port)</description></item>
+    /// <item><description><c>Port = 4566</c> (or any value): Always uses the specified static port (overrides lifetime defaults)</description></item>
+    /// </list>
+    /// <para>Use static ports for predictable URLs and external tool integration. Use dynamic ports for parallel testing and CI/CD.</para>
     /// </remarks>
     public int? Port { get; set; }
 }
