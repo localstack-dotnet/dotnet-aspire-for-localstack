@@ -62,4 +62,13 @@ public sealed class LocalStackContainerOptions
     /// Default: false
     /// </remarks>
     public bool EnableDockerSocket { get; set; }
+
+    /// <summary>
+    /// Gets or sets the port to expose LocalStack on the host machine.
+    /// </summary>
+    /// <remarks>
+    /// If set, LocalStack will be mapped to this static port on the host. If not set, a dynamic port will be used unless the container lifetime is persistent,
+    /// in which case the default LocalStack port is used. Useful for avoiding port conflicts or for predictable endpoint URLs.
+    /// </remarks>
+    public int? Port { get; set; }
 }

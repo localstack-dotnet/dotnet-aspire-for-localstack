@@ -94,6 +94,9 @@ builder.AddLocalStack(configureContainer: container =>
     // Optional: Enable verbose logging for troubleshooting
     container.DebugLevel = 1;
     container.LogLevel = LocalStackLogLevel.Debug;
+
+    // Optional: Use a specific port instead of dynamic port assignment
+    container.Port = 4566;
 });
 ```
 
@@ -103,6 +106,7 @@ builder.AddLocalStack(configureContainer: container =>
 - **`Lifetime`** - Container lifecycle: `Persistent` (survives restarts) or `Session` (cleaned up on stop)
 - **`DebugLevel`** - LocalStack debug verbosity (0 = default, 1 = verbose)
 - **`LogLevel`** - Log level control (Error, Warn, Info, Debug, Trace, etc.)
+- **`Port`** - Static port mapping for LocalStack container. If set, LocalStack will be mapped to this static port on the host. If not set, a dynamic port will be used unless the container lifetime is persistent, in which case the default LocalStack port (4566) is used. Useful for avoiding port conflicts or for predictable endpoint URLs
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).

@@ -98,4 +98,23 @@ public class LocalStackContainerOptionsTests
 
         Assert.True(options.EnableDockerSocket);
     }
+
+    [Fact]
+    public void Port_Should_Default_To_Null()
+    {
+        var options = new LocalStackContainerOptions();
+
+        Assert.Null(options.Port);
+    }
+
+    [Fact]
+    public void Port_Should_Be_Settable()
+    {
+        var options = new LocalStackContainerOptions
+        {
+            Port = 1234,
+        };
+
+        Assert.Equal(1234, options.Port);
+    }
 }

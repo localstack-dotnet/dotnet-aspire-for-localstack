@@ -171,7 +171,10 @@ public static class LocalStackResourceBuilderExtensions
             .WithImage(LocalStackContainerImageTags.Image)
             .WithImageRegistry(LocalStackContainerImageTags.Registry)
             .WithImageTag(LocalStackContainerImageTags.Tag)
-            .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort, name: LocalStackResource.PrimaryEndpointName)
+            .WithHttpEndpoint(targetPort: Constants.DefaultContainerPort,
+                // Map to a static port if specified or if using a persistent lifetime; otherwise, use dynamic port mapping
+                port: containerOptions.Port ?? (containerOptions.Lifetime == ContainerLifetime.Persistent ? Constants.DefaultContainerPort : null),
+                name: LocalStackResource.PrimaryEndpointName)
             .WithLifetime(containerOptions.Lifetime)
             .WithEnvironment("DEBUG", containerOptions.DebugLevel.ToString(CultureInfo.InvariantCulture))
             .WithEnvironment("LS_LOG", containerOptions.LogLevel.ToEnvironmentValue())

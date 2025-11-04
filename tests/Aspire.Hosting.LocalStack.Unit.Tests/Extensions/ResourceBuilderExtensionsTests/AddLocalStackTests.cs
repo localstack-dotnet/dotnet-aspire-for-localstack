@@ -288,4 +288,35 @@ public class AddLocalStackTests
 
         Assert.Null(dockerSocketMount);
     }
+
+    [Theory]
+    [InlineData(ContainerLifetime.Session, null, null)]
+    [InlineData(ContainerLifetime.Session, 1234, 1234)]
+    [InlineData(ContainerLifetime.Persistent, null, Constants.DefaultContainerPort)]
+    [InlineData(ContainerLifetime.Persistent, 1234, 1234)]
+    public void AddLocalStack_Should_Set_Endpoint_Port(ContainerLifetime lifetime, int? port, int? expectedPort)
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
+
+        var result = builder.AddLocalStack
+        (
+            localStackOptions: localStackOptions,
+            configureContainer: container =>
+            {
+                container.Lifetime = lifetime;
+                container.Port = port;
+            });
+
+        Assert.NotNull(result);
+        var resource = result.Resource;
+        Assert.NotNull(resource);
+
+        // Verify endpoint port configuration
+        var endpointAnnotations = resource.Annotations.OfType<EndpointAnnotation>();
+        var httpEndpoint = endpointAnnotations.FirstOrDefault(e => e is { Name: "http" });
+
+        Assert.NotNull(httpEndpoint);
+        Assert.Equal(expectedPort, httpEndpoint.Port);
+    }
 }
