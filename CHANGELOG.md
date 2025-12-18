@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [13.1.0] - 2025-12-18
+
+### Added
+
+- **Aspire 13.1 Support**: Full compatibility with .NET Aspire 13.1 and .NET 10.0
+- **Health Check Improvements**: Added log suppression for `localstack_health_client` to reduce console noise during startup
+
+### Changed
+
+- **Dependencies**: Updated `Aspire.Hosting` to `13.1.0`
+- **LocalStack Container**: Updated from `4.10.0` → `4.12.0`
+- **Target Frameworks**: Added `net10.0` support
+
 ## [9.5.3] - 2025-11-04
 
 ### Added

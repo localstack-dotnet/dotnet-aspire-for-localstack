@@ -54,11 +54,17 @@ internal sealed class LocalStackHealthCheck(IHttpClientFactory httpClientFactory
         }
         catch (HttpRequestException ex)
         {
+            // Catches network errors including HttpIOException (response ended prematurely during startup)
             return HealthCheckResult.Unhealthy("LocalStack health check failed: network error", ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
             return HealthCheckResult.Unhealthy("LocalStack health check timed out", ex);
+        }
+        catch (Exception ex) when (ex is IOException or OperationCanceledException)
+        {
+            // Catches IO errors (e.g., response ended prematurely) and cancellations during startup
+            return HealthCheckResult.Unhealthy("LocalStack is starting up", ex);
         }
     }
 }

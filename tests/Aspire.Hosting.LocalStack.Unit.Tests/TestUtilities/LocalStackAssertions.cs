@@ -54,7 +54,9 @@ internal static class LocalStackAssertions
     {
         ArgumentNullException.ThrowIfNull(projectResource);
         ArgumentNullException.ThrowIfNull(expectedLocalStack);
+#pragma warning disable MA0015
         ArgumentNullException.ThrowIfNull(expectedLocalStack.Options);
+#pragma warning restore MA0015
 
         projectResource.ShouldHaveLocalStackEnabledAnnotation(expectedLocalStack);
 

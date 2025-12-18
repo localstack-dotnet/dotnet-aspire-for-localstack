@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(AllTargetFrameworks)</TargetFrameworks>
-    <Version>9.5.3</Version>
+    <Version>13.1.0</Version>
     <IsPackable>true</IsPackable>
     <PackageTags>aspire hosting,aspire,localstack,aws,integration,docker,cloud</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
