@@ -23,18 +23,20 @@ public class LocalStackProjectExtensionsTests
     public async Task WithReference_Should_Return_Builder_When_LocalStack_Is_Null()
     {
         const string testProjectResourceName = "test-project";
+        IResourceBuilder<ProjectResource>? capturedResult = null;
+        IResourceBuilder<ProjectResource>? capturedBuilder = null;
 
         var (app, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>(testProjectResourceName, builder =>
         {
             var projectBuilder = builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath());
             var result = projectBuilder.WithReference(localStackBuilder: null);
 
-            // Should return the same builder
-            if (!ReferenceEquals(result, projectBuilder))
-            {
-                throw new InvalidOperationException("Builder should be the same reference");
-            }
+            capturedBuilder = projectBuilder;
+            capturedResult = result;
         });
+
+        // Should return the same builder
+        await Assert.That(capturedResult).IsSameReferenceAs(capturedBuilder);
 
         await Assert.That(app.HasResource<ILocalStackResource>("localstack")).IsFalse();
         await projectResource.ShouldNotHaveLocalStackEnabledAnnotation();
