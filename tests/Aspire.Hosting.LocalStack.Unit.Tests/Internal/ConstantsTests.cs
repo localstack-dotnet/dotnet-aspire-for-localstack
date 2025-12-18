@@ -1,4 +1,4 @@
-using System.Reflection;
+#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
 
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
@@ -8,79 +8,80 @@ public class ConstantsTests
     {
         // Force load AWS assembly for type validation tests
         // This ensures the assembly is in the AppDomain before we try to find types
-        var awsAssembly = Assembly.Load("Aspire.Hosting.AWS");
+        var awsAssembly = System.Reflection.Assembly.Load("Aspire.Hosting.AWS");
         _ = awsAssembly; // Suppress unused warning
     }
 
-    [Fact]
-    public void DefaultContainerPort_Should_Be_4566()
+    [Test]
+    public async Task DefaultContainerPort_Should_Be_4566()
     {
-        Assert.Equal(4566, Constants.DefaultContainerPort);
+        await Assert.That(Constants.DefaultContainerPort).IsEqualTo(4566);
     }
 
-    [Fact]
-    public void CloudFormationReferenceAnnotation_Should_Have_Correct_Type_Name()
+    [Test]
+    public async Task CloudFormationReferenceAnnotation_Should_Have_Correct_Type_Name()
     {
-        Assert.Equal("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation", Constants.CloudFormationReferenceAnnotation);
+        await Assert.That(Constants.CloudFormationReferenceAnnotation).IsEqualTo("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation");
     }
 
-    [Fact]
-    public void SQSEventSourceResource_Should_Have_Correct_Type_Name()
+    [Test]
+    public async Task SQSEventSourceResource_Should_Have_Correct_Type_Name()
     {
-        Assert.Equal("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource", Constants.SQSEventSourceResource);
+        await Assert.That(Constants.SQSEventSourceResource).IsEqualTo("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource");
     }
 
-    [Fact]
-    public void CloudFormationReferenceAnnotation_Type_Should_Exist_In_AWS_Assembly()
+    [Test]
+    public async Task CloudFormationReferenceAnnotation_Type_Should_Exist_In_AWS_Assembly()
     {
         // Act & Assert
         var type = GetTypeByName(Constants.CloudFormationReferenceAnnotation);
-        Assert.NotNull(type);
-        Assert.Equal(Constants.CloudFormationReferenceAnnotation, type.FullName);
+        await Assert.That(type).IsNotNull();
+        await Assert.That(type!.FullName).IsEqualTo(Constants.CloudFormationReferenceAnnotation);
 
         // Verify it's an annotation type
-        Assert.True(typeof(IResourceAnnotation).IsAssignableFrom(type),
-            $"Type {Constants.CloudFormationReferenceAnnotation} should implement IResourceAnnotation");
+        await Assert.That(typeof(IResourceAnnotation).IsAssignableFrom(type)).IsTrue()
+            .Because($"Type {Constants.CloudFormationReferenceAnnotation} should implement IResourceAnnotation");
     }
 
-    [Fact]
-    public void SQSEventSourceResource_Type_Should_Exist_In_AWS_Assembly()
+    [Test]
+    public async Task SQSEventSourceResource_Type_Should_Exist_In_AWS_Assembly()
     {
         // Act & Assert
         var type = GetTypeByName(Constants.SQSEventSourceResource);
-        Assert.NotNull(type);
-        Assert.Equal(Constants.SQSEventSourceResource, type.FullName);
+        await Assert.That(type).IsNotNull();
+        await Assert.That(type!.FullName).IsEqualTo(Constants.SQSEventSourceResource);
 
         // Verify it's an executable resource type
-        Assert.True(typeof(ExecutableResource).IsAssignableFrom(type),
-            $"Type {Constants.SQSEventSourceResource} should inherit from ExecutableResource");
+        await Assert.That(typeof(ExecutableResource).IsAssignableFrom(type)).IsTrue()
+            .Because($"Type {Constants.SQSEventSourceResource} should inherit from ExecutableResource");
     }
 
-    [Theory]
-    [InlineData("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation")]
-    [InlineData("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource")]
-    public void AWS_Types_Should_Be_Accessible_From_Current_Assembly_Context(string typeName)
+    [Test]
+    [Arguments("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation")]
+    [Arguments("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource")]
+    public async Task AWS_Types_Should_Be_Accessible_From_Current_Assembly_Context(string typeName)
     {
         // This test ensures we can find AWS types at runtime
         // Important for catching assembly loading or reference issues
         var type = GetTypeByName(typeName);
-        Assert.NotNull(type);
-        Assert.Equal(typeName, type.FullName);
+        await Assert.That(type).IsNotNull();
+        await Assert.That(type!.FullName).IsEqualTo(typeName);
     }
 
-    [Fact]
-    public void AWS_Assembly_Dependencies_Should_Be_Available()
+    [Test]
+    public async Task AWS_Assembly_Dependencies_Should_Be_Available()
     {
         // Verify we can access the AWS assemblies our constants reference
         var awsAssemblies = AppDomain.CurrentDomain.GetAssemblies()
             .Where(a => a.FullName?.Contains("Aspire.Hosting.AWS", StringComparison.OrdinalIgnoreCase) == true)
             .ToList();
 
-        Assert.NotEmpty(awsAssemblies);
+        await Assert.That(awsAssemblies).IsNotEmpty();
 
         // Log available AWS assemblies for debugging
         var assemblyNames = string.Join(", ", awsAssemblies.Select(a => a.GetName().Name));
-        Assert.True(awsAssemblies.Count > 0, $"Available AWS assemblies: {assemblyNames}");
+        await Assert.That(awsAssemblies.Count > 0).IsTrue()
+            .Because($"Available AWS assemblies: {assemblyNames}");
     }
 
     private static Type? GetTypeByName(string typeName)
@@ -96,7 +97,7 @@ public class ConstantsTests
                     return type;
                 }
             }
-            catch (Exception ex) when (ex is System.Reflection.ReflectionTypeLoadException or FileNotFoundException)
+            catch (Exception ex) when (ex is ReflectionTypeLoadException or FileNotFoundException)
             {
                 // Assembly might not be loaded or accessible, continue searching
                 continue;

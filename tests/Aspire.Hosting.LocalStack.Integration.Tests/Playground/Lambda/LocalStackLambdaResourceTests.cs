@@ -1,53 +1,52 @@
-using Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
-
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda;
 
 /// <summary>
 /// Tests for LocalStack Lambda playground resources.
 /// These tests verify that CloudFormation stack outputs and AWS resources are created correctly.
 /// </summary>
-[Collection("LocalStackLambda")]
-public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture, ITestOutputHelper outputHelper)
+[NotInParallel("IntegrationTests")]
+[ClassDataSource<LocalStackLambdaFixture>(Shared = SharedType.PerTestSession)]
+public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture)
 {
-    [Fact]
-    public async Task LocalStack_Should_Be_Healthy()
+    [Test]
+    public async Task LocalStack_Should_Be_Healthy(CancellationToken cancellationToken)
     {
         using var httpClient = fixture.App.CreateHttpClient("localstack", "http");
-        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), TestContext.Current.CancellationToken);
-        var healthContent = await healthResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cancellationToken);
+        var healthContent = await healthResponse.Content.ReadAsStringAsync(cancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
-        Assert.NotEmpty(healthContent);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(healthContent).IsNotEmpty();
 
-        outputHelper.WriteLine($"LocalStack health check passed: {healthResponse.StatusCode}");
-        outputHelper.WriteLine($"Health response: {healthContent}");
+        await TestOutputHelper.WriteLineAsync($"LocalStack health check passed: {healthResponse.StatusCode}");
+        await TestOutputHelper.WriteLineAsync($"Health response: {healthContent}");
     }
 
-    [Fact]
-    public void CloudFormation_Stack_Should_Have_Required_Outputs()
+    [Test]
+    public async Task CloudFormation_Stack_Should_Have_Required_Outputs()
     {
         var qrBucketName = fixture.StackOutputs.GetOutput("QrBucketName");
         var urlsTableName = fixture.StackOutputs.GetOutput("UrlsTableName");
         var analyticsQueueUrl = fixture.StackOutputs.GetOutput("AnalyticsQueueUrl");
         var analyticsTableName = fixture.StackOutputs.GetOutput("AnalyticsTableName");
 
-        Assert.NotNull(qrBucketName);
-        Assert.NotEmpty(qrBucketName);
-        Assert.NotNull(urlsTableName);
-        Assert.NotEmpty(urlsTableName);
-        Assert.NotNull(analyticsQueueUrl);
-        Assert.NotEmpty(analyticsQueueUrl);
-        Assert.NotNull(analyticsTableName);
-        Assert.NotEmpty(analyticsTableName);
+        await Assert.That(qrBucketName).IsNotNull();
+        await Assert.That(qrBucketName).IsNotEmpty();
+        await Assert.That(urlsTableName).IsNotNull();
+        await Assert.That(urlsTableName).IsNotEmpty();
+        await Assert.That(analyticsQueueUrl).IsNotNull();
+        await Assert.That(analyticsQueueUrl).IsNotEmpty();
+        await Assert.That(analyticsTableName).IsNotNull();
+        await Assert.That(analyticsTableName).IsNotEmpty();
 
-        outputHelper.WriteLine($"QrBucketName: {qrBucketName}");
-        outputHelper.WriteLine($"UrlsTableName: {urlsTableName}");
-        outputHelper.WriteLine($"AnalyticsQueueUrl: {analyticsQueueUrl}");
-        outputHelper.WriteLine($"AnalyticsTableName: {analyticsTableName}");
+        await TestOutputHelper.WriteLineAsync($"QrBucketName: {qrBucketName}");
+        await TestOutputHelper.WriteLineAsync($"UrlsTableName: {urlsTableName}");
+        await TestOutputHelper.WriteLineAsync($"AnalyticsQueueUrl: {analyticsQueueUrl}");
+        await TestOutputHelper.WriteLineAsync($"AnalyticsTableName: {analyticsTableName}");
     }
 
-    [Fact]
-    public async Task S3_QrBucket_Should_Exist()
+    [Test]
+    public async Task S3_QrBucket_Should_Exist(CancellationToken cancellationToken)
     {
         var bucketName = fixture.StackOutputs.GetOutput("QrBucketName")
                          ?? throw new InvalidOperationException("QrBucketName output not found");
@@ -57,12 +56,12 @@ public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture, ITes
         var s3Client = session.CreateClientByImplementation<AmazonS3Client>();
         var doesS3BucketExist = await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName);
 
-        Assert.True(doesS3BucketExist, $"S3 bucket '{bucketName}' should exist");
-        outputHelper.WriteLine($"S3 bucket '{bucketName}' exists ✓");
+        await Assert.That(doesS3BucketExist).IsTrue().Because($"S3 bucket '{bucketName}' should exist");
+        await TestOutputHelper.WriteLineAsync($"S3 bucket '{bucketName}' exists ✓");
     }
 
-    [Fact]
-    public async Task DynamoDB_UrlsTable_Should_Exist()
+    [Test]
+    public async Task DynamoDB_UrlsTable_Should_Exist(CancellationToken cancellationToken)
     {
         var tableName = fixture.StackOutputs.GetOutput("UrlsTableName")
                         ?? throw new InvalidOperationException("UrlsTableName output not found");
@@ -70,18 +69,18 @@ public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture, ITes
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var dynamoDbClient = session.CreateClientByImplementation<AmazonDynamoDBClient>();
-        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, TestContext.Current.CancellationToken);
+        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, cancellationToken);
 
-        Assert.NotNull(tableResponse);
-        Assert.Equal(HttpStatusCode.OK, tableResponse.HttpStatusCode);
-        Assert.Equal(tableName, tableResponse.Table.TableName);
+        await Assert.That(tableResponse).IsNotNull();
+        await Assert.That(tableResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(tableResponse.Table.TableName).IsEqualTo(tableName);
 
-        outputHelper.WriteLine($"DynamoDB table '{tableName}' exists ✓");
-        outputHelper.WriteLine($"  Partition Key: {tableResponse.Table.KeySchema[0].AttributeName}");
+        await TestOutputHelper.WriteLineAsync($"DynamoDB table '{tableName}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Partition Key: {tableResponse.Table.KeySchema[0].AttributeName}");
     }
 
-    [Fact]
-    public async Task SQS_AnalyticsQueue_Should_Exist()
+    [Test]
+    public async Task SQS_AnalyticsQueue_Should_Exist(CancellationToken cancellationToken)
     {
         var queueUrl = fixture.StackOutputs.GetOutput("AnalyticsQueueUrl")
                        ?? throw new InvalidOperationException("AnalyticsQueueUrl output not found");
@@ -89,19 +88,19 @@ public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture, ITes
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var sqsClient = session.CreateClientByImplementation<AmazonSQSClient>();
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrl, ["QueueArn"], TestContext.Current.CancellationToken);
+        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrl, ["QueueArn"], cancellationToken);
 
-        Assert.NotNull(queueAttributesResponse);
-        Assert.Equal(HttpStatusCode.OK, queueAttributesResponse.HttpStatusCode);
-        Assert.NotEmpty(queueAttributesResponse.Attributes);
-        Assert.True(queueAttributesResponse.Attributes.ContainsKey("QueueArn"));
+        await Assert.That(queueAttributesResponse).IsNotNull();
+        await Assert.That(queueAttributesResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(queueAttributesResponse.Attributes).IsNotEmpty();
+        await Assert.That(queueAttributesResponse.Attributes.ContainsKey("QueueArn")).IsTrue();
 
-        outputHelper.WriteLine($"SQS queue '{queueUrl}' exists ✓");
-        outputHelper.WriteLine($"  Queue ARN: {queueAttributesResponse.Attributes["QueueArn"]}");
+        await TestOutputHelper.WriteLineAsync($"SQS queue '{queueUrl}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Queue ARN: {queueAttributesResponse.Attributes["QueueArn"]}");
     }
 
-    [Fact]
-    public async Task DynamoDB_AnalyticsTable_Should_Exist_With_Correct_Schema()
+    [Test]
+    public async Task DynamoDB_AnalyticsTable_Should_Exist_With_Correct_Schema(CancellationToken cancellationToken)
     {
         var tableName = fixture.StackOutputs.GetOutput("AnalyticsTableName")
                         ?? throw new InvalidOperationException("AnalyticsTableName output not found");
@@ -109,23 +108,23 @@ public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture, ITes
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var dynamoDbClient = session.CreateClientByImplementation<AmazonDynamoDBClient>();
-        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, TestContext.Current.CancellationToken);
+        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, cancellationToken);
 
-        Assert.NotNull(tableResponse);
-        Assert.Equal(HttpStatusCode.OK, tableResponse.HttpStatusCode);
-        Assert.Equal(tableName, tableResponse.Table.TableName);
+        await Assert.That(tableResponse).IsNotNull();
+        await Assert.That(tableResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(tableResponse.Table.TableName).IsEqualTo(tableName);
 
         // Verify key schema
         var partitionKey = tableResponse.Table.KeySchema.FirstOrDefault(k => k.KeyType == KeyType.HASH);
-        Assert.NotNull(partitionKey);
-        Assert.Equal("EventId", partitionKey.AttributeName);
+        await Assert.That(partitionKey).IsNotNull();
+        await Assert.That(partitionKey.AttributeName).IsEqualTo("EventId");
 
         var sortKey = tableResponse.Table.KeySchema.FirstOrDefault(k => k.KeyType == KeyType.RANGE);
-        Assert.NotNull(sortKey);
-        Assert.Equal("Timestamp", sortKey.AttributeName);
+        await Assert.That(sortKey).IsNotNull();
+        await Assert.That(sortKey.AttributeName).IsEqualTo("Timestamp");
 
-        outputHelper.WriteLine($"DynamoDB analytics table '{tableName}' exists ✓");
-        outputHelper.WriteLine($"  Partition Key: {partitionKey.AttributeName}");
-        outputHelper.WriteLine($"  Sort Key: {sortKey.AttributeName}");
+        await TestOutputHelper.WriteLineAsync($"DynamoDB analytics table '{tableName}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Partition Key: {partitionKey.AttributeName}");
+        await TestOutputHelper.WriteLineAsync($"  Sort Key: {sortKey.AttributeName}");
     }
 }

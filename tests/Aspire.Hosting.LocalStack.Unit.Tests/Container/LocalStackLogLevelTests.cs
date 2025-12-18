@@ -2,67 +2,67 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Container;
 
 public class LocalStackLogLevelTests
 {
-    [Theory]
-    [MemberData(nameof(AllLogLevelMappingsTestData))]
-    public void ToEnvironmentValue_Should_Map_All_Enum_Values_Correctly(LocalStackLogLevel logLevel, string expectedValue)
+    [Test]
+    [MethodDataSource(nameof(AllLogLevelMappingsTestData))]
+    public async Task ToEnvironmentValue_Should_Map_All_Enum_Values_Correctly(LocalStackLogLevel logLevel, string expectedValue)
     {
         var result = logLevel.ToEnvironmentValue();
 
-        Assert.Equal(expectedValue, result);
+        await Assert.That(result).IsEqualTo(expectedValue);
     }
 
-    [Fact]
-    public void LocalStackLogLevel_Should_Have_All_Expected_Values()
+    [Test]
+    public async Task LocalStackLogLevel_Should_Have_All_Expected_Values()
     {
         var enumValues = Enum.GetValues<LocalStackLogLevel>();
 
-        Assert.Equal(7, enumValues.Length);
-        Assert.Contains(LocalStackLogLevel.Trace, enumValues);
-        Assert.Contains(LocalStackLogLevel.TraceInternal, enumValues);
-        Assert.Contains(LocalStackLogLevel.Debug, enumValues);
-        Assert.Contains(LocalStackLogLevel.Info, enumValues);
-        Assert.Contains(LocalStackLogLevel.Warn, enumValues);
-        Assert.Contains(LocalStackLogLevel.Error, enumValues);
-        Assert.Contains(LocalStackLogLevel.Warning, enumValues);
+        await Assert.That(enumValues.Length).IsEqualTo(7);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Trace);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.TraceInternal);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Debug);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Info);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Warn);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Error);
+        await Assert.That(enumValues).Contains(LocalStackLogLevel.Warning);
     }
 
-    [Fact]
-    public void LocalStackLogLevel_Should_Have_Unique_Integer_Values()
+    [Test]
+    public async Task LocalStackLogLevel_Should_Have_Unique_Integer_Values()
     {
         var enumValues = Enum.GetValues<LocalStackLogLevel>();
         var integerValues = enumValues.Cast<int>().ToArray();
 
-        Assert.Equal(integerValues.Length, integerValues.Distinct().Count());
+        await Assert.That(integerValues.Length).IsEqualTo(integerValues.Distinct().Count());
     }
 
-    [Fact]
-    public void ToEnvironmentValue_Should_Handle_Invalid_Enum_Values_Gracefully()
+    [Test]
+    public async Task ToEnvironmentValue_Should_Handle_Invalid_Enum_Values_Gracefully()
     {
         const LocalStackLogLevel invalidLogLevel = (LocalStackLogLevel)999;
 
         // The implementation doesn't throw for invalid values, it handles them gracefully
         var result = invalidLogLevel.ToEnvironmentValue();
-        Assert.NotNull(result);
+        await Assert.That(result).IsNotNull();
     }
 
-    [Fact]
-    public void ToEnvironmentValue_Should_Handle_Negative_Enum_Values_Gracefully()
+    [Test]
+    public async Task ToEnvironmentValue_Should_Handle_Negative_Enum_Values_Gracefully()
     {
         const LocalStackLogLevel invalidLogLevel = (LocalStackLogLevel)(-1);
 
         // The implementation doesn't throw for invalid values, it handles them gracefully
         var result = invalidLogLevel.ToEnvironmentValue();
-        Assert.NotNull(result);
+        await Assert.That(result).IsNotNull();
     }
 
-    public static IEnumerable<object[]> AllLogLevelMappingsTestData =>
-    [
-        [LocalStackLogLevel.Trace, "trace"],
-        [LocalStackLogLevel.TraceInternal, "trace-internal"],
-        [LocalStackLogLevel.Debug, "debug"],
-        [LocalStackLogLevel.Info, "info"],
-        [LocalStackLogLevel.Warn, "warn"],
-        [LocalStackLogLevel.Error, "error"],
-        [LocalStackLogLevel.Warning, "warning"],
-    ];
+    public static IEnumerable<(LocalStackLogLevel, string)> AllLogLevelMappingsTestData()
+    {
+        yield return (LocalStackLogLevel.Trace, "trace");
+        yield return (LocalStackLogLevel.TraceInternal, "trace-internal");
+        yield return (LocalStackLogLevel.Debug, "debug");
+        yield return (LocalStackLogLevel.Info, "info");
+        yield return (LocalStackLogLevel.Warn, "warn");
+        yield return (LocalStackLogLevel.Error, "error");
+        yield return (LocalStackLogLevel.Warning, "warning");
+    }
 }

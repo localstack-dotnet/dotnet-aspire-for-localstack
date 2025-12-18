@@ -1,47 +1,45 @@
-﻿using LocalStack.Client.Enums;
-
-namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensionsTests;
+﻿namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensionsTests;
 
 public class AddLocalStackTests
 {
-    [Fact]
-    public void AddLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
+    [Test]
+    public async Task AddLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions);
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Create_LocalStack_Resource_When_UseLocalStack_Is_True()
+    [Test]
+    public async Task AddLocalStack_Should_Create_LocalStack_Resource_When_UseLocalStack_Is_True()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions);
 
-        Assert.NotNull(result);
-        Assert.NotNull(result.Resource);
-        Assert.IsType<LocalStackResource>(result.Resource);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Resource).IsNotNull();
+        await Assert.That(result.Resource).IsTypeOf<LocalStackResource>();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Default_Name_When_Not_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Default_Name_When_Not_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions);
 
-        Assert.NotNull(result);
-        Assert.Equal("localstack", result.Resource.Name);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Resource.Name).IsEqualTo("localstack");
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Custom_Name_When_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Custom_Name_When_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -49,12 +47,12 @@ public class AddLocalStackTests
 
         var result = builder.AddLocalStack(name: customName, localStackOptions: localStackOptions);
 
-        Assert.NotNull(result);
-        Assert.Equal(customName, result.Resource.Name);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Resource.Name).IsEqualTo(customName);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Configure_Container_Options_When_Action_Provided()
+    [Test]
+    public async Task AddLocalStack_Should_Configure_Container_Options_When_Action_Provided()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -62,8 +60,8 @@ public class AddLocalStackTests
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: ConfigureContainer);
 
-        Assert.NotNull(result);
-        Assert.True(configureContainerCalled);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(configureContainerCalled).IsTrue();
         return;
 
         void ConfigureContainer(LocalStackContainerOptions options)
@@ -74,8 +72,8 @@ public class AddLocalStackTests
         }
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Inherit_Region_From_AWS_Config()
+    [Test]
+    public async Task AddLocalStack_Should_Inherit_Region_From_AWS_Config()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -83,32 +81,32 @@ public class AddLocalStackTests
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions, awsConfig: awsConfig);
 
-        Assert.NotNull(result);
-        Assert.Equal("us-west-2", result.Resource.Options.Session.RegionName);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Resource.Options.Session.RegionName).IsEqualTo("us-west-2");
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Throw_ArgumentNullException_When_Builder_Is_Null()
+    [Test]
+    public async Task AddLocalStack_Should_Throw_ArgumentNullException_When_Builder_Is_Null()
     {
         IDistributedApplicationBuilder builder = null!;
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
-        Assert.Throws<ArgumentNullException>(() => builder.AddLocalStack(localStackOptions: localStackOptions));
+        await Assert.That(() => builder.AddLocalStack(localStackOptions: localStackOptions)).ThrowsExactly<ArgumentNullException>();
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void AddLocalStack_Should_Throw_ArgumentException_When_Name_Is_Invalid(string invalidName)
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    public async Task AddLocalStack_Should_Throw_ArgumentException_When_Name_Is_Invalid(string invalidName)
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
-        Assert.Throws<ArgumentException>(() => builder.AddLocalStack(name: invalidName, localStackOptions: localStackOptions));
+        await Assert.That(() => builder.AddLocalStack(name: invalidName, localStackOptions: localStackOptions)).ThrowsExactly<ArgumentException>();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Configured()
+    [Test]
+    public async Task AddLocalStack_Should_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Configured()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -119,19 +117,19 @@ public class AddLocalStackTests
             configureContainer: container => container.EagerLoadedServices = [AwsService.Sqs]
         );
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
 
         // Verify the resource was created
-        Assert.NotNull(resource);
+        await Assert.That(resource).IsNotNull();
 
         // Verify eager loading environment variable would be set
         var envAnnotations = resource.Annotations.OfType<EnvironmentCallbackAnnotation>();
-        Assert.NotEmpty(envAnnotations);
+        await Assert.That(envAnnotations).IsNotEmpty();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Set_SERVICES_Environment_Variable_With_Comma_Separated_Services()
+    [Test]
+    public async Task AddLocalStack_Should_Set_SERVICES_Environment_Variable_With_Comma_Separated_Services()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -142,17 +140,17 @@ public class AddLocalStackTests
             configureContainer: container => container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3]
         );
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Environment variables are set through annotations
         var envAnnotations = resource.Annotations.OfType<EnvironmentCallbackAnnotation>();
-        Assert.NotEmpty(envAnnotations);
+        await Assert.That(envAnnotations).IsNotEmpty();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Not_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Empty()
+    [Test]
+    public async Task AddLocalStack_Should_Not_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Empty()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -163,47 +161,47 @@ public class AddLocalStackTests
             configureContainer: container => container.EagerLoadedServices = []
         );
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_SERVICES()
+    [Test]
+    public async Task AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_SERVICES()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = await Assert.That(() =>
             builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
             {
                 container.AdditionalEnvironmentVariables["SERVICES"] = "lambda";
                 container.EagerLoadedServices = [AwsService.Sqs];
-            }));
+            })).ThrowsExactly<InvalidOperationException>();
 
-        Assert.Contains("Cannot set 'SERVICES'", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("AdditionalEnvironmentVariables", exception.Message, StringComparison.OrdinalIgnoreCase);
+        await Assert.That(exception!.Message).Contains("Cannot set 'SERVICES'", StringComparison.OrdinalIgnoreCase);
+        await Assert.That(exception.Message).Contains("AdditionalEnvironmentVariables", StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_EAGER_SERVICE_LOADING()
+    [Test]
+    public async Task AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_EAGER_SERVICE_LOADING()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
-        var exception = Assert.Throws<InvalidOperationException>(() =>
+        var exception = await Assert.That(() =>
             builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
             {
                 container.AdditionalEnvironmentVariables["EAGER_SERVICE_LOADING"] = "1";
                 container.EagerLoadedServices = [AwsService.Sqs];
-            }));
+            })).ThrowsExactly<InvalidOperationException>();
 
-        Assert.Contains("Cannot set", exception.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("EAGER_SERVICE_LOADING", exception.Message, StringComparison.OrdinalIgnoreCase);
+        await Assert.That(exception!.Message).Contains("Cannot set", StringComparison.OrdinalIgnoreCase);
+        await Assert.That(exception.Message).Contains("EAGER_SERVICE_LOADING", StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Throw_When_Unsupported_Service_In_EagerLoadedServices()
+    [Test]
+    public async Task AddLocalStack_Should_Throw_When_Unsupported_Service_In_EagerLoadedServices()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -211,18 +209,18 @@ public class AddLocalStackTests
         // Note: This test assumes there might be an AwsService enum value with no CliName
         // If all current services are supported, this validates the error handling mechanism
         // The actual exception will be thrown during the Select operation when CliName is null
-        var exception = Assert.ThrowsAny<InvalidOperationException>(() =>
+        var exception = await Assert.That(() =>
             builder.AddLocalStack(localStackOptions: localStackOptions, configureContainer: container =>
             {
                 // Using a very high enum value that likely doesn't have metadata
                 container.EagerLoadedServices = [(AwsService)99999];
-            }));
+            })).Throws<InvalidOperationException>();
 
-        Assert.Contains("not supported by LocalStack", exception.Message, StringComparison.OrdinalIgnoreCase);
+        await Assert.That(exception!.Message).Contains("not supported by LocalStack", StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Mount_Docker_Socket_When_EnableDockerSocket_Is_True()
+    [Test]
+    public async Task AddLocalStack_Should_Mount_Docker_Socket_When_EnableDockerSocket_Is_True()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -233,20 +231,20 @@ public class AddLocalStackTests
             configureContainer: container => container.EnableDockerSocket = true
         );
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Verify the Docker socket bind mount annotation exists
         var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
         var dockerSocketMount = mountAnnotations.FirstOrDefault
             (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock", Type: ContainerMountType.BindMount });
 
-        Assert.NotNull(dockerSocketMount);
+        await Assert.That(dockerSocketMount).IsNotNull();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Not_Mount_Docker_Socket_When_EnableDockerSocket_Is_False()
+    [Test]
+    public async Task AddLocalStack_Should_Not_Mount_Docker_Socket_When_EnableDockerSocket_Is_False()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -257,44 +255,44 @@ public class AddLocalStackTests
             configureContainer: container => container.EnableDockerSocket = false
         );
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Verify no Docker socket bind mount annotation exists
         var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
         var dockerSocketMount = mountAnnotations.FirstOrDefault
             (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock" });
 
-        Assert.Null(dockerSocketMount);
+        await Assert.That(dockerSocketMount).IsNull();
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Not_Mount_Docker_Socket_By_Default()
+    [Test]
+    public async Task AddLocalStack_Should_Not_Mount_Docker_Socket_By_Default()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions);
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Verify no Docker socket bind mount annotation exists when not configured
         var mountAnnotations = resource.Annotations.OfType<ContainerMountAnnotation>();
         var dockerSocketMount = mountAnnotations.FirstOrDefault
             (m => m is { Source: "/var/run/docker.sock", Target: "/var/run/docker.sock" });
 
-        Assert.Null(dockerSocketMount);
+        await Assert.That(dockerSocketMount).IsNull();
     }
 
-    [Theory]
-    [InlineData(ContainerLifetime.Session, null, null)]
-    [InlineData(ContainerLifetime.Session, 1234, 1234)]
-    [InlineData(ContainerLifetime.Persistent, null, Constants.DefaultContainerPort)]
-    [InlineData(ContainerLifetime.Persistent, 1234, 1234)]
-    public void AddLocalStack_Should_Set_Endpoint_Port(ContainerLifetime lifetime, int? port, int? expectedPort)
+    [Test]
+    [Arguments(ContainerLifetime.Session, null, null)]
+    [Arguments(ContainerLifetime.Session, 1234, 1234)]
+    [Arguments(ContainerLifetime.Persistent, null, Constants.DefaultContainerPort)]
+    [Arguments(ContainerLifetime.Persistent, 1234, 1234)]
+    public async Task AddLocalStack_Should_Set_Endpoint_Port(ContainerLifetime lifetime, int? port, int? expectedPort)
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -308,39 +306,39 @@ public class AddLocalStackTests
                 container.Port = port;
             });
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Verify endpoint port configuration
         var endpointAnnotations = resource.Annotations.OfType<EndpointAnnotation>();
         var httpEndpoint = endpointAnnotations.FirstOrDefault(e => e is { Name: "http" });
 
-        Assert.NotNull(httpEndpoint);
-        Assert.Equal(expectedPort, httpEndpoint.Port);
+        await Assert.That(httpEndpoint).IsNotNull();
+        await Assert.That(httpEndpoint!.Port).IsEqualTo(expectedPort);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Default_Container_Image_Values_When_Not_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Default_Container_Image_Values_When_Not_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
 
         var result = builder.AddLocalStack(localStackOptions: localStackOptions);
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         // Verify default image annotations
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
-        Assert.Equal("docker.io", imageAnnotation.Registry);
-        Assert.Equal("localstack/localstack", imageAnnotation.Image);
-        Assert.Equal("4.10.0", imageAnnotation.Tag);
+        await Assert.That(imageAnnotation.Registry).IsEqualTo("docker.io");
+        await Assert.That(imageAnnotation.Image).IsEqualTo("localstack/localstack");
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("4.12.0");
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Custom_Container_Registry_When_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Custom_Container_Registry_When_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -350,18 +348,18 @@ public class AddLocalStackTests
             localStackOptions: localStackOptions,
             configureContainer: container => container.ContainerRegistry = customRegistry);
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
-        Assert.Equal(customRegistry, imageAnnotation.Registry);
-        Assert.Equal("localstack/localstack", imageAnnotation.Image); // Default image
-        Assert.Equal("4.10.0", imageAnnotation.Tag); // Default tag
+        await Assert.That(imageAnnotation.Registry).IsEqualTo(customRegistry);
+        await Assert.That(imageAnnotation.Image).IsEqualTo("localstack/localstack"); // Default image
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("4.12.0"); // Default tag
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Custom_Container_Image_When_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Custom_Container_Image_When_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -371,18 +369,18 @@ public class AddLocalStackTests
             localStackOptions: localStackOptions,
             configureContainer: container => container.ContainerImage = customImage);
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
-        Assert.Equal("docker.io", imageAnnotation.Registry); // Default registry
-        Assert.Equal(customImage, imageAnnotation.Image);
-        Assert.Equal("4.10.0", imageAnnotation.Tag); // Default tag
+        await Assert.That(imageAnnotation.Registry).IsEqualTo("docker.io"); // Default registry
+        await Assert.That(imageAnnotation.Image).IsEqualTo(customImage);
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("4.12.0"); // Default tag
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_Custom_Container_ImageTag_When_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_Custom_Container_ImageTag_When_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -392,18 +390,18 @@ public class AddLocalStackTests
             localStackOptions: localStackOptions,
             configureContainer: container => container.ContainerImageTag = customTag);
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
-        Assert.Equal("docker.io", imageAnnotation.Registry); // Default registry
-        Assert.Equal("localstack/localstack", imageAnnotation.Image); // Default image
-        Assert.Equal(customTag, imageAnnotation.Tag);
+        await Assert.That(imageAnnotation.Registry).IsEqualTo("docker.io"); // Default registry
+        await Assert.That(imageAnnotation.Image).IsEqualTo("localstack/localstack"); // Default image
+        await Assert.That(imageAnnotation.Tag).IsEqualTo(customTag);
     }
 
-    [Fact]
-    public void AddLocalStack_Should_Use_All_Custom_Container_Image_Values_When_Specified()
+    [Test]
+    public async Task AddLocalStack_Should_Use_All_Custom_Container_Image_Values_When_Specified()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -420,13 +418,13 @@ public class AddLocalStackTests
                 container.ContainerImageTag = customTag;
             });
 
-        Assert.NotNull(result);
-        var resource = result.Resource;
-        Assert.NotNull(resource);
+        await Assert.That(result).IsNotNull();
+        var resource = result!.Resource;
+        await Assert.That(resource).IsNotNull();
 
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
-        Assert.Equal(customRegistry, imageAnnotation.Registry);
-        Assert.Equal(customImage, imageAnnotation.Image);
-        Assert.Equal(customTag, imageAnnotation.Tag);
+        await Assert.That(imageAnnotation.Registry).IsEqualTo(customRegistry);
+        await Assert.That(imageAnnotation.Image).IsEqualTo(customImage);
+        await Assert.That(imageAnnotation.Tag).IsEqualTo(customTag);
     }
 }

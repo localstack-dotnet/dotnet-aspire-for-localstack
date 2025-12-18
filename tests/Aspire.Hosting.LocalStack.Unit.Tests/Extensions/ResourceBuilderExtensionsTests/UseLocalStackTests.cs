@@ -2,16 +2,16 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensi
 
 public class UseLocalStackTests
 {
-    [Fact]
-    public void UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Null()
+    [Test]
+    public async Task UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Null()
     {
         using var app = TestApplicationBuilder.Create(builder => builder.UseLocalStack(localStack: null));
 
-        app.ShouldHaveResourceCount<ILocalStackResource>(0);
+        await app.ShouldHaveResourceCount<ILocalStackResource>(0);
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Disabled()
+    [Test]
+    public async Task UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Disabled()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -20,11 +20,11 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        app.ShouldHaveResourceCount<ILocalStackResource>(0);
+        await app.ShouldHaveResourceCount<ILocalStackResource>(0);
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Configure_CloudFormation_Resources_With_LocalStack_Reference()
+    [Test]
+    public async Task UseLocalStack_Should_Configure_CloudFormation_Resources_With_LocalStack_Reference()
     {
         var (app, cfResource) = TestApplicationBuilder.CreateWithResource<ICloudFormationTemplateResource>("test-cf", builder =>
         {
@@ -40,12 +40,12 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        cfResource.ShouldHaveLocalStackEnabledAnnotation();
-        app.ShouldHaveResourceCount<ILocalStackResource>(1);
+        await cfResource.ShouldHaveLocalStackEnabledAnnotation();
+        await app.ShouldHaveResourceCount<ILocalStackResource>(1);
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Configure_Multiple_CloudFormation_Resources()
+    [Test]
+    public async Task UseLocalStack_Should_Configure_Multiple_CloudFormation_Resources()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -62,16 +62,16 @@ public class UseLocalStackTests
         });
 
         var cfResources = app.GetResources<ICloudFormationTemplateResource>().ToList();
-        Assert.Equal(2, cfResources.Count);
+        await Assert.That(cfResources.Count).IsEqualTo(2);
 
         foreach (var cfResource in cfResources)
         {
-            cfResource.ShouldHaveLocalStackEnabledAnnotation();
+            await cfResource.ShouldHaveLocalStackEnabledAnnotation();
         }
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Configure_Projects_That_Reference_AWS_Resources()
+    [Test]
+    public async Task UseLocalStack_Should_Configure_Projects_That_Reference_AWS_Resources()
     {
         var (_, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>("test-project", builder =>
         {
@@ -90,11 +90,11 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        projectResource.ShouldHaveLocalStackEnabledAnnotation();
+        await projectResource.ShouldHaveLocalStackEnabledAnnotation();
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Create_CDK_Bootstrap_When_Explicitly_Called()
+    [Test]
+    public async Task UseLocalStack_Should_Create_CDK_Bootstrap_When_Explicitly_Called()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -111,12 +111,12 @@ public class UseLocalStackTests
             .Where(r => string.Equals(r.Name, "CDKBootstrap", StringComparison.Ordinal))
             .ToList();
 
-        Assert.Single(bootstrapResources);
-        bootstrapResources[0].ShouldHaveLocalStackEnabledAnnotation();
+        await Assert.That(bootstrapResources).HasSingleItem();
+        await bootstrapResources[0].ShouldHaveLocalStackEnabledAnnotation();
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Handle_Empty_Application_Gracefully()
+    [Test]
+    public async Task UseLocalStack_Should_Handle_Empty_Application_Gracefully()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -127,11 +127,11 @@ public class UseLocalStackTests
             builder.UseLocalStack(localStack);
         });
 
-        app.ShouldHaveResourceCount<ILocalStackResource>(1);
+        await app.ShouldHaveResourceCount<ILocalStackResource>(1);
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Not_Configure_Resources_Already_Marked_With_LocalStack()
+    [Test]
+    public async Task UseLocalStack_Should_Not_Configure_Resources_Already_Marked_With_LocalStack()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -148,7 +148,7 @@ public class UseLocalStackTests
         });
 
         var cfResource = app.GetResource<ICloudFormationTemplateResource>("manually-configured");
-        cfResource.ShouldHaveLocalStackEnabledAnnotation();
+        await cfResource.ShouldHaveLocalStackEnabledAnnotation();
 
         var localStackResource = app.GetResource<ILocalStackResource>("localstack");
         var referenceAnnotations = localStackResource.Annotations
@@ -156,11 +156,11 @@ public class UseLocalStackTests
             .Where(a => string.Equals(a.Resource.Name, "manually-configured", StringComparison.Ordinal))
             .ToList();
 
-        Assert.Single(referenceAnnotations);
+        await Assert.That(referenceAnnotations).HasSingleItem();
     }
 
-    [Fact]
-    public void UseLocalStack_Should_Establish_Bidirectional_References()
+    [Test]
+    public async Task UseLocalStack_Should_Establish_Bidirectional_References()
     {
         using var app = TestApplicationBuilder.Create(builder =>
         {
@@ -178,9 +178,9 @@ public class UseLocalStackTests
         var cfResource = app.GetResource<ICloudFormationTemplateResource>("test-resource");
 
         // LocalStack should reference the CloudFormation resource
-        localStackResource.ShouldHaveReferenceToResource(cfResource);
+        await localStackResource.ShouldHaveReferenceToResource(cfResource);
 
         // CloudFormation resource should be enabled for LocalStack
-        cfResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
+        await cfResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
     }
 }

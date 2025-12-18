@@ -1,177 +1,179 @@
-using LocalStack.Client.Enums;
-
 #pragma warning disable S4143
 
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Container;
 
 public class LocalStackContainerOptionsTests
 {
-    [Fact]
-    public void Constructor_Should_Set_Correct_Defaults()
+    [Test]
+    public async Task Constructor_Should_Set_Correct_Defaults()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Equal(ContainerLifetime.Session, options.Lifetime);
-        Assert.Equal(0, options.DebugLevel);
-        Assert.Equal(LocalStackLogLevel.Error, options.LogLevel);
-        Assert.NotNull(options.AdditionalEnvironmentVariables);
-        Assert.Empty(options.AdditionalEnvironmentVariables);
-        Assert.False(options.EnableDockerSocket);
+        await Assert.That(options.Lifetime).IsEqualTo(ContainerLifetime.Session);
+        await Assert.That(options.DebugLevel).IsEqualTo(0);
+        await Assert.That(options.LogLevel).IsEqualTo(LocalStackLogLevel.Error);
+        await Assert.That(options.AdditionalEnvironmentVariables).IsNotNull();
+        await Assert.That(options.AdditionalEnvironmentVariables).IsEmpty();
+        await Assert.That(options.EnableDockerSocket).IsFalse();
     }
 
-    [Fact]
-    public void AdditionalEnvironmentVariables_Should_Be_Mutable_Dictionary()
+    [Test]
+    public async Task AdditionalEnvironmentVariables_Should_Be_Mutable_Dictionary()
     {
-        var options = new LocalStackContainerOptions();
+        var options = new LocalStackContainerOptions
+        {
+            AdditionalEnvironmentVariables =
+            {
+                ["TEST_KEY"] = "test_value",
+                ["ANOTHER_KEY"] = "another_value"
+            }
+        };
 
-        options.AdditionalEnvironmentVariables["TEST_KEY"] = "test_value";
-        options.AdditionalEnvironmentVariables["ANOTHER_KEY"] = "another_value";
-
-        Assert.Equal(2, options.AdditionalEnvironmentVariables.Count);
-        Assert.Equal("test_value", options.AdditionalEnvironmentVariables["TEST_KEY"]);
-        Assert.Equal("another_value", options.AdditionalEnvironmentVariables["ANOTHER_KEY"]);
+        await Assert.That(options.AdditionalEnvironmentVariables.Count).IsEqualTo(2);
+        await Assert.That(options.AdditionalEnvironmentVariables["TEST_KEY"]).IsEqualTo("test_value");
+        await Assert.That(options.AdditionalEnvironmentVariables["ANOTHER_KEY"]).IsEqualTo("another_value");
     }
 
-    [Fact]
-    public void AdditionalEnvironmentVariables_Should_Use_Ordinal_StringComparer()
+    [Test]
+    public async Task AdditionalEnvironmentVariables_Should_Use_Ordinal_StringComparer()
     {
         var options = new LocalStackContainerOptions();
 
         options.AdditionalEnvironmentVariables["TestKey"] = "value1";
         options.AdditionalEnvironmentVariables["testkey"] = "value2";
 
-        Assert.Equal(2, options.AdditionalEnvironmentVariables.Count);
-        Assert.Equal("value1", options.AdditionalEnvironmentVariables["TestKey"]);
-        Assert.Equal("value2", options.AdditionalEnvironmentVariables["testkey"]);
+        await Assert.That(options.AdditionalEnvironmentVariables.Count).IsEqualTo(2);
+        await Assert.That(options.AdditionalEnvironmentVariables["TestKey"]).IsEqualTo("value1");
+        await Assert.That(options.AdditionalEnvironmentVariables["testkey"]).IsEqualTo("value2");
     }
 
-    [Fact]
-    public void EagerLoadedServices_Should_Default_To_Empty_Collection()
+    [Test]
+    public async Task EagerLoadedServices_Should_Default_To_Empty_Collection()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.NotNull(options.EagerLoadedServices);
-        Assert.Empty(options.EagerLoadedServices);
+        await Assert.That(options.EagerLoadedServices).IsNotNull();
+        await Assert.That(options.EagerLoadedServices).IsEmpty();
     }
 
-    [Fact]
-    public void EagerLoadedServices_Should_Accept_Single_Service()
+    [Test]
+    public async Task EagerLoadedServices_Should_Accept_Single_Service()
     {
         var options = new LocalStackContainerOptions
         {
             EagerLoadedServices = [AwsService.Sqs],
         };
 
-        Assert.Single(options.EagerLoadedServices);
-        Assert.Contains(AwsService.Sqs, options.EagerLoadedServices);
+        await Assert.That(options.EagerLoadedServices).HasSingleItem();
+        await Assert.That(options.EagerLoadedServices).Contains(AwsService.Sqs);
     }
 
-    [Fact]
-    public void EagerLoadedServices_Should_Accept_Multiple_Services()
+    [Test]
+    public async Task EagerLoadedServices_Should_Accept_Multiple_Services()
     {
         var options = new LocalStackContainerOptions
         {
             EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3],
         };
 
-        Assert.Equal(3, options.EagerLoadedServices.Count);
-        Assert.Contains(AwsService.Sqs, options.EagerLoadedServices);
-        Assert.Contains(AwsService.DynamoDb, options.EagerLoadedServices);
-        Assert.Contains(AwsService.S3, options.EagerLoadedServices);
+        await Assert.That(options.EagerLoadedServices.Count).IsEqualTo(3);
+        await Assert.That(options.EagerLoadedServices).Contains(AwsService.Sqs);
+        await Assert.That(options.EagerLoadedServices).Contains(AwsService.DynamoDb);
+        await Assert.That(options.EagerLoadedServices).Contains(AwsService.S3);
     }
 
-    [Fact]
-    public void EnableDockerSocket_Should_Default_To_False()
+    [Test]
+    public async Task EnableDockerSocket_Should_Default_To_False()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.False(options.EnableDockerSocket);
+        await Assert.That(options.EnableDockerSocket).IsFalse();
     }
 
-    [Fact]
-    public void EnableDockerSocket_Should_Be_Settable()
+    [Test]
+    public async Task EnableDockerSocket_Should_Be_Settable()
     {
         var options = new LocalStackContainerOptions
         {
             EnableDockerSocket = true,
         };
 
-        Assert.True(options.EnableDockerSocket);
+        await Assert.That(options.EnableDockerSocket).IsTrue();
     }
 
-    [Fact]
-    public void Port_Should_Default_To_Null()
+    [Test]
+    public async Task Port_Should_Default_To_Null()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Null(options.Port);
+        await Assert.That(options.Port).IsNull();
     }
 
-    [Fact]
-    public void Port_Should_Be_Settable()
+    [Test]
+    public async Task Port_Should_Be_Settable()
     {
         var options = new LocalStackContainerOptions
         {
             Port = 1234,
         };
 
-        Assert.Equal(1234, options.Port);
+        await Assert.That(options.Port).IsEqualTo(1234);
     }
 
-    [Fact]
-    public void ContainerRegistry_Should_Default_To_Null()
+    [Test]
+    public async Task ContainerRegistry_Should_Default_To_Null()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Null(options.ContainerRegistry);
+        await Assert.That(options.ContainerRegistry).IsNull();
     }
 
-    [Fact]
-    public void ContainerRegistry_Should_Be_Settable()
+    [Test]
+    public async Task ContainerRegistry_Should_Be_Settable()
     {
         var options = new LocalStackContainerOptions
         {
             ContainerRegistry = "artifactory.company.com",
         };
 
-        Assert.Equal("artifactory.company.com", options.ContainerRegistry);
+        await Assert.That(options.ContainerRegistry).IsEqualTo("artifactory.company.com");
     }
 
-    [Fact]
-    public void ContainerImage_Should_Default_To_Null()
+    [Test]
+    public async Task ContainerImage_Should_Default_To_Null()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Null(options.ContainerImage);
+        await Assert.That(options.ContainerImage).IsNull();
     }
 
-    [Fact]
-    public void ContainerImage_Should_Be_Settable()
+    [Test]
+    public async Task ContainerImage_Should_Be_Settable()
     {
         var options = new LocalStackContainerOptions
         {
             ContainerImage = "custom/localstack",
         };
 
-        Assert.Equal("custom/localstack", options.ContainerImage);
+        await Assert.That(options.ContainerImage).IsEqualTo("custom/localstack");
     }
 
-    [Fact]
-    public void ContainerImageTag_Should_Default_To_Null()
+    [Test]
+    public async Task ContainerImageTag_Should_Default_To_Null()
     {
         var options = new LocalStackContainerOptions();
 
-        Assert.Null(options.ContainerImageTag);
+        await Assert.That(options.ContainerImageTag).IsNull();
     }
 
-    [Fact]
-    public void ContainerImageTag_Should_Be_Settable()
+    [Test]
+    public async Task ContainerImageTag_Should_Be_Settable()
     {
         var options = new LocalStackContainerOptions
         {
             ContainerImageTag = "4.9.2",
         };
 
-        Assert.Equal("4.9.2", options.ContainerImageTag);
+        await Assert.That(options.ContainerImageTag).IsEqualTo("4.9.2");
     }
 }

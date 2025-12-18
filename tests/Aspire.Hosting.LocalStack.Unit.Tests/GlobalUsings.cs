@@ -1,6 +1,12 @@
 // Global using statements for unit tests
 
+global using System.Collections.Immutable;
 global using System.Diagnostics.CodeAnalysis;
+global using System.Net;
+global using System.Reflection;
+global using System.Runtime.CompilerServices;
+global using System.Text;
+global using System.Text.Json;
 global using Amazon.CloudFormation;
 global using Aspire.Hosting;
 global using Aspire.Hosting.ApplicationModel;
@@ -13,7 +19,11 @@ global using Aspire.Hosting.LocalStack.Container;
 global using Aspire.Hosting.LocalStack.Internal;
 global using Aspire.Hosting.LocalStack.Unit.Tests.TestUtilities;
 global using LocalStack.Client.Contracts;
+global using LocalStack.Client.Enums;
 global using LocalStack.Client.Options;
 global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Diagnostics.HealthChecks;
 global using NSubstitute;
-global using Xunit;
+global using TUnit.Core;
+global using TUnit.Assertions;
+global using TUnit.Assertions.Extensions;

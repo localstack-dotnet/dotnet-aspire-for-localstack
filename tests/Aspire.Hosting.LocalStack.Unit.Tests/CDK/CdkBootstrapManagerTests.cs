@@ -1,19 +1,19 @@
 namespace Aspire.Hosting.LocalStack.Unit.Tests.CDK;
 
-[Collection("SequentialCdkTests")]
+[NotInParallel("CdkTests")]
 public sealed class CdkBootstrapManagerTests
 {
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Return_Valid_File_Path()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Return_Valid_File_Path()
     {
         var testDir = CreateTestDirectory();
         try
         {
             var templatePath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
-            Assert.NotNull(templatePath);
-            Assert.NotEmpty(templatePath);
-            Assert.True(Path.IsPathFullyQualified(templatePath));
+            await Assert.That(templatePath).IsNotNull();
+            await Assert.That(templatePath).IsNotEmpty();
+            await Assert.That(Path.IsPathFullyQualified(templatePath)).IsTrue();
         }
         finally
         {
@@ -21,17 +21,17 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Extract_Template_To_Temp_Directory()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Extract_Template_To_Temp_Directory()
     {
         var testDir = CreateTestDirectory();
         try
         {
             var templatePath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
-            Assert.Contains(testDir, templatePath, StringComparison.Ordinal);
-            Assert.EndsWith(".template", templatePath, StringComparison.Ordinal);
-            Assert.Contains("cdk-bootstrap-", templatePath, StringComparison.Ordinal);
+            await Assert.That(templatePath).Contains(testDir);
+            await Assert.That(templatePath).EndsWith(".template");
+            await Assert.That(templatePath).Contains("cdk-bootstrap-");
         }
         finally
         {
@@ -39,15 +39,15 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Create_File_That_Exists()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Create_File_That_Exists()
     {
         var testDir = CreateTestDirectory();
         try
         {
             var templatePath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
-            Assert.True(File.Exists(templatePath));
+            await Assert.That(File.Exists(templatePath)).IsTrue();
         }
         finally
         {
@@ -55,8 +55,8 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Create_Non_Empty_Template_File()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Create_Non_Empty_Template_File()
     {
         var testDir = CreateTestDirectory();
         try
@@ -64,7 +64,7 @@ public sealed class CdkBootstrapManagerTests
             var templatePath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
             var fileInfo = new FileInfo(templatePath);
-            Assert.True(fileInfo.Length > 0);
+            await Assert.That(fileInfo.Length > 0).IsTrue();
         }
         finally
         {
@@ -72,8 +72,8 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Return_Same_Path_On_Multiple_Calls()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Return_Same_Path_On_Multiple_Calls()
     {
         var testDir = CreateTestDirectory();
         try
@@ -81,7 +81,7 @@ public sealed class CdkBootstrapManagerTests
             var path1 = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
             var path2 = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
-            Assert.Equal(path1, path2);
+            await Assert.That(path1).IsEqualTo(path2);
         }
         finally
         {
@@ -89,8 +89,8 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Create_Directory_If_It_Does_Not_Exist()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Create_Directory_If_It_Does_Not_Exist()
     {
         var testDir = CreateTestDirectory();
         // Delete the directory to test creation
@@ -98,12 +98,12 @@ public sealed class CdkBootstrapManagerTests
 
         try
         {
-            Assert.False(Directory.Exists(testDir));
+            await Assert.That(Directory.Exists(testDir)).IsFalse();
 
             var templatePath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
 
-            Assert.True(Directory.Exists(testDir));
-            Assert.True(File.Exists(templatePath));
+            await Assert.That(Directory.Exists(testDir)).IsTrue();
+            await Assert.That(File.Exists(templatePath)).IsTrue();
         }
         finally
         {
@@ -111,8 +111,8 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Handle_Multiple_Sequential_Calls()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Handle_Multiple_Sequential_Calls()
     {
         var testDir = CreateTestDirectory();
         try
@@ -125,9 +125,12 @@ public sealed class CdkBootstrapManagerTests
                 results.Add(CdkBootstrapManager.GetBootstrapTemplatePath(testDir));
             }
 
-            Assert.All(results, Assert.NotNull);
-            Assert.All(results, path => Assert.True(File.Exists(path)));
-            Assert.True(results.TrueForAll(path => string.Equals(path, results[0], StringComparison.Ordinal)));
+            foreach (var path in results)
+            {
+                await Assert.That(path).IsNotNull();
+                await Assert.That(File.Exists(path)).IsTrue();
+            }
+            await Assert.That(results.TrueForAll(path => string.Equals(path, results[0], StringComparison.Ordinal))).IsTrue();
         }
         finally
         {
@@ -135,23 +138,23 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
-    public void GetBootstrapTemplatePath_Should_Overwrite_Existing_File()
+    [Test]
+    public async Task GetBootstrapTemplatePath_Should_Overwrite_Existing_File()
     {
         var testDir = CreateTestDirectory();
         try
         {
             var firstPath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
-            var originalContent = File.ReadAllText(firstPath);
+            var originalContent = await File.ReadAllTextAsync(firstPath);
 
-            File.WriteAllText(firstPath, "outdated content");
+            await File.WriteAllTextAsync(firstPath, "outdated content");
 
             var secondPath = CdkBootstrapManager.GetBootstrapTemplatePath(testDir);
-            var newContent = File.ReadAllText(secondPath);
+            var newContent = await File.ReadAllTextAsync(secondPath);
 
-            Assert.Equal(firstPath, secondPath);
-            Assert.Equal(originalContent, newContent);
-            Assert.NotEqual("outdated content", newContent);
+            await Assert.That(firstPath).IsEqualTo(secondPath);
+            await Assert.That(originalContent).IsEqualTo(newContent);
+            await Assert.That(newContent).IsNotEqualTo("outdated content");
         }
         finally
         {
@@ -159,7 +162,7 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 
-    [Fact]
+    [Test]
     public async Task GetBootstrapTemplatePath_Should_Be_Thread_Safe_And_Handle_Parallel_Calls()
     {
         var testDir = CreateTestDirectory();
@@ -175,15 +178,22 @@ public sealed class CdkBootstrapManagerTests
 
             var results = await Task.WhenAll(tasks);
 
-            Assert.Equal(parallelTasks, results.Length);
-            Assert.All(results, path => Assert.False(string.IsNullOrEmpty(path)));
+            await Assert.That(results.Length).IsEqualTo(parallelTasks);
+
+            foreach (var path in results)
+            {
+                await Assert.That(string.IsNullOrEmpty(path)).IsFalse();
+            }
 
             var firstPath = results[0];
-            Assert.All(results, path => Assert.Equal(firstPath, path));
+            foreach (var path in results)
+            {
+                await Assert.That(path).IsEqualTo(firstPath);
+            }
 
-            Assert.True(File.Exists(firstPath));
+            await Assert.That(File.Exists(firstPath)).IsTrue();
             var fileInfo = new FileInfo(firstPath);
-            Assert.True(fileInfo.Length > 0);
+            await Assert.That(fileInfo.Length > 0).IsTrue();
         }
         finally
         {
@@ -215,9 +225,3 @@ public sealed class CdkBootstrapManagerTests
         }
     }
 }
-
-[CollectionDefinition("CdkManagerSequential", DisableParallelization = true)]
-[SuppressMessage("Maintainability", "CA1515:Consider making public types internal")]
-[SuppressMessage("Naming", "CA1711:Identifiers should not have incorrect suffix")]
-[SuppressMessage("Design", "MA0048:File name must match type name")]
-public class CdkManagerSequentialCollection : ICollectionFixture<CdkBootstrapManagerTests>;

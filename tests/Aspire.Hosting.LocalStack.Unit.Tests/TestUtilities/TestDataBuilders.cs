@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace Aspire.Hosting.LocalStack.Unit.Tests.TestUtilities;
 
 internal static class TestDataBuilders

@@ -17,6 +17,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependencies**: Updated `Aspire.Hosting` to `13.1.0`
 - **LocalStack Container**: Updated from `4.10.0` → `4.12.0`
 - **Target Frameworks**: Added `net10.0` support
+- **Testing Framework**: Migrated from xUnit v3 to TUnit v1.5.70
+  - 453 tests migrated (432 unit tests, 21 integration tests)
+  - All tests passing across net8.0, net9.0, and net10.0
+  - Leverages Microsoft.Testing.Platform for improved performance
+  - Source-generated test discovery for faster execution
+  - Async-first assertion API throughout test suite
 
 ## [9.5.3] - 2025-11-04
 

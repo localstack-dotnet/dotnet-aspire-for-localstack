@@ -2,18 +2,18 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensi
 
 public class AddAWSCDKBootstrapCfTemplateForLocalStackTests
 {
-    [Fact]
-    public void AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Return_Null_When_LocalStack_Is_Null()
+    [Test]
+    public async Task AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Return_Null_When_LocalStack_Is_Null()
     {
         var builder = DistributedApplication.CreateBuilder([]);
 
         var result = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStackBuilder: null);
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
-    public void AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
+    [Test]
+    public async Task AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
@@ -21,11 +21,11 @@ public class AddAWSCDKBootstrapCfTemplateForLocalStackTests
 
         var result = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStackBuilder);
 
-        Assert.Null(result);
+        await Assert.That(result).IsNull();
     }
 
-    [Fact]
-    public void AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Create_Template_When_LocalStack_Enabled()
+    [Test]
+    public async Task AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Create_Template_When_LocalStack_Enabled()
     {
         var builder = DistributedApplication.CreateBuilder([]);
         var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
@@ -33,8 +33,8 @@ public class AddAWSCDKBootstrapCfTemplateForLocalStackTests
 
         var result = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStackBuilder);
 
-        Assert.NotNull(result);
-        Assert.NotNull(result.Resource);
-        Assert.Equal("CDKBootstrap", result.Resource.Name);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Resource).IsNotNull();
+        await Assert.That(result.Resource.Name).IsEqualTo("CDKBootstrap");
     }
 }

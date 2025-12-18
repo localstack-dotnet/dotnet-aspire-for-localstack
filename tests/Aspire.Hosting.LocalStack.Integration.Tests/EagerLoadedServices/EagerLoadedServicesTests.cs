@@ -1,19 +1,13 @@
-using System.Net.Http.Json;
-using System.Text.Json.Nodes;
-using Amazon;
-using Amazon.SQS.Model;
-using Aspire.Hosting.LocalStack.Container;
-using LocalStack.Client.Enums;
-
 namespace Aspire.Hosting.LocalStack.Integration.Tests.EagerLoadedServices;
 
+[NotInParallel("IntegrationTests")]
 public class EagerLoadedServicesTests
 {
-    [Fact]
-    public async Task LocalStack_Should_Lazy_Load_Services_By_Default_Async()
+    [Test]
+    public async Task LocalStack_Should_Lazy_Load_Services_By_Default_Async(CancellationToken cancellationToken)
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
 
 #pragma warning disable CA1849
         await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
@@ -37,16 +31,16 @@ public class EagerLoadedServicesTests
         using var httpClient = app.CreateHttpClient("localstack", "http");
         var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
         var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         var servicesNode = healthContent?["services"]?.AsObject();
-        Assert.NotNull(servicesNode);
-        Assert.True(servicesNode.ContainsKey("sqs"));
-        Assert.NotEqual("running", servicesNode["sqs"]?.ToString());
+        await Assert.That(servicesNode).IsNotNull();
+        await Assert.That(servicesNode.ContainsKey("sqs")).IsTrue();
+        await Assert.That(servicesNode["sqs"]?.ToString()).IsNotEqualTo("running");
 
         var connectionString = await app.GetConnectionStringAsync("localstack", cancellationToken: cts.Token);
-        Assert.NotNull(connectionString);
-        Assert.NotEmpty(connectionString);
+        await Assert.That(connectionString).IsNotNull();
+        await Assert.That(connectionString).IsNotEmpty();
 
         var connectionStringUri = new Uri(connectionString);
 
@@ -59,19 +53,19 @@ public class EagerLoadedServicesTests
 
         var laterHealthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
         var laterHealthContent = await laterHealthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
-        Assert.Equal(HttpStatusCode.OK, laterHealthResponse.StatusCode);
+        await Assert.That(laterHealthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         var sqsServicesNode = laterHealthContent?["services"]?.AsObject();
-        Assert.NotNull(sqsServicesNode);
-        Assert.True(sqsServicesNode.ContainsKey("sqs"));
-        Assert.Equal("running", sqsServicesNode["sqs"]?.ToString());
+        await Assert.That(sqsServicesNode).IsNotNull();
+        await Assert.That(sqsServicesNode.ContainsKey("sqs")).IsTrue();
+        await Assert.That(sqsServicesNode["sqs"]?.ToString()).IsEqualTo("running");
     }
 
-    [Fact]
-    public async Task LocalStack_Should_Eagerly_Load_Services_When_Configured_Async()
+    [Test]
+    public async Task LocalStack_Should_Eagerly_Load_Services_When_Configured_Async(CancellationToken cancellationToken)
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
 
 #pragma warning disable CA1849
         await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
@@ -96,19 +90,19 @@ public class EagerLoadedServicesTests
         using var httpClient = app.CreateHttpClient("localstack", "http");
         var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
         var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         var servicesNode = healthContent?["services"]?.AsObject();
-        Assert.NotNull(servicesNode);
-        Assert.True(servicesNode.ContainsKey("sqs"));
-        Assert.Equal("running", servicesNode["sqs"]?.ToString());
+        await Assert.That(servicesNode).IsNotNull();
+        await Assert.That(servicesNode.ContainsKey("sqs")).IsTrue();
+        await Assert.That(servicesNode["sqs"]?.ToString()).IsEqualTo("running");
     }
 
-    [Fact]
-    public async Task LocalStack_Should_Eagerly_Load_Multiple_Services_Async()
+    [Test]
+    public async Task LocalStack_Should_Eagerly_Load_Multiple_Services_Async(CancellationToken cancellationToken)
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
 
 #pragma warning disable CA1849
         await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
@@ -132,25 +126,25 @@ public class EagerLoadedServicesTests
         using var httpClient = app.CreateHttpClient("localstack", "http");
         var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
         var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         var servicesNode = healthContent?["services"]?.AsObject();
-        Assert.NotNull(servicesNode);
+        await Assert.That(servicesNode).IsNotNull();
 
         // All three services should be running
-        Assert.True(servicesNode.ContainsKey("sqs"));
-        Assert.Equal("running", servicesNode["sqs"]?.ToString());
-        Assert.True(servicesNode.ContainsKey("dynamodb"));
-        Assert.Equal("running", servicesNode["dynamodb"]?.ToString());
-        Assert.True(servicesNode.ContainsKey("s3"));
-        Assert.Equal("running", servicesNode["s3"]?.ToString());
+        await Assert.That(servicesNode.ContainsKey("sqs")).IsTrue();
+        await Assert.That(servicesNode["sqs"]?.ToString()).IsEqualTo("running");
+        await Assert.That(servicesNode.ContainsKey("dynamodb")).IsTrue();
+        await Assert.That(servicesNode["dynamodb"]?.ToString()).IsEqualTo("running");
+        await Assert.That(servicesNode.ContainsKey("s3")).IsTrue();
+        await Assert.That(servicesNode["s3"]?.ToString()).IsEqualTo("running");
     }
 
-    [Fact]
-    public async Task LocalStack_Should_Handle_Empty_EagerLoadedServices_Like_Lazy_Loading_Async()
+    [Test]
+    public async Task LocalStack_Should_Handle_Empty_EagerLoadedServices_Like_Lazy_Loading_Async(CancellationToken cancellationToken)
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
 
 #pragma warning disable CA1849
         await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
@@ -174,15 +168,15 @@ public class EagerLoadedServicesTests
         using var httpClient = app.CreateHttpClient("localstack", "http");
         var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cts.Token);
         var healthContent = await healthResponse.Content.ReadFromJsonAsync<JsonNode>(cts.Token);
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
 
         var servicesNode = healthContent?["services"]?.AsObject();
-        Assert.NotNull(servicesNode);
+        await Assert.That(servicesNode).IsNotNull();
 
         // Services should not be running by default (lazy loading)
         if (servicesNode.ContainsKey("sqs"))
         {
-            Assert.NotEqual("running", servicesNode["sqs"]?.ToString());
+            await Assert.That(servicesNode["sqs"]?.ToString()).IsNotEqualTo("running");
         }
     }
 

@@ -1,5 +1,3 @@
-using LocalStack.Client.Contracts;
-
 namespace Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
 
 /// <summary>

@@ -2,9 +2,9 @@ namespace Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
 
 /// <summary>
 /// Test fixture for LocalStack Lambda integration tests.
-/// Starts the AppHost once and shares it across all tests in the collection.
+/// Starts the AppHost once and shares it across all tests in the class.
 /// </summary>
-public sealed class LocalStackLambdaFixture : IAsyncLifetime
+public sealed class LocalStackLambdaFixture : IAsyncInitializer, IAsyncDisposable
 {
     private DistributedApplication? _app;
     private CloudFormationStackOutputs? _stackOutputs;
@@ -26,21 +26,16 @@ public sealed class LocalStackLambdaFixture : IAsyncLifetime
     /// </summary>
     public HttpClient CreateApiGatewayClient() => App.CreateHttpClient("APIGatewayEmulator");
 
-    public async ValueTask InitializeAsync()
+    public async Task InitializeAsync()
     {
-        using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, TestContext.Current.CancellationToken);
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
 
         var appHost = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.LocalStack_Lambda_AppHost>(["LocalStack:UseLocalStack=true"], cts.Token);
 
-        // Configure logging to capture Aspire app logs in xUnit test output
+        // Configure logging to capture Aspire app logs
         appHost.Services.AddLogging(logging =>
         {
-            if (TestContext.Current.TestOutputHelper is not null)
-            {
-                logging.AddXUnit(TestContext.Current.TestOutputHelper);
-            }
             logging.SetMinimumLevel(LogLevel.Information)
                    .AddFilter("Aspire.Hosting.Dcp", LogLevel.Warning);
         });
@@ -78,9 +73,3 @@ public sealed class LocalStackLambdaFixture : IAsyncLifetime
         }
     }
 }
-
-/// <summary>
-/// xUnit collection definition for Lambda tests to share the fixture.
-/// </summary>
-[CollectionDefinition("LocalStackLambda", DisableParallelization = true)]
-public class LocalStackLambdaCollectionDefinition : ICollectionFixture<LocalStackLambdaFixture>;

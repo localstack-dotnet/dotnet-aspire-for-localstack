@@ -1,53 +1,52 @@
-using Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
-
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning;
 
 /// <summary>
 /// Tests for LocalStack CDK provisioning playground resources.
 /// These tests verify that CloudFormation stack outputs and AWS resources are created correctly.
 /// </summary>
-[Collection("LocalStackCDK")]
-public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture, ITestOutputHelper outputHelper)
+[NotInParallel("IntegrationTests")]
+[ClassDataSource<LocalStackCdkFixture>(Shared = SharedType.PerTestSession)]
+public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture)
 {
-    [Fact]
-    public async Task LocalStack_Should_Be_Healthy()
+    [Test]
+    public async Task LocalStack_Should_Be_Healthy(CancellationToken cancellationToken)
     {
         using var httpClient = fixture.App.CreateHttpClient("localstack", "http");
-        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), TestContext.Current.CancellationToken);
-        var healthContent = await healthResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var healthResponse = await httpClient.GetAsync(new Uri("/_localstack/health", UriKind.Relative), cancellationToken);
+        var healthContent = await healthResponse.Content.ReadAsStringAsync(cancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, healthResponse.StatusCode);
-        Assert.NotEmpty(healthContent);
+        await Assert.That(healthResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(healthContent).IsNotEmpty();
 
-        outputHelper.WriteLine($"LocalStack health check passed: {healthResponse.StatusCode}");
-        outputHelper.WriteLine($"Health response: {healthContent}");
+        await TestOutputHelper.WriteLineAsync($"LocalStack health check passed: {healthResponse.StatusCode}");
+        await TestOutputHelper.WriteLineAsync($"Health response: {healthContent}");
     }
 
-    [Fact]
-    public void CloudFormation_Stack_Should_Have_Required_Outputs()
+    [Test]
+    public async Task CloudFormation_Stack_Should_Have_Required_Outputs()
     {
         var bucketName = fixture.StackOutputs.GetOutput("BucketName");
         var chatTopicArn = fixture.StackOutputs.GetOutput("ChatTopicArn");
         var chatMessagesQueueUrl = fixture.StackOutputs.GetOutput("ChatMessagesQueueUrl");
         var chatMessagesTableName = fixture.StackOutputs.GetOutput("ChatMessagesTableName");
 
-        Assert.NotNull(bucketName);
-        Assert.NotEmpty(bucketName);
-        Assert.NotNull(chatTopicArn);
-        Assert.NotEmpty(chatTopicArn);
-        Assert.NotNull(chatMessagesQueueUrl);
-        Assert.NotEmpty(chatMessagesQueueUrl);
-        Assert.NotNull(chatMessagesTableName);
-        Assert.NotEmpty(chatMessagesTableName);
+        await Assert.That(bucketName).IsNotNull();
+        await Assert.That(bucketName).IsNotEmpty();
+        await Assert.That(chatTopicArn).IsNotNull();
+        await Assert.That(chatTopicArn).IsNotEmpty();
+        await Assert.That(chatMessagesQueueUrl).IsNotNull();
+        await Assert.That(chatMessagesQueueUrl).IsNotEmpty();
+        await Assert.That(chatMessagesTableName).IsNotNull();
+        await Assert.That(chatMessagesTableName).IsNotEmpty();
 
-        outputHelper.WriteLine($"BucketName: {bucketName}");
-        outputHelper.WriteLine($"ChatTopicArn: {chatTopicArn}");
-        outputHelper.WriteLine($"ChatMessagesQueueUrl: {chatMessagesQueueUrl}");
-        outputHelper.WriteLine($"ChatMessagesTableName: {chatMessagesTableName}");
+        await TestOutputHelper.WriteLineAsync($"BucketName: {bucketName}");
+        await TestOutputHelper.WriteLineAsync($"ChatTopicArn: {chatTopicArn}");
+        await TestOutputHelper.WriteLineAsync($"ChatMessagesQueueUrl: {chatMessagesQueueUrl}");
+        await TestOutputHelper.WriteLineAsync($"ChatMessagesTableName: {chatMessagesTableName}");
     }
 
-    [Fact]
-    public async Task S3_Bucket_Should_Exist()
+    [Test]
+    public async Task S3_Bucket_Should_Exist(CancellationToken cancellationToken)
     {
         var bucketName = fixture.StackOutputs.GetOutput("BucketName")
             ?? throw new InvalidOperationException("BucketName output not found");
@@ -57,12 +56,12 @@ public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture, ITestOutpu
         var s3Client = session.CreateClientByImplementation<AmazonS3Client>();
         var doesS3BucketExist = await AmazonS3Util.DoesS3BucketExistV2Async(s3Client, bucketName);
 
-        Assert.True(doesS3BucketExist, $"S3 bucket '{bucketName}' should exist");
-        outputHelper.WriteLine($"S3 bucket '{bucketName}' exists ✓");
+        await Assert.That(doesS3BucketExist).IsTrue().Because($"S3 bucket '{bucketName}' should exist");
+        await TestOutputHelper.WriteLineAsync($"S3 bucket '{bucketName}' exists ✓");
     }
 
-    [Fact]
-    public async Task SNS_ChatTopic_Should_Exist()
+    [Test]
+    public async Task SNS_ChatTopic_Should_Exist(CancellationToken cancellationToken)
     {
         var topicArn = fixture.StackOutputs.GetOutput("ChatTopicArn")
             ?? throw new InvalidOperationException("ChatTopicArn output not found");
@@ -70,18 +69,18 @@ public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture, ITestOutpu
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var snsClient = session.CreateClientByImplementation<AmazonSimpleNotificationServiceClient>();
-        var topicAttributesResponse = await snsClient.GetTopicAttributesAsync(topicArn, TestContext.Current.CancellationToken);
+        var topicAttributesResponse = await snsClient.GetTopicAttributesAsync(topicArn, cancellationToken);
 
-        Assert.NotNull(topicAttributesResponse);
-        Assert.Equal(HttpStatusCode.OK, topicAttributesResponse.HttpStatusCode);
-        Assert.NotEmpty(topicAttributesResponse.Attributes);
+        await Assert.That(topicAttributesResponse).IsNotNull();
+        await Assert.That(topicAttributesResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(topicAttributesResponse.Attributes).IsNotEmpty();
 
-        outputHelper.WriteLine($"SNS topic '{topicArn}' exists ✓");
-        outputHelper.WriteLine($"  Display Name: {topicAttributesResponse.Attributes.GetValueOrDefault("DisplayName", "N/A")}");
+        await TestOutputHelper.WriteLineAsync($"SNS topic '{topicArn}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Display Name: {topicAttributesResponse.Attributes.GetValueOrDefault("DisplayName", "N/A")}");
     }
 
-    [Fact]
-    public async Task SQS_ChatMessagesQueue_Should_Exist()
+    [Test]
+    public async Task SQS_ChatMessagesQueue_Should_Exist(CancellationToken cancellationToken)
     {
         var queueUrl = fixture.StackOutputs.GetOutput("ChatMessagesQueueUrl")
             ?? throw new InvalidOperationException("ChatMessagesQueueUrl output not found");
@@ -89,19 +88,19 @@ public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture, ITestOutpu
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var sqsClient = session.CreateClientByImplementation<AmazonSQSClient>();
-        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrl, ["QueueArn"], TestContext.Current.CancellationToken);
+        var queueAttributesResponse = await sqsClient.GetQueueAttributesAsync(queueUrl, ["QueueArn"], cancellationToken);
 
-        Assert.NotNull(queueAttributesResponse);
-        Assert.Equal(HttpStatusCode.OK, queueAttributesResponse.HttpStatusCode);
-        Assert.NotEmpty(queueAttributesResponse.Attributes);
-        Assert.True(queueAttributesResponse.Attributes.ContainsKey("QueueArn"));
+        await Assert.That(queueAttributesResponse).IsNotNull();
+        await Assert.That(queueAttributesResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(queueAttributesResponse.Attributes).IsNotEmpty();
+        await Assert.That(queueAttributesResponse.Attributes.ContainsKey("QueueArn")).IsTrue();
 
-        outputHelper.WriteLine($"SQS queue '{queueUrl}' exists ✓");
-        outputHelper.WriteLine($"  Queue ARN: {queueAttributesResponse.Attributes["QueueArn"]}");
+        await TestOutputHelper.WriteLineAsync($"SQS queue '{queueUrl}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Queue ARN: {queueAttributesResponse.Attributes["QueueArn"]}");
     }
 
-    [Fact]
-    public async Task DynamoDB_ChatMessagesTable_Should_Exist()
+    [Test]
+    public async Task DynamoDB_ChatMessagesTable_Should_Exist(CancellationToken cancellationToken)
     {
         var tableName = fixture.StackOutputs.GetOutput("ChatMessagesTableName")
             ?? throw new InvalidOperationException("ChatMessagesTableName output not found");
@@ -109,13 +108,13 @@ public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture, ITestOutpu
         var session = LocalStackTestHelpers.CreateLocalStackSession(fixture.LocalStackConnectionString, fixture.RegionName);
 
         var dynamoDbClient = session.CreateClientByImplementation<AmazonDynamoDBClient>();
-        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, TestContext.Current.CancellationToken);
+        var tableResponse = await dynamoDbClient.DescribeTableAsync(tableName, cancellationToken);
 
-        Assert.NotNull(tableResponse);
-        Assert.Equal(HttpStatusCode.OK, tableResponse.HttpStatusCode);
-        Assert.Equal(tableName, tableResponse.Table.TableName);
+        await Assert.That(tableResponse).IsNotNull();
+        await Assert.That(tableResponse.HttpStatusCode).IsEqualTo(HttpStatusCode.OK);
+        await Assert.That(tableResponse.Table.TableName).IsEqualTo(tableName);
 
-        outputHelper.WriteLine($"DynamoDB table '{tableName}' exists ✓");
-        outputHelper.WriteLine($"  Partition Key: {tableResponse.Table.KeySchema[0].AttributeName}");
+        await TestOutputHelper.WriteLineAsync($"DynamoDB table '{tableName}' exists ✓");
+        await TestOutputHelper.WriteLineAsync($"  Partition Key: {tableResponse.Table.KeySchema[0].AttributeName}");
     }
 }

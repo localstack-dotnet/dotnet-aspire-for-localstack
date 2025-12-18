@@ -2,33 +2,33 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
 public class LocalStackConnectionStringAvailableCallbackTests
 {
-    [Fact]
-    public void CreateCallback_Should_Return_Valid_Callback()
+    [Test]
+    public async Task CreateCallback_Should_Return_Valid_Callback()
     {
         var builder = Substitute.For<IDistributedApplicationBuilder>();
 
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
 
-        Assert.NotNull(callback);
+        await Assert.That(callback).IsNotNull();
     }
 
-    [Fact]
-    public void CreateCallback_Should_Throw_ArgumentNullException_For_Null_Builder()
+    [Test]
+    public async Task CreateCallback_Should_Throw_ArgumentNullException_For_Null_Builder()
     {
-        Assert.Throws<ArgumentNullException>(() => LocalStackConnectionStringAvailableCallback.CreateCallback(null!));
+        await Assert.That(() => LocalStackConnectionStringAvailableCallback.CreateCallback(null!)).ThrowsExactly<ArgumentNullException>();
     }
 
-    [Fact]
-    public void CreateCallback_Should_Return_Function_With_Correct_Signature()
+    [Test]
+    public async Task CreateCallback_Should_Return_Function_With_Correct_Signature()
     {
         var builder = Substitute.For<IDistributedApplicationBuilder>();
 
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
 
-        Assert.IsType<Func<ILocalStackResource, ConnectionStringAvailableEvent, CancellationToken, Task>>(callback);
+        await Assert.That(callback).IsTypeOf<Func<ILocalStackResource, ConnectionStringAvailableEvent, CancellationToken, Task>>();
     }
 
-    [Fact]
+    [Test]
     public async Task Callback_Should_Skip_When_UseLocalStack_Is_False()
     {
         var builder = Substitute.For<IDistributedApplicationBuilder>();
