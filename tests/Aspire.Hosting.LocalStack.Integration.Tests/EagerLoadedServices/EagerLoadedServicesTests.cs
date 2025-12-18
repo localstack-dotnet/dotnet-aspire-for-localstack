@@ -174,9 +174,10 @@ public class EagerLoadedServicesTests
         await Assert.That(servicesNode).IsNotNull();
 
         // Services should not be running by default (lazy loading)
-        if (servicesNode.ContainsKey("sqs"))
+        var sqsService = servicesNode["sqs"];
+        if (sqsService is not null)
         {
-            await Assert.That(servicesNode["sqs"]?.ToString()).IsNotEqualTo("running");
+            await Assert.That(sqsService.ToString()).IsNotEqualTo("running");
         }
     }
 

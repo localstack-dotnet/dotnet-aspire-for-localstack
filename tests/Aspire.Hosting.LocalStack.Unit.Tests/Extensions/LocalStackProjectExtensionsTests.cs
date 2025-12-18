@@ -24,17 +24,18 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
+        IResourceBuilder<ProjectResource>? resultBuilder = null;
+        IResourceBuilder<ProjectResource>? originalBuilder = null;
+
         var (app, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>(testProjectResourceName, builder =>
         {
             var projectBuilder = builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath());
-            var result = projectBuilder.WithReference(localStackBuilder: null);
-
-            // Should return the same builder
-            if (!ReferenceEquals(result, projectBuilder))
-            {
-                throw new InvalidOperationException("Builder should be the same reference");
-            }
+            originalBuilder = projectBuilder;
+            resultBuilder = projectBuilder.WithReference(localStackBuilder: null);
         });
+
+        // Should return the same builder instance
+        await Assert.That(resultBuilder).IsSameReferenceAs(originalBuilder);
 
         await Assert.That(app.HasResource<ILocalStackResource>("localstack")).IsFalse();
         await projectResource.ShouldNotHaveLocalStackEnabledAnnotation();
