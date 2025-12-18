@@ -30,7 +30,7 @@ for tfm in "${TFMS[@]}"; do
   [[ -z "$tfm" ]] && continue
 
   echo "🧪 $tfm ..."
-  dotnet test "$PROJECT_PATH" -c "$CONFIGURATION" -f "$tfm" --no-build \
+  dotnet test --project "$PROJECT_PATH" -c "$CONFIGURATION" -f "$tfm" --no-build \
          --logger "trx;LogFileName=testResults-$tfm.trx" \
          --results-directory "$RESULTS_DIR"
 done
