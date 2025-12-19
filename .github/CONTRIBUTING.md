@@ -24,7 +24,7 @@ This project follows the [Contributor Covenant Code of Conduct](.github/CODE_OF_
 
 ### Prerequisites
 
-- [.NET SDK 9.0](https://dotnet.microsoft.com/download) (for development)
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download) (for development)
 - [Docker](https://docs.docker.com/get-docker/) (for LocalStack testing)
 - [Git](https://git-scm.com/downloads)
 - IDE: [Visual Studio](https://visualstudio.microsoft.com/), [Rider](https://www.jetbrains.com/rider/), or [VS Code](https://code.visualstudio.com/)
@@ -52,12 +52,17 @@ This project follows the [Contributor Covenant Code of Conduct](.github/CODE_OF_
 
 3. **Run Tests**
 
-   ```bash
-   # All tests
-   dotnet test --configuration Release
+   This project uses [TUnit](https://tunit.dev/) as its testing framework.
 
-   # With coverage
-   dotnet test --configuration Release
+   ```bash
+   # Run all tests
+   dotnet test
+
+   # Run tests for a specific project
+   dotnet test --project tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj
+
+   # Run specific tests (using standard filter syntax)
+   dotnet test --filter "FullyQualifiedName~HealthCheck"
    ```
 
 ## 🐛 Reporting Issues
@@ -143,7 +148,7 @@ We love new ideas! Here's how to suggest features:
 
 We have multiple test types:
 
-- **Unit Tests** - Fast, isolated, no external dependencies
+- **Unit Tests** - Fast, isolated, no external dependencies (using TUnit)
 - **Integration Tests** - Test AWS Aspire integration
 
 When adding tests:

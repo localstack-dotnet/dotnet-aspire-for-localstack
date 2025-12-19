@@ -178,7 +178,6 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Run Unit Tests"
-        # --timeout ensures test session exits properly (workaround for MTP Linux shutdown bug)
         run:  dotnet test --project ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build -- --timeout 5m
 
       - name: "Setup GitHub Packages Authentication"

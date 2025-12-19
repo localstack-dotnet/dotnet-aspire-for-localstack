@@ -58,7 +58,7 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Run Unit Tests"
-        run:  dotnet test ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build
+        run:  dotnet test --project ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build -- --timeout 5m
 
       - name: "Print Package Information"
         run: |

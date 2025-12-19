@@ -29,7 +29,6 @@ Write-Host "📋 Target frameworks: $($tfms -join ', ')"
 
 foreach ($tfm in $tfms) {
     Write-Host "🧪 $tfm ..."
-    # --timeout ensures test session exits properly (workaround for MTP shutdown bug)
     dotnet test --project $ProjectPath -c $Configuration -f $tfm --no-build `
         --report-trx --report-trx-filename "testResults-$tfm.trx" `
         --results-directory $ResultsDir `

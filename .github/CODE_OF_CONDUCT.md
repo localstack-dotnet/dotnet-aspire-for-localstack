@@ -12,7 +12,7 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at [localstack.dotnet@gmail.com](mailto:localstack.dotnet@gmail.com).
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at [info@localstackfor.net](mailto:info@localstackfor.net).
 
 All complaints will be reviewed and investigated promptly and fairly.
 
