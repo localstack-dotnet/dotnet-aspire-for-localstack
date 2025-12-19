@@ -30,6 +30,6 @@ Write-Host "📋 Target frameworks: $($tfms -join ', ')"
 foreach ($tfm in $tfms) {
     Write-Host "🧪 $tfm ..."
     dotnet test --project $ProjectPath -c $Configuration -f $tfm --no-build `
-        --logger "trx;LogFileName=testResults-$tfm.trx" `
+        --report-trx --report-trx-filename "testResults-$tfm.trx" `
         --results-directory $ResultsDir
 }

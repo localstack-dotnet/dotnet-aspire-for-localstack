@@ -31,6 +31,6 @@ for tfm in "${TFMS[@]}"; do
 
   echo "🧪 $tfm ..."
   dotnet test --project "$PROJECT_PATH" -c "$CONFIGURATION" -f "$tfm" --no-build \
-         --logger "trx;LogFileName=testResults-$tfm.trx" \
+         --report-trx --report-trx-filename "testResults-$tfm.trx" \
          --results-directory "$RESULTS_DIR"
 done
