@@ -1,9 +1,3 @@
-using System.Collections.Immutable;
-using System.Net;
-using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
-
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
 public sealed class LocalStackHealthCheckTests : IDisposable
@@ -26,7 +20,7 @@ public sealed class LocalStackHealthCheckTests : IDisposable
         _messageHandler.Dispose();
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Healthy_When_No_Services_Specified_And_Endpoint_Responds()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -35,13 +29,13 @@ public sealed class LocalStackHealthCheckTests : IDisposable
 
         _messageHandler.SetupResponse(HttpStatusCode.OK, new { services = new { } });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Healthy, result.Status);
-        Assert.Equal("LocalStack is healthy", result.Description);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Healthy);
+        await Assert.That(result.Description).IsEqualTo("LocalStack is healthy");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Healthy_When_All_Services_Running()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -57,13 +51,13 @@ public sealed class LocalStackHealthCheckTests : IDisposable
             },
         });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Healthy, result.Status);
-        Assert.Equal("LocalStack is healthy.", result.Description);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Healthy);
+        await Assert.That(result.Description).IsEqualTo("LocalStack is healthy.");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Unhealthy_When_Service_Not_Running()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -79,14 +73,14 @@ public sealed class LocalStackHealthCheckTests : IDisposable
             },
         });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Contains("dynamodb", result.Description, StringComparison.Ordinal);
-        Assert.Contains("not running", result.Description, StringComparison.Ordinal);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("dynamodb");
+        await Assert.That(result.Description).Contains("not running");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Unhealthy_When_Service_Missing()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -102,13 +96,13 @@ public sealed class LocalStackHealthCheckTests : IDisposable
             },
         });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Contains("s3", result.Description, StringComparison.Ordinal);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("s3");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Handles_Case_Insensitive_Service_Names()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -125,12 +119,12 @@ public sealed class LocalStackHealthCheckTests : IDisposable
             },
         });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Healthy, result.Status);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Healthy);
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Unhealthy_When_Endpoint_Returns_Non_Success_Status()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -139,13 +133,13 @@ public sealed class LocalStackHealthCheckTests : IDisposable
 
         _messageHandler.SetupResponse(HttpStatusCode.ServiceUnavailable, new { });
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Equal("LocalStack is unhealthy.", result.Description);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).IsEqualTo("LocalStack is unhealthy.");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Returns_Unhealthy_When_Services_Object_Missing()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -154,13 +148,13 @@ public sealed class LocalStackHealthCheckTests : IDisposable
 
         _messageHandler.SetupResponse(HttpStatusCode.OK, new { version = "1.0" }); // No services object
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Contains("did not contain a 'services' object", result.Description, StringComparison.Ordinal);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("did not contain a 'services' object");
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Handles_HttpRequestException()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -169,14 +163,14 @@ public sealed class LocalStackHealthCheckTests : IDisposable
 
         _messageHandler.SetupException(new HttpRequestException("Network error"));
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Contains("network error", result.Description, StringComparison.Ordinal);
-        Assert.NotNull(result.Exception);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("network error");
+        await Assert.That(result.Exception).IsNotNull();
     }
 
-    [Fact]
+    [Test]
     public async Task CheckHealthAsync_Handles_Timeout()
     {
         var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
@@ -185,12 +179,42 @@ public sealed class LocalStackHealthCheckTests : IDisposable
 
         _messageHandler.SetupException(new TaskCanceledException("Timeout", new TimeoutException("Operation timed out")));
 
-        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), TestContext.Current.CancellationToken);
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
 
-        Assert.Equal(HealthStatus.Unhealthy, result.Status);
-        Assert.Contains("timed out", result.Description, StringComparison.Ordinal);
-        Assert.NotNull(result.Exception);
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("timed out");
+        await Assert.That(result.Exception).IsNotNull();
     }
+    [Test]
+    public async Task CheckHealthAsync_Returns_Unhealthy_When_IOException_Occurs()
+    {
+        var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
+        var services = ImmutableArray.Create("sqs");
+        var healthCheck = new LocalStackHealthCheck(_httpClientFactory, healthCheckUri, services);
+
+        _messageHandler.SetupException(new IOException("Connection closed prematurely"));
+
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("starting up");
+        await Assert.That(result.Exception).IsTypeOf<IOException>();
+    }
+
+    [Test]
+    public async Task CheckHealthAsync_Propagates_OperationCanceledException()
+    {
+        var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
+        var services = ImmutableArray.Create("sqs");
+        var healthCheck = new LocalStackHealthCheck(_httpClientFactory, healthCheckUri, services);
+
+        _messageHandler.SetupException(new OperationCanceledException("Cancellation requested"));
+
+        // This should NOT be caught by the generic handler anymore
+        await Assert.That(async () => await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None))
+            .ThrowsExactly<OperationCanceledException>();
+    }
+
 
     // Custom HttpMessageHandler for testing
     private sealed class TestHttpMessageHandler : HttpMessageHandler

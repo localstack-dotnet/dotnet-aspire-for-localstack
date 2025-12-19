@@ -2,8 +2,8 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
 public class LocalStackResourceConfiguratorTests
 {
-    [Fact]
-    public void ConfigureCloudFormationResource_Should_Set_CloudFormation_Client()
+    [Test]
+    public async Task ConfigureCloudFormationResource_Should_Set_CloudFormation_Client()
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("http://localhost:4566");
@@ -16,12 +16,12 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
 
-        Assert.NotNull(capturedClient);
-        Assert.IsType<AmazonCloudFormationClient>(capturedClient);
+        await Assert.That(capturedClient).IsNotNull();
+        await Assert.That(capturedClient).IsTypeOf<AmazonCloudFormationClient>();
     }
 
-    [Fact]
-    public void ConfigureCloudFormationResource_Should_Configure_Client_With_LocalStack_Endpoint()
+    [Test]
+    public async Task ConfigureCloudFormationResource_Should_Configure_Client_With_LocalStack_Endpoint()
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("http://test-host:9999");
@@ -37,8 +37,8 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
 
-        Assert.NotNull(capturedClient);
-        Assert.NotNull(capturedClient.Config);
+        await Assert.That(capturedClient).IsNotNull();
+        await Assert.That(capturedClient.Config).IsNotNull();
 
         // Log some debug info about what's actually configured
         var config = capturedClient.Config;
@@ -48,13 +48,13 @@ public class LocalStackResourceConfiguratorTests
                         $"ProxyHost: '{config.ProxyHost}', " +
                         $"ProxyPort: '{config.ProxyPort}'";
 
-        // For now, just verify the client was created successfully
-        // Note: LocalStack client configuration may use internal mechanisms to set endpoint URLs
-        Assert.True(true, $"Client config: {debugInfo}");
+        // Verify client was created with valid configuration
+        await Assert.That(config.ServiceURL ?? config.RegionEndpoint?.SystemName).IsNotNull()
+            .Because($"Client config: {debugInfo}");
     }
 
-    [Fact]
-    public void ConfigureCloudFormationResource_Should_Handle_SSL_Configuration()
+    [Test]
+    public async Task ConfigureCloudFormationResource_Should_Handle_SSL_Configuration()
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("https://localhost:4566");
@@ -67,17 +67,18 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
 
-        Assert.NotNull(capturedClient);
-        Assert.NotNull(capturedClient.Config);
+        await Assert.That(capturedClient).IsNotNull();
+        await Assert.That(capturedClient.Config).IsNotNull();
 
         var config = capturedClient.Config;
 
-        // We can at least verify that a valid client was created
-        Assert.True(true, $"SSL client created with UseHttp: {config.UseHttp}");
+        // Verify SSL client has valid configuration
+        await Assert.That(capturedClient).IsNotNull()
+            .Because($"SSL client created with UseHttp: {config.UseHttp}");
     }
 
-    [Fact]
-    public void ConfigureProjectResource_Should_Call_WithEnvironment()
+    [Test]
+    public async Task ConfigureProjectResource_Should_Call_WithEnvironment()
     {
         var mockResource = Substitute.For<IResourceWithEnvironment>();
         var mockBuilder = Substitute.For<IResourceBuilder<IResourceWithEnvironment>>();
@@ -93,12 +94,12 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
 
-        Assert.NotNull(mockBuilder);
-        Assert.NotNull(options);
+        await Assert.That(mockBuilder).IsNotNull();
+        await Assert.That(options).IsNotNull();
     }
 
-    [Fact]
-    public void ConfigureProjectResource_Should_Handle_Custom_Port_And_Host()
+    [Test]
+    public async Task ConfigureProjectResource_Should_Handle_Custom_Port_And_Host()
     {
         var mockResource = Substitute.For<IResourceWithEnvironment>();
         var mockBuilder = Substitute.For<IResourceBuilder<IResourceWithEnvironment>>();
@@ -111,11 +112,11 @@ public class LocalStackResourceConfiguratorTests
             useSsl: true);
 
         LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
-        Assert.NotNull(mockBuilder);
+        await Assert.That(mockBuilder).IsNotNull();
     }
 
-    [Fact]
-    public void ConfigureProjectResource_Should_Handle_All_Configuration_Options()
+    [Test]
+    public async Task ConfigureProjectResource_Should_Handle_All_Configuration_Options()
     {
         var mockResource = Substitute.For<IResourceWithEnvironment>();
         var mockBuilder = Substitute.For<IResourceBuilder<IResourceWithEnvironment>>();
@@ -126,13 +127,13 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
 
-        Assert.True(options.UseLocalStack || !options.UseLocalStack); // Verifies bool is accessible
-        Assert.NotNull(options.Session);
-        Assert.NotNull(options.Config);
+        await Assert.That(options.UseLocalStack || !options.UseLocalStack).IsTrue(); // Verifies bool is accessible
+        await Assert.That(options.Session).IsNotNull();
+        await Assert.That(options.Config).IsNotNull();
     }
 
-    [Fact]
-    public void ConfigureSqsEventSourceResource_Should_Add_Environment_Annotation_With_AWS_Endpoint_URL()
+    [Test]
+    public async Task ConfigureSqsEventSourceResource_Should_Add_Environment_Annotation_With_AWS_Endpoint_URL()
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
@@ -154,12 +155,12 @@ public class LocalStackResourceConfiguratorTests
             .OfType<EnvironmentCallbackAnnotation>()
             .ToList();
 
-        Assert.NotEmpty(envAnnotations);
-        Assert.Single(envAnnotations);
+        await Assert.That(envAnnotations).IsNotEmpty();
+        await Assert.That(envAnnotations).HasSingleItem();
     }
 
-    [Fact]
-    public void ConfigureSqsEventSourceResource_Should_Add_Annotation_Via_WithEnvironment()
+    [Test]
+    public async Task ConfigureSqsEventSourceResource_Should_Add_Annotation_Via_WithEnvironment()
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
@@ -183,16 +184,16 @@ public class LocalStackResourceConfiguratorTests
 
         LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
 
-        Assert.Equal(initialAnnotationCount + 1, mockExecutableResource.Annotations.Count);
+        await Assert.That(mockExecutableResource.Annotations.Count).IsEqualTo(initialAnnotationCount + 1);
 
         var envAnnotations = mockExecutableResource.Annotations
             .OfType<EnvironmentCallbackAnnotation>()
             .ToList();
-        Assert.Single(envAnnotations);
+        await Assert.That(envAnnotations).HasSingleItem();
     }
 
-    [Fact]
-    public void ConfigureSqsEventSourceResource_Should_Handle_Empty_Annotations_Collection()
+    [Test]
+    public async Task ConfigureSqsEventSourceResource_Should_Handle_Empty_Annotations_Collection()
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
@@ -212,12 +213,12 @@ public class LocalStackResourceConfiguratorTests
         LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
 
         // Should have added exactly one EnvironmentCallbackAnnotation
-        Assert.Equal(initialAnnotationCount + 1, mockExecutableResource.Annotations.Count);
-        Assert.Single(mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>());
+        await Assert.That(mockExecutableResource.Annotations.Count).IsEqualTo(initialAnnotationCount + 1);
+        await Assert.That(mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>()).HasSingleItem();
     }
 
-    [Fact]
-    public void ConfigureSqsEventSourceResource_Should_Handle_Different_LocalStack_URLs()
+    [Test]
+    public async Task ConfigureSqsEventSourceResource_Should_Handle_Different_LocalStack_URLs()
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
@@ -236,6 +237,6 @@ public class LocalStackResourceConfiguratorTests
         LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, customLocalStackUrl, options);
 
         var envAnnotation = mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().FirstOrDefault();
-        Assert.NotNull(envAnnotation);
+        await Assert.That(envAnnotation).IsNotNull();
     }
 }

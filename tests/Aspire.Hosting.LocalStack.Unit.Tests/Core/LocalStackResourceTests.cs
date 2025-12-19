@@ -2,65 +2,65 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Core;
 
 public class LocalStackResourceTests
 {
-    [Fact]
-    public void LocalStackResource_Should_Implement_ILocalStackResource()
+    [Test]
+    public async Task LocalStackResource_Should_Implement_ILocalStackResource()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         var resource = new LocalStackResource("test-localstack", options);
 
-        Assert.IsType<ILocalStackResource>(resource, exactMatch: false);
-        Assert.IsType<IResourceWithWaitSupport>(resource, exactMatch: false);
-        Assert.IsType<IResourceWithConnectionString>(resource, exactMatch: false);
+        await Assert.That(resource).IsAssignableTo<ILocalStackResource>();
+        await Assert.That(resource).IsAssignableTo<IResourceWithWaitSupport>();
+        await Assert.That(resource).IsAssignableTo<IResourceWithConnectionString>();
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Store_Name_And_Options()
+    [Test]
+    public async Task LocalStackResource_Should_Store_Name_And_Options()
     {
         const string resourceName = "my-localstack";
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         var resource = new LocalStackResource(resourceName, options);
 
-        Assert.Equal(resourceName, resource.Name);
-        Assert.Same(options, resource.Options);
+        await Assert.That(resource.Name).IsEqualTo(resourceName);
+        await Assert.That(resource.Options).IsSameReferenceAs(options);
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Generate_HTTP_Connection_String_When_SSL_Disabled()
+    [Test]
+    public async Task LocalStackResource_Should_Generate_HTTP_Connection_String_When_SSL_Disabled()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(edgePort: 4566, useSsl: false);
 
         var resource = new LocalStackResource("test-localstack", options);
 
         var connectionString = resource.ConnectionStringExpression.ValueExpression;
-        Assert.StartsWith("http://", connectionString, StringComparison.Ordinal);
+        await Assert.That(connectionString).StartsWith("http://");
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Generate_HTTPS_Connection_String_When_SSL_Enabled()
+    [Test]
+    public async Task LocalStackResource_Should_Generate_HTTPS_Connection_String_When_SSL_Enabled()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(edgePort: 4566, useSsl: true);
 
         var resource = new LocalStackResource("test-localstack", options);
 
         var connectionString = resource.ConnectionStringExpression.ValueExpression;
-        Assert.StartsWith("https://", connectionString, StringComparison.Ordinal);
+        await Assert.That(connectionString).StartsWith("https://");
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Have_Primary_Endpoint()
+    [Test]
+    public async Task LocalStackResource_Should_Have_Primary_Endpoint()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         var resource = new LocalStackResource("test-localstack", options);
 
-        Assert.NotNull(resource.PrimaryEndpoint);
-        Assert.Equal("http", resource.PrimaryEndpoint.EndpointName);
+        await Assert.That(resource.PrimaryEndpoint).IsNotNull();
+        await Assert.That(resource.PrimaryEndpoint.EndpointName).IsEqualTo("http");
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Return_Same_Primary_Endpoint_Instance()
+    [Test]
+    public async Task LocalStackResource_Should_Return_Same_Primary_Endpoint_Instance()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
         var resource = new LocalStackResource("test-localstack", options);
@@ -68,51 +68,51 @@ public class LocalStackResourceTests
         var endpoint1 = resource.PrimaryEndpoint;
         var endpoint2 = resource.PrimaryEndpoint;
 
-        Assert.Same(endpoint1, endpoint2);
+        await Assert.That(endpoint1).IsSameReferenceAs(endpoint2);
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Have_Correct_Primary_Endpoint_Name()
+    [Test]
+    public async Task LocalStackResource_Should_Have_Correct_Primary_Endpoint_Name()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         var resource = new LocalStackResource("test-localstack", options);
 
-        Assert.Equal(LocalStackResource.PrimaryEndpointName, resource.PrimaryEndpoint.EndpointName);
-        Assert.Equal("http", LocalStackResource.PrimaryEndpointName);
+        await Assert.That(resource.PrimaryEndpoint.EndpointName).IsEqualTo(LocalStackResource.PrimaryEndpointName);
+        await Assert.That(resource.PrimaryEndpoint.EndpointName).IsEqualTo("http");
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void LocalStackResource_Should_Throw_ArgumentException_For_Invalid_Name(string invalidName)
+    [Test]
+    [Arguments("")]
+    [Arguments("   ")]
+    public async Task LocalStackResource_Should_Throw_ArgumentException_For_Invalid_Name(string invalidName)
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
-        Assert.Throws<ArgumentException>(() => new LocalStackResource(invalidName, options));
+        await Assert.That(() => new LocalStackResource(invalidName, options)).ThrowsExactly<ArgumentException>();
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Throw_ArgumentNullException_For_Null_Name()
+    [Test]
+    public async Task LocalStackResource_Should_Throw_ArgumentNullException_For_Null_Name()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
-        Assert.Throws<ArgumentNullException>(() => new LocalStackResource(null!, options));
+        await Assert.That(() => new LocalStackResource(null!, options)).ThrowsExactly<ArgumentNullException>();
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Throw_ArgumentNullException_For_Null_Options()
+    [Test]
+    public async Task LocalStackResource_Should_Throw_ArgumentNullException_For_Null_Options()
     {
-        Assert.Throws<ArgumentNullException>(() => new LocalStackResource("test", null!));
+        await Assert.That(() => new LocalStackResource("test", null!)).ThrowsExactly<ArgumentNullException>();
     }
 
-    [Fact]
-    public void LocalStackResource_Should_Be_Container_Resource()
+    [Test]
+    public async Task LocalStackResource_Should_Be_Container_Resource()
     {
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
 
         var resource = new LocalStackResource("test-localstack", options);
 
-        Assert.IsType<ContainerResource>(resource, exactMatch: false);
+        await Assert.That(resource).IsAssignableTo<ContainerResource>();
     }
 }

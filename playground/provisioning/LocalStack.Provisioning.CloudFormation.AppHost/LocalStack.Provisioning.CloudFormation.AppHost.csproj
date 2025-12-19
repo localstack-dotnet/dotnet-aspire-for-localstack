@@ -9,10 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost"/>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" IsAspireProjectResource="false"/>
     <ProjectReference Include="..\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
-
-    <PackageReference Include="Aspire.Hosting.AppHost"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -19,6 +19,7 @@ using LocalStack.Client.Options;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Logging;
 
 namespace Aspire.Hosting;
 
@@ -307,6 +308,13 @@ public static class LocalStackResourceBuilderExtensions
         ImmutableArray<string> serviceNames)
     {
         builder.Services.AddHttpClient(Constants.LocalStackHealthClientName, client => client.Timeout = TimeSpan.FromSeconds(5));
+
+        // Suppress noisy logs from the health check client during startup
+        builder.Services.AddLogging(logging =>
+        {
+            logging.AddFilter($"System.Net.Http.HttpClient.{Constants.LocalStackHealthClientName}.ClientHandler", LogLevel.Warning);
+            logging.AddFilter($"System.Net.Http.HttpClient.{Constants.LocalStackHealthClientName}.LogicalHandler", LogLevel.Warning);
+        });
 
         EndpointReference endpoint = resourceBuilder.Resource.GetEndpoint(LocalStackResource.PrimaryEndpointName);
 

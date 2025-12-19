@@ -1,16 +1,12 @@
-using System.Net.Http.Json;
-using System.Text.Json;
-using Amazon.DynamoDBv2.Model;
-using Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
-
 namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda;
 
 /// <summary>
 /// End-to-end functional tests for the Lambda playground.
 /// These tests validate the complete URL shortener and analytics flow.
 /// </summary>
-[Collection("LocalStackLambda")]
-public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, ITestOutputHelper outputHelper)
+[NotInParallel("IntegrationTests")]
+[ClassDataSource<LocalStackLambdaFixture>(Shared = SharedType.PerTestSession)]
+public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
 {
     // Cache JsonSerializerOptions to avoid creating new instances for each test (CA1869)
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -21,72 +17,72 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         PropertyNamingPolicy = null, // Use default PascalCase, not camelCase
     };
 
-    [Fact]
-    public async Task UrlShortener_Should_Create_Short_Url()
+    [Test]
+    public async Task UrlShortener_Should_Create_Short_Url(CancellationToken cancellationToken)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
         var request = new { Url = "https://aws.amazon.com", Format = (string?)null };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, TestContext.Current.CancellationToken);
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         // Log response for debugging
-        outputHelper.WriteLine($"Response Status: {response.StatusCode}");
-        outputHelper.WriteLine($"Response Body: {content}");
+        await TestOutputHelper.WriteLineAsync($"Response Status: {response.StatusCode}");
+        await TestOutputHelper.WriteLineAsync($"Response Body: {content}");
 
         // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
         var result = JsonSerializer.Deserialize<ShortenResponse>(content, JsonOptions);
-        Assert.NotNull(result);
-        Assert.NotNull(result.Id);
-        Assert.NotEmpty(result.Id);
-        Assert.Null(result.QrUrl); // No QR code requested
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.Id).IsNotNull();
+        await Assert.That(result.Id).IsNotEmpty();
+        await Assert.That(result.QrUrl).IsNull(); // No QR code requested
 
-        outputHelper.WriteLine($"Created short URL with ID: {result.Id}");
+        await TestOutputHelper.WriteLineAsync($"Created short URL with ID: {result.Id}");
     }
 
-    [Fact]
-    public async Task UrlShortener_Should_Create_Short_Url_With_QrCode()
+    [Test]
+    public async Task UrlShortener_Should_Create_Short_Url_With_QrCode(CancellationToken cancellationToken)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
         var request = new { Url = "https://localstack.cloud", Format = "qr" };
 
         // Act
-        var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, TestContext.Current.CancellationToken);
-        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, cancellationToken);
+        var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
         // Assert
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
         var result = JsonSerializer.Deserialize<ShortenResponse>(content, JsonOptions);
-        Assert.NotNull(result);
-        Assert.NotNull(result.Id);
-        Assert.NotEmpty(result.Id);
-        Assert.NotNull(result.QrUrl); // QR code was requested
-        Assert.NotEmpty(result.QrUrl);
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.Id).IsNotNull();
+        await Assert.That(result.Id).IsNotEmpty();
+        await Assert.That(result.QrUrl).IsNotNull(); // QR code was requested
+        await Assert.That(result.QrUrl).IsNotEmpty();
 
-        outputHelper.WriteLine($"Created short URL with ID: {result.Id}");
-        outputHelper.WriteLine($"QR Code URL: {result.QrUrl}");
+        await TestOutputHelper.WriteLineAsync($"Created short URL with ID: {result.Id}");
+        await TestOutputHelper.WriteLineAsync($"QR Code URL: {result.QrUrl}");
     }
 
-    [Fact]
-    public async Task Redirector_Should_Redirect_To_Original_Url()
+    [Test]
+    public async Task Redirector_Should_Redirect_To_Original_Url(CancellationToken cancellationToken)
     {
         // Arrange: First create a short URL
         using var httpClient = fixture.CreateApiGatewayClient();
         httpClient.Timeout = TimeSpan.FromSeconds(90);
 
         var createRequest = new { Url = "https://docs.localstack.cloud", Format = (string?)null };
-        var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, TestContext.Current.CancellationToken);
-        var createContent = await createResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
+        var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
         var createResult = JsonSerializer.Deserialize<ShortenResponse>(createContent, JsonOptions);
 
-        Assert.NotNull(createResult);
-        Assert.NotNull(createResult.Id);
+        await Assert.That(createResult).IsNotNull();
+        await Assert.That(createResult.Id).IsNotNull();
 
         // Act: Access the redirect endpoint (don't follow redirects automatically)
         using var handler = new HttpClientHandler();
@@ -95,19 +91,20 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         redirectClient.BaseAddress = httpClient.BaseAddress;
         redirectClient.Timeout = TimeSpan.FromSeconds(90);
 
-        var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
+        var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), cancellationToken);
+        var headersLocation = redirectResponse.Headers.Location;
 
         // Assert
-        Assert.Equal(HttpStatusCode.Found, redirectResponse.StatusCode); // 302 Found
-        Assert.True(redirectResponse.Headers.Location is not null);
+        await Assert.That(redirectResponse.StatusCode).IsEqualTo(HttpStatusCode.Found); // 302 Found
+        await Assert.That(headersLocation).IsNotNull();
         // Trim trailing slash for comparison as DynamoDB might normalize URLs
-        Assert.Equal("https://docs.localstack.cloud", redirectResponse.Headers.Location.ToString().TrimEnd('/'));
+        await Assert.That(headersLocation.ToString().TrimEnd('/')).IsEqualTo("https://docs.localstack.cloud");
 
-        outputHelper.WriteLine($"Redirect from /{createResult.Id} to {redirectResponse.Headers.Location}");
+        await TestOutputHelper.WriteLineAsync($"Redirect from /{createResult.Id} to {headersLocation}");
     }
 
-    [Fact]
-    public async Task Analyzer_Lambda_Should_Process_Events_From_Queue()
+    [Test]
+    public async Task Analyzer_Lambda_Should_Process_Events_From_Queue(CancellationToken cancellationToken)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
@@ -122,43 +119,43 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         using var stringContent = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
 
         // Act: Create a short URL (this triggers analytics event → SQS → Analyzer Lambda)
-        var createResponse = await httpClient.PostAsync(new Uri("/shorten", UriKind.Relative), stringContent, TestContext.Current.CancellationToken);
-        var createContent = await createResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var createResponse = await httpClient.PostAsync(new Uri("/shorten", UriKind.Relative), stringContent, cancellationToken);
+        var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
         var createResult = JsonSerializer.Deserialize<ShortenResponse>(createContent, JsonOptions);
 
-        Assert.NotNull(createResult);
-        Assert.NotNull(createResult.Id);
+        await Assert.That(createResult).IsNotNull();
+        await Assert.That(createResult.Id).IsNotNull();
 
         // Wait for SQS Event Source to trigger Analyzer Lambda and process the event
-        outputHelper.WriteLine("Waiting for Analyzer Lambda to process event...");
-        await Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await TestOutputHelper.WriteLineAsync("Waiting for Analyzer Lambda to process event...");
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
         // Assert: Verify event was written to AnalyticsTable by Analyzer Lambda
-        var scanResponse = await dynamoDbClient.ScanAsync(new ScanRequest
+        var scanResponse = await dynamoDbClient.ScanAsync(new Amazon.DynamoDBv2.Model.ScanRequest
         {
             TableName = analyticsTableName,
             FilterExpression = "Slug = :slug AND EventType = :eventType",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>
                 (StringComparer.OrdinalIgnoreCase)
                 {
                     [":slug"] = new() { S = createResult.Id },
                     [":eventType"] = new() { S = "url_created" },
                 },
-        }, TestContext.Current.CancellationToken);
+        }, cancellationToken);
 
-        Assert.NotEmpty(scanResponse.Items);
-        Assert.Single(scanResponse.Items);
+        await Assert.That(scanResponse.Items).IsNotEmpty();
+        await Assert.That(scanResponse.Items).HasSingleItem();
 
         var analyticsItem = scanResponse.Items[0];
-        Assert.Equal(createResult.Id, analyticsItem["Slug"].S);
-        Assert.Equal("url_created", analyticsItem["EventType"].S);
-        Assert.Equal(testUrl, analyticsItem["OriginalUrl"].S);
+        await Assert.That(analyticsItem["Slug"].S).IsEqualTo(createResult.Id);
+        await Assert.That(analyticsItem["EventType"].S).IsEqualTo("url_created");
+        await Assert.That(analyticsItem["OriginalUrl"].S).IsEqualTo(testUrl);
 
-        outputHelper.WriteLine($"Analyzer Lambda successfully processed event for slug: {createResult.Id}");
+        await TestOutputHelper.WriteLineAsync($"Analyzer Lambda successfully processed event for slug: {createResult.Id}");
     }
 
-    [Fact]
-    public async Task Redirecting_Url_Should_Send_Analytics_Event_And_Be_Processed()
+    [Test]
+    public async Task Redirecting_Url_Should_Send_Analytics_Event_And_Be_Processed(CancellationToken cancellationToken)
     {
         // Arrange: First create a short URL
         using var httpClient = fixture.CreateApiGatewayClient();
@@ -170,15 +167,15 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
 
         var testUrl = $"https://redirect-analytics-test.example.com/{Guid.NewGuid()}";
         var createRequest = new { Url = testUrl, Format = (string?)null };
-        var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, TestContext.Current.CancellationToken);
-        var createContent = await createResponse.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+        var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
+        var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
         var createResult = JsonSerializer.Deserialize<ShortenResponse>(createContent, JsonOptions);
 
-        Assert.NotNull(createResult);
-        Assert.NotNull(createResult.Id);
+        await Assert.That(createResult).IsNotNull();
+        await Assert.That(createResult.Id).IsNotNull();
 
         // Wait for creation analytics to be processed
-        await Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
         // Act: Access the redirect endpoint
         using var handler = new HttpClientHandler();
@@ -187,33 +184,33 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture, IT
         redirectClient.BaseAddress = httpClient.BaseAddress;
         redirectClient.Timeout = TimeSpan.FromSeconds(90);
 
-        var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), TestContext.Current.CancellationToken);
-        Assert.Equal(HttpStatusCode.Found, redirectResponse.StatusCode);
+        var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), cancellationToken);
+        await Assert.That(redirectResponse.StatusCode).IsEqualTo(HttpStatusCode.Found);
 
         // Wait for Analyzer Lambda to process the url_accessed event
-        outputHelper.WriteLine("Waiting for Analyzer Lambda to process url_accessed event...");
-        await Task.Delay(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await TestOutputHelper.WriteLineAsync("Waiting for Analyzer Lambda to process url_accessed event...");
+        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
 
         // Assert: Verify both url_created and url_accessed events are in AnalyticsTable
-        var scanResponse = await dynamoDbClient.ScanAsync(new ScanRequest
+        var scanResponse = await dynamoDbClient.ScanAsync(new Amazon.DynamoDBv2.Model.ScanRequest
         {
             TableName = analyticsTableName,
             FilterExpression = "Slug = :slug",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>
+            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>
                 (StringComparer.OrdinalIgnoreCase)
                 {
                     [":slug"] = new() { S = createResult.Id },
                 },
-        }, TestContext.Current.CancellationToken);
+        }, cancellationToken);
 
-        Assert.NotEmpty(scanResponse.Items);
-        Assert.Equal(2, scanResponse.Items.Count); // Both url_created and url_accessed
+        await Assert.That(scanResponse.Items).IsNotEmpty();
+        await Assert.That(scanResponse.Items.Count).IsEqualTo(2); // Both url_created and url_accessed
 
         var eventTypes = scanResponse.Items.Select(item => item["EventType"].S).ToList();
-        Assert.Contains("url_created", eventTypes);
-        Assert.Contains("url_accessed", eventTypes);
+        await Assert.That(eventTypes).Contains("url_created");
+        await Assert.That(eventTypes).Contains("url_accessed");
 
-        outputHelper.WriteLine($"Successfully verified both url_created and url_accessed events for slug: {createResult.Id}");
+        await TestOutputHelper.WriteLineAsync($"Successfully verified both url_created and url_accessed events for slug: {createResult.Id}");
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ dotnet add package LocalStack.Aspire.Hosting
 
 > **Package Note**: The package is named `LocalStack.Aspire.Hosting` but uses the namespace `Aspire.Hosting.LocalStack` to align with .NET Aspire hosting conventions. This ensures consistency with other Aspire hosting integrations while maintaining a unique package identity.
 
-**Requirements**: .NET 8.0 or later (supports both .NET 8 and .NET 9)
+**Requirements**: .NET 8.0 or later (supports .NET 8, .NET 9, and .NET 10)
 
 ### Development Builds
 
@@ -37,6 +37,7 @@ This package follows Aspire's **major.minor** versioning but releases **patch ve
 
 - `9.5.x` works with Aspire 9.5.x
 - `9.6.x` works with Aspire 9.6.x
+- `13.1.x` works with Aspire 13.1.x
 
 We may ship features and fixes between Aspire releases. When upgrading Aspire's minor version, upgrade this package to match.
 

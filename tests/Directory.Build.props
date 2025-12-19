@@ -3,27 +3,16 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <!-- Disable warnings that don't apply to TUnit test projects -->
+    <NoWarn>$(NoWarn);CA1515;CA2007;IDE1006;CA1707</NoWarn>
+    <NoError>$(NoError);CA1515;CA2007;IDE1006;CA1707</NoError>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Testing"/>
     <PackageReference Include="Aspire.Hosting.AWS"/>
-    <PackageReference Include="Microsoft.NET.Test.Sdk"/>
-    <PackageReference Include="MartinCostello.Logging.XUnit.v3"/>
     <PackageReference Include="NSubstitute"/>
-    <PackageReference Include="xunit.v3"/>
-    <PackageReference Include="xunit.v3.runner.console">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="xunit.runner.visualstudio">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="xunit.analyzers">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
-    </PackageReference>
+    <PackageReference Include="TUnit"/>
     <PackageReference Include="NSubstitute.Analyzers.CSharp">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>

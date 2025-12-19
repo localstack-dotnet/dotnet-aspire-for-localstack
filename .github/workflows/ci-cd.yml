@@ -55,6 +55,7 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: "Setup Node.js"
         if: runner.os == 'Linux'
@@ -160,6 +161,7 @@ jobs:
           dotnet-version: |
             8.0.x
             9.0.x
+            10.0.x
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v4
@@ -176,7 +178,8 @@ jobs:
         run: dotnet build --configuration Release --no-restore
 
       - name: "Run Unit Tests"
-        run:  dotnet test ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build
+        # --timeout ensures test session exits properly (workaround for MTP Linux shutdown bug)
+        run:  dotnet test --project ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build -- --timeout 5m
 
       - name: "Setup GitHub Packages Authentication"
         run: |

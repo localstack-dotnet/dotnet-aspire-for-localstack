@@ -18,5 +18,5 @@ internal static class LocalStackContainerImageTags
     /// <summary>
     /// The default LocalStack container image tag.
     /// </summary>
-    internal const string Tag = "4.10.0";
+    internal const string Tag = "4.12.0";
 }

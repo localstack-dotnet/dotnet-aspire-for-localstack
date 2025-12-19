@@ -30,7 +30,9 @@ for tfm in "${TFMS[@]}"; do
   [[ -z "$tfm" ]] && continue
 
   echo "🧪 $tfm ..."
-  dotnet test "$PROJECT_PATH" -c "$CONFIGURATION" -f "$tfm" --no-build \
-         --logger "trx;LogFileName=testResults-$tfm.trx" \
-         --results-directory "$RESULTS_DIR"
+  # --timeout ensures test session exits properly (workaround for MTP Linux shutdown bug)
+  dotnet test --project "$PROJECT_PATH" -c "$CONFIGURATION" -f "$tfm" --no-build \
+         --report-trx --report-trx-filename "testResults-$tfm.trx" \
+         --results-directory "$RESULTS_DIR" \
+         -- --timeout 10m
 done
