@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Source-generated test discovery for faster execution
   - Async-first assertion API throughout test suite
 
+### Fixed
+- **LocalStack Container Health Check**: Improved cancellation handling during application shutdown
+
 ## [9.5.3] - 2025-11-04
 
 ### Added

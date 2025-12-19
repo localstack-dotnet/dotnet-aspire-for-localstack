@@ -185,6 +185,36 @@ public sealed class LocalStackHealthCheckTests : IDisposable
         await Assert.That(result.Description).Contains("timed out");
         await Assert.That(result.Exception).IsNotNull();
     }
+    [Test]
+    public async Task CheckHealthAsync_Returns_Unhealthy_When_IOException_Occurs()
+    {
+        var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
+        var services = ImmutableArray.Create("sqs");
+        var healthCheck = new LocalStackHealthCheck(_httpClientFactory, healthCheckUri, services);
+
+        _messageHandler.SetupException(new IOException("Connection closed prematurely"));
+
+        var result = await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None);
+
+        await Assert.That(result.Status).IsEqualTo(HealthStatus.Unhealthy);
+        await Assert.That(result.Description).Contains("starting up");
+        await Assert.That(result.Exception).IsTypeOf<IOException>();
+    }
+
+    [Test]
+    public async Task CheckHealthAsync_Propagates_OperationCanceledException()
+    {
+        var healthCheckUri = new Uri("http://localhost:4566/_localstack/health");
+        var services = ImmutableArray.Create("sqs");
+        var healthCheck = new LocalStackHealthCheck(_httpClientFactory, healthCheckUri, services);
+
+        _messageHandler.SetupException(new OperationCanceledException("Cancellation requested"));
+
+        // This should NOT be caught by the generic handler anymore
+        await Assert.That(async () => await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None))
+            .ThrowsExactly<OperationCanceledException>();
+    }
+
 
     // Custom HttpMessageHandler for testing
     private sealed class TestHttpMessageHandler : HttpMessageHandler

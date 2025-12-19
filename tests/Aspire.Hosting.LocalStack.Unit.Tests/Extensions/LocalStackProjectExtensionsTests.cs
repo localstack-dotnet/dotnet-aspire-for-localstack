@@ -24,17 +24,20 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
+        IResourceBuilder<ProjectResource>? capturedBuilder = null;
+        IResourceBuilder<ProjectResource>? capturedResult = null;
+
         var (app, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>(testProjectResourceName, builder =>
         {
             var projectBuilder = builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath());
             var result = projectBuilder.WithReference(localStackBuilder: null);
 
-            // Should return the same builder
-            if (!ReferenceEquals(result, projectBuilder))
-            {
-                throw new InvalidOperationException("Builder should be the same reference");
-            }
+            capturedBuilder = projectBuilder;
+            capturedResult = result;
         });
+
+        // Should return the same builder
+        await Assert.That(capturedResult).IsSameReferenceAs(capturedBuilder);
 
         await Assert.That(app.HasResource<ILocalStackResource>("localstack")).IsFalse();
         await projectResource.ShouldNotHaveLocalStackEnabledAnnotation();
@@ -72,7 +75,7 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);
@@ -92,7 +95,7 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);
@@ -111,7 +114,7 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
                 useLocalStack: true,
@@ -134,7 +137,7 @@ public class LocalStackProjectExtensionsTests
     {
         const string testProjectResourceName = "test-project";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);

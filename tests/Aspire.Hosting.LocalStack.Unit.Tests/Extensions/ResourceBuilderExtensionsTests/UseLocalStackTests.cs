@@ -5,7 +5,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Null()
     {
-        using var app = TestApplicationBuilder.Create(builder => builder.UseLocalStack(localStack: null));
+        await using var app = TestApplicationBuilder.Create(builder => builder.UseLocalStack(localStack: null));
 
         await app.ShouldHaveResourceCount<ILocalStackResource>(0);
     }
@@ -13,7 +13,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Return_Builder_When_LocalStack_Is_Disabled()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (disabledOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
             var localStack = builder.AddLocalStack(localStackOptions: disabledOptions);
@@ -47,7 +47,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Configure_Multiple_CloudFormation_Resources()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -96,7 +96,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Create_CDK_Bootstrap_When_Explicitly_Called()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);
@@ -118,7 +118,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Handle_Empty_Application_Gracefully()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);
@@ -133,7 +133,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Not_Configure_Resources_Already_Marked_With_LocalStack()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -162,7 +162,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Establish_Bidirectional_References()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();

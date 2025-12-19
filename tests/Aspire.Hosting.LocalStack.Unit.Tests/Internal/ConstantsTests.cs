@@ -1,4 +1,4 @@
-#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
+using System.Reflection;
 
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
@@ -15,19 +15,25 @@ public class ConstantsTests
     [Test]
     public async Task DefaultContainerPort_Should_Be_4566()
     {
+#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
         await Assert.That(Constants.DefaultContainerPort).IsEqualTo(4566);
+#pragma warning restore TUnitAssertions0005
     }
 
     [Test]
     public async Task CloudFormationReferenceAnnotation_Should_Have_Correct_Type_Name()
     {
+#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
         await Assert.That(Constants.CloudFormationReferenceAnnotation).IsEqualTo("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation");
+#pragma warning restore TUnitAssertions0005
     }
 
     [Test]
     public async Task SQSEventSourceResource_Should_Have_Correct_Type_Name()
     {
+#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
         await Assert.That(Constants.SQSEventSourceResource).IsEqualTo("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource");
+#pragma warning restore TUnitAssertions0005
     }
 
     [Test]

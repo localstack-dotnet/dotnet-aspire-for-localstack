@@ -28,7 +28,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
     {
         const string cfResourceName = "test-cf";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -51,7 +51,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
     {
         const string cfResourceName = "test-cf";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -77,7 +77,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
     {
         const string cfResourceName = "test-cf";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -145,7 +145,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
     {
         const string cfResourceName = "test-cf";
 
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
@@ -171,7 +171,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
     [Test]
     public async Task WithReference_Should_Work_With_Multiple_CloudFormation_Resources()
     {
-        using var app = TestApplicationBuilder.Create(builder =>
+        await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
