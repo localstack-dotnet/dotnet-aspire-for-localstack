@@ -1,6 +1,5 @@
 namespace Aspire.Hosting.LocalStack.Unit.Tests.CDK;
 
-[NotInParallel("CdkTests")]
 public sealed class CdkBootstrapManagerTests
 {
     [Test]
