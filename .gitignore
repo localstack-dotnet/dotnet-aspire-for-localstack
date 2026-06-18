@@ -420,4 +420,10 @@ FodyWeavers.xsd
 .idea/
 internal-docs/
 
+.claude/*
+!.claude/skills/
+!.claude/skills/**
+
+external/
+
 .fake
