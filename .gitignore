@@ -396,14 +396,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# VS Code files for those working on multiple tools
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
-
 # Local History for Visual Studio Code
 .history/
 
@@ -420,6 +412,7 @@ FodyWeavers.xsd
 .idea/
 internal-docs/
 
+.vscode/
 .claude/*
 !.claude/skills/
 !.claude/skills/**
@@ -427,3 +420,9 @@ internal-docs/
 external/
 
 .fake
+
+.mcp.active
+.mcp.claude.json
+.mcp.copilot-cli.json
+.mcp.json
+opencode.jsonc
