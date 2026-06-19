@@ -20,7 +20,9 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting"/>
     <PackageReference Include="Aspire.Hosting.AWS"/>
+    <PackageReference Include="AWSSDK.Core"/>
     <PackageReference Include="LocalStack.Client"/>
+    <PackageReference Include="MessagePack"/>
   </ItemGroup>
 
   <ItemGroup>

@@ -2,7 +2,6 @@
 // Originally copied from https://github.com/aws/integrations-on-dotnet-aspire-for-aws
 // and adjusted for Aspire.Hosting.LocalStack. All rights reserved.
 
-#pragma warning disable CA1848 // Use the LoggerMessage delegates
 #pragma warning disable CA1812 // Mark members as static
 
 using System.Globalization;
@@ -16,7 +15,7 @@ namespace LocalStack.Provisioning.Frontend.Handlers;
 /// <summary>
 /// Handles ChatMessage messages from SQS queue and persists them to DynamoDB.
 /// </summary>
-internal sealed class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfiguration configuration, ILogger<ChatMessageHandler> logger)
+internal sealed partial class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfiguration configuration, ILogger<ChatMessageHandler> logger)
     : IMessageHandler<ChatMessage>
 {
     public async Task<MessageProcessStatus> HandleAsync(
@@ -25,7 +24,7 @@ internal sealed class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfig
     {
         ArgumentNullException.ThrowIfNull(messageEnvelope);
 
-        logger.LogInformation("Processing chat message: {Message} for recipient: {Recipient}",
+        LogProcessingChatMessage(logger,
             messageEnvelope.Message.Message,
             messageEnvelope.Message.Recipient);
 
@@ -55,19 +54,47 @@ internal sealed class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfig
 
             await dynamoDbClient.PutItemAsync(putItemRequest, token).ConfigureAwait(false);
 
-            logger.LogInformation("Successfully stored chat message with ID {MessageId} in DynamoDB table {TableName}", messageId, tableName);
+            LogStoredChatMessage(logger, messageId, tableName);
 
             return MessageProcessStatus.Success();
         }
         catch (AmazonDynamoDBException ex)
         {
-            logger.LogError(ex, "DynamoDB error while processing chat message: {ErrorCode} - {ErrorMessage}", ex.ErrorCode, ex.Message);
+            LogDynamoDbError(logger, ex, ex.ErrorCode, ex.Message);
             return MessageProcessStatus.Failed();
         }
         catch (OperationCanceledException ex)
         {
-            logger.LogWarning(ex, "Chat message processing was cancelled");
+            LogChatMessageProcessingCancelled(logger, ex);
             return MessageProcessStatus.Failed();
         }
     }
+
+    [LoggerMessage(
+        EventId = 1,
+        EventName = "ProcessingChatMessage",
+        Level = LogLevel.Information,
+        Message = "Processing chat message: {Message} for recipient: {Recipient}")]
+    private static partial void LogProcessingChatMessage(ILogger logger, string? message, string? recipient);
+
+    [LoggerMessage(
+        EventId = 2,
+        EventName = "StoredChatMessage",
+        Level = LogLevel.Information,
+        Message = "Successfully stored chat message with ID {MessageId} in DynamoDB table {TableName}")]
+    private static partial void LogStoredChatMessage(ILogger logger, string messageId, string tableName);
+
+    [LoggerMessage(
+        EventId = 3,
+        EventName = "DynamoDbError",
+        Level = LogLevel.Error,
+        Message = "DynamoDB error while processing chat message: {ErrorCode} - {ErrorMessage}")]
+    private static partial void LogDynamoDbError(ILogger logger, Exception exception, string? errorCode, string errorMessage);
+
+    [LoggerMessage(
+        EventId = 4,
+        EventName = "ChatMessageProcessingCancelled",
+        Level = LogLevel.Warning,
+        Message = "Chat message processing was cancelled")]
+    private static partial void LogChatMessageProcessingCancelled(ILogger logger, Exception exception);
 }

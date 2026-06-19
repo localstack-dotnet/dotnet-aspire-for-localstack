@@ -1,0 +1,296 @@
+{
+  "version": 1,
+  "createdAt": "2026-06-19T07:04:36.9517037+00:00",
+  "updatedAt": "2026-06-19T07:04:36.9543258+00:00",
+  "description": "Initial baseline created by 'slopwatch init' on 2026-06-19 07:04:36 UTC",
+  "entries": [
+    {
+      "hash": "1f088b1f66fefc4b",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Analyzer/Function.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable CA1822 // Member 'FunctionHandler' does not access instance data and can be marked as static",
+      "message": "#pragma warning disable for warnings CA1822 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.954152+00:00"
+    },
+    {
+      "hash": "2c6e169bedd741ea",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Analyzer/Function.cs",
+      "lineNumber": 2,
+      "codeSnippet": "#pragma warning disable S2325 // Make 'FunctionHandler' a static method.",
+      "message": "#pragma warning disable for warnings S2325 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542399+00:00"
+    },
+    {
+      "hash": "14edd7195c39766c",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Analyzer/Function.cs",
+      "lineNumber": 3,
+      "codeSnippet": "#pragma warning disable CA1812 // Error CA1812 : 'Function.ShortenRequest' is an internal class that is apparently never instantiated.",
+      "message": "#pragma warning disable for warnings CA1812 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542441+00:00"
+    },
+    {
+      "hash": "87bc67cb907132fe",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Analyzer/Function.cs",
+      "lineNumber": 4,
+      "codeSnippet": "#pragma warning disable CA1031 // Modify 'FunctionHandler' to catch a more specific allowed exception type, or rethrow the exception",
+      "message": "#pragma warning disable for warnings CA1031 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542464+00:00"
+    },
+    {
+      "hash": "a9216bb1ec8d305f",
+      "ruleId": "SW005",
+      "filePath": "playground/lambda/LocalStack.Lambda.AppHost/LocalStack.Lambda.AppHost.csproj",
+      "lineNumber": 8,
+      "codeSnippet": "<NoWarn>$(NoWarn);CS8002;ASPIRE004</NoWarn>",
+      "message": "Adding warnings to NoWarn: CS8002;ASPIRE004",
+      "baselinedAt": "2026-06-19T07:04:36.954251+00:00"
+    },
+    {
+      "hash": "478e0247f179000d",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.AppHost/Program.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable CA2252 // Using 'AddAWSLambdaFunction' requires opting into preview features.",
+      "message": "#pragma warning disable for warnings CA2252 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542538+00:00"
+    },
+    {
+      "hash": "0d40e68102934cba",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.AppHost/UrlShortenerStack.cs",
+      "lineNumber": 5,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.954256+00:00"
+    },
+    {
+      "hash": "5174ec66ba7a1b3c",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Redirector/Function.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable CA1822 // Member 'FunctionHandler' does not access instance data and can be marked as static",
+      "message": "#pragma warning disable for warnings CA1822 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542584+00:00"
+    },
+    {
+      "hash": "cc997c27b5ace64c",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Redirector/Function.cs",
+      "lineNumber": 2,
+      "codeSnippet": "#pragma warning disable S2325 // Make 'FunctionHandler' a static method.",
+      "message": "#pragma warning disable for warnings S2325 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542606+00:00"
+    },
+    {
+      "hash": "3d34c0205e09b71f",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Redirector/Function.cs",
+      "lineNumber": 3,
+      "codeSnippet": "#pragma warning disable CA1812 // Error CA1812 : 'Function.ShortenRequest' is an internal class that is apparently never instantiated.",
+      "message": "#pragma warning disable for warnings CA1812 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542636+00:00"
+    },
+    {
+      "hash": "7b7b7e8aa27b22fb",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.Redirector/Function.cs",
+      "lineNumber": 4,
+      "codeSnippet": "#pragma warning disable CA1031 // Modify 'FunctionHandler' to catch a more specific allowed exception type, or rethrow the exception",
+      "message": "#pragma warning disable for warnings CA1031 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542655+00:00"
+    },
+    {
+      "hash": "3ed3dcd5f08718d2",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.UrlShortener/Function.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable CA1822 // Member 'FunctionHandler' does not access instance data and can be marked as static",
+      "message": "#pragma warning disable for warnings CA1822 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542682+00:00"
+    },
+    {
+      "hash": "8972d0cdc07febaa",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.UrlShortener/Function.cs",
+      "lineNumber": 2,
+      "codeSnippet": "#pragma warning disable S2325 // Make 'FunctionHandler' a static method.",
+      "message": "#pragma warning disable for warnings S2325 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542701+00:00"
+    },
+    {
+      "hash": "9ca64a123b71f79a",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.UrlShortener/Function.cs",
+      "lineNumber": 3,
+      "codeSnippet": "#pragma warning disable CA1812 // Error CA1812 : 'Function.ShortenRequest' is an internal class that is apparently never instantiated.",
+      "message": "#pragma warning disable for warnings CA1812 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542726+00:00"
+    },
+    {
+      "hash": "5066bd8c9d9336f0",
+      "ruleId": "SW002",
+      "filePath": "playground/lambda/LocalStack.Lambda.UrlShortener/Function.cs",
+      "lineNumber": 4,
+      "codeSnippet": "#pragma warning disable CA1031 // Modify 'FunctionHandler' to catch a more specific allowed exception type, or rethrow the exception",
+      "message": "#pragma warning disable for warnings CA1031 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542745+00:00"
+    },
+    {
+      "hash": "86dc29152102e8a0",
+      "ruleId": "SW002",
+      "filePath": "playground/LocalStack.Playground.ServiceDefaults/LocalStackPlaygroundExtensions.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.954277+00:00"
+    },
+    {
+      "hash": "fa53b2e1135044cd",
+      "ruleId": "SW002",
+      "filePath": "playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs",
+      "lineNumber": 5,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542798+00:00"
+    },
+    {
+      "hash": "8f788ee0aba3813d",
+      "ruleId": "SW005",
+      "filePath": "playground/provisioning/LocalStack.Provisioning.CDK.AppHost/LocalStack.Provisioning.CDK.AppHost.csproj",
+      "lineNumber": 8,
+      "codeSnippet": "<NoWarn>$(NoWarn);CS8002</NoWarn>",
+      "message": "Adding warnings to NoWarn: CS8002",
+      "baselinedAt": "2026-06-19T07:04:36.9542824+00:00"
+    },
+    {
+      "hash": "303586651803b1f4",
+      "ruleId": "SW005",
+      "filePath": "playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/LocalStack.Provisioning.CloudFormation.AppHost.csproj",
+      "lineNumber": 8,
+      "codeSnippet": "<NoWarn>$(NoWarn);CS8002</NoWarn>",
+      "message": "Adding warnings to NoWarn: CS8002",
+      "baselinedAt": "2026-06-19T07:04:36.9542848+00:00"
+    },
+    {
+      "hash": "a2b041588ff4f75b",
+      "ruleId": "SW002",
+      "filePath": "playground/provisioning/LocalStack.Provisioning.Frontend/Handlers/ChatMessageHandler.cs",
+      "lineNumber": 5,
+      "codeSnippet": "#pragma warning disable CA1848 // Use the LoggerMessage delegates",
+      "message": "#pragma warning disable for warnings CA1848 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542872+00:00"
+    },
+    {
+      "hash": "013b3eaea362797b",
+      "ruleId": "SW002",
+      "filePath": "playground/provisioning/LocalStack.Provisioning.Frontend/Handlers/ChatMessageHandler.cs",
+      "lineNumber": 6,
+      "codeSnippet": "#pragma warning disable CA1812 // Mark members as static",
+      "message": "#pragma warning disable for warnings CA1812 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542892+00:00"
+    },
+    {
+      "hash": "7f5bdf73a7710c05",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/LocalStackCloudFormationResourceExtensions.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.954292+00:00"
+    },
+    {
+      "hash": "aa926463c314649f",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/LocalStackProjectExtensions.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542941+00:00"
+    },
+    {
+      "hash": "77e436f7acb94908",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/LocalStackResource.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542962+00:00"
+    },
+    {
+      "hash": "d1ebdb370c2a4d52",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/LocalStackResourceBuilderExtensions.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9542982+00:00"
+    },
+    {
+      "hash": "55861de754de7302",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/CDK/CdkBootstrapManager.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130, MA0045",
+      "message": "#pragma warning disable for warnings IDE0130, MA0045 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9543002+00:00"
+    },
+    {
+      "hash": "bc631ef13ed5bae2",
+      "ruleId": "SW002",
+      "filePath": "src/Aspire.Hosting.LocalStack/Container/LocalStackContainerOptions.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable IDE0130",
+      "message": "#pragma warning disable for warnings IDE0130 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9543034+00:00"
+    },
+    {
+      "hash": "8b1dcfb8dff5c7cd",
+      "ruleId": "SW005",
+      "filePath": "tests/Directory.Build.props",
+      "lineNumber": 7,
+      "codeSnippet": "<NoWarn>$(NoWarn);CA1515;CA2007;IDE1006;CA1707</NoWarn>",
+      "message": "Adding warnings to NoWarn: CA1515;CA2007;IDE1006;CA1707",
+      "baselinedAt": "2026-06-19T07:04:36.9543054+00:00"
+    },
+    {
+      "hash": "6b7a8edc69ac89be",
+      "ruleId": "SW005",
+      "filePath": "tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj",
+      "lineNumber": 9,
+      "codeSnippet": "<NoWarn>$(NoWarn);CA2007;CA1515;CA5399</NoWarn>",
+      "message": "Adding warnings to NoWarn: CA2007;CA1515;CA5399",
+      "baselinedAt": "2026-06-19T07:04:36.9543081+00:00"
+    },
+    {
+      "hash": "855e6606eb2e7bf7",
+      "ruleId": "SW004",
+      "filePath": "tests/Aspire.Hosting.LocalStack.Integration.Tests/Playground/Lambda/LocalStackLambdaFunctionalTests.cs",
+      "lineNumber": 131,
+      "codeSnippet": "Task.Delay(TimeSpan.FromSeconds(10), cancellationToken)",
+      "message": "Test uses Task.Delay(TimeSpan.FromSeconds(10)) which may indicate a timing-dependent test",
+      "baselinedAt": "2026-06-19T07:04:36.9543103+00:00"
+    },
+    {
+      "hash": "fd99881f852f9a13",
+      "ruleId": "SW003",
+      "filePath": "tests/Aspire.Hosting.LocalStack.Unit.Tests/CDK/CdkBootstrapManagerTests.cs",
+      "lineNumber": 221,
+      "codeSnippet": "catch (IOException)\n        {\n            // Ignore cleanup errors to prevent test failures\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-06-19T07:04:36.9543234+00:00"
+    },
+    {
+      "hash": "4c35a49db0e77e84",
+      "ruleId": "SW002",
+      "filePath": "tests/Aspire.Hosting.LocalStack.Unit.Tests/Container/LocalStackContainerOptionsTests.cs",
+      "lineNumber": 1,
+      "codeSnippet": "#pragma warning disable S4143",
+      "message": "#pragma warning disable for warnings S4143 without matching restore in same scope",
+      "baselinedAt": "2026-06-19T07:04:36.9543257+00:00"
+    }
+  ]
+}
