@@ -125,18 +125,23 @@ Official Microsoft Aspire skills may describe newer Aspire versions than this re
 
 Skills encode workflow discipline and retrieval-led reasoning. Use exact installed skill names when invoking skills.
 
-### Always Active
+### Session-Start Preload
+
+Load these project/harness skills explicitly at session start (alongside `using-superpowers`, which the harness auto-loads). All other skills below are **on-demand**: invoke them only when their trigger fires.
+
+- `aspire-source-navigation` — compatibility/source work in `src/` and `tests/`.
+- `subagent-model-routing` — OpenCode only; subagent dispatch and model routing.
+
+### Process Skills (on-demand)
 
 | Skill | Trigger |
 | --- | --- |
-| `using-superpowers` | Start of every session; establishes skill usage rules |
 | `brainstorming` | Feature, behavior, design, or refactor work before implementation |
 | `writing-plans` | Multi-step implementation planning after design approval |
 | `test-driven-development` | Production bugfixes and feature implementation |
 | `systematic-debugging` | Bugs, test failures, unexpected behavior, flaky behavior |
 | `verification-before-completion` | Before claiming work is complete or passing |
 | `requesting-code-review` / `receiving-code-review` | Review workflows and review feedback |
-| `subagent-model-routing` | OpenCode only: before applying Superpowers guidance that launches subagents, chooses `subagent_type`, or maps Claude-style examples to repo-local agents; other harnesses ignore this skill |
 
 ### .NET And Package Work
 
