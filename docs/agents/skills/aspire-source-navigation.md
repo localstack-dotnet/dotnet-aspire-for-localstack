@@ -72,6 +72,15 @@ Before trusting local upstream source:
 
 Acceptable evidence includes a tag name, release branch, commit SHA, or upstream release page that ties the package version to the source. Unacceptable evidence includes repository default branches, approximate version names, or unchecked local folder names.
 
+### Resolving A Version To A Ref
+
+Upstream repositories do not all tag releases the same way. Determine the repository's release scheme first, then resolve the package version to a ref:
+
+- **Semver tags** (e.g. `vX.Y.Z`): match the package version directly to the tag.
+- **Non-semver tags** (date-based, build-numbered, or otherwise): the version usually lives in the release notes, not the tag. Do not walk tags one by one. List releases and match the package version string in the release bodies, then take that release's tag and commit SHA. Releases are usually chronological, so a coarse search converges in a few lookups.
+
+A package's major version may be realigned to track another dependency, so a low major does not imply old source; rely on the resolved ref, not the version's shape. If a repository's scheme is unclear, inspect a couple of recent releases to learn it before resolving. Record each resolved version-to-ref mapping (tag plus SHA) so the lookup is not repeated.
+
 ## Missing Or Stale Source
 
 If the matching local checkout does not exist, do not silently continue with default-branch source. Report the gap before making compatibility-sensitive conclusions.
@@ -86,6 +95,18 @@ Upstream source status:
 ```
 
 Create or refresh `external/` checkouts only when the user has approved that setup work or when the current task explicitly includes source setup. Keep those checkouts uncommitted.
+
+### Setting Up Checkouts
+
+When approved, create one checkout per resolved ref. Use a shallow clone to limit size:
+
+```bash
+git clone --depth 1 --branch {ref} {repo-url} external/{name}/{ref}
+```
+
+- `{name}` is the checkout root from the package-to-source map; `{ref}` is the resolved tag, used verbatim (including non-semver forms).
+- `external/` is gitignored, so these clones never enter repository status. Do not commit them.
+- After cloning, confirm the checkout's `HEAD` matches the resolved commit SHA before trusting it.
 
 ## Evidence Report
 
