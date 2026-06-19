@@ -136,6 +136,7 @@ Skills encode workflow discipline and retrieval-led reasoning. Use exact install
 | `systematic-debugging` | Bugs, test failures, unexpected behavior, flaky behavior |
 | `verification-before-completion` | Before claiming work is complete or passing |
 | `requesting-code-review` / `receiving-code-review` | Review workflows and review feedback |
+| `subagent-model-routing` | OpenCode only: before applying Superpowers guidance that launches subagents, chooses `subagent_type`, or maps Claude-style examples to repo-local agents; other harnesses ignore this skill |
 
 ### .NET And Package Work
 
@@ -166,6 +167,7 @@ Skills encode workflow discipline and retrieval-led reasoning. Use exact install
 
 ### Specialist Agents
 
+- Harnesses may keep work in the parent model, use native subagents, or choose repo-local specialists when that improves isolation, cost, or quality; ask Deniz when routing is ambiguous or materially changes risk/cost.
 - Use `dotnet-concurrency-specialist` for racy tests, deadlocks, or async timing bugs.
 - Use `dotnet-performance-analyst` only when measured performance data exists.
 - Use `explore` for broad codebase discovery across many files when the harness provides it; otherwise use local search tools.

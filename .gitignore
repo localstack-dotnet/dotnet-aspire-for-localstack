@@ -426,3 +426,6 @@ external/
 .mcp.copilot-cli.json
 .mcp.json
 opencode.jsonc
+
+.opencode/agents/
+.opencode/skills/subagent-model-routing/
