@@ -22,7 +22,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS6 | Refactoring / API quality | P2 | 🔜 | — |
 | WS7 | LocalStack platform tracking | P2 | 🔜 | — |
 | WS8 | Observability / UX features | P3 | 🔜 | — |
-| WS9 | Docs & internal-docs consolidation | P0 | 🔜 | — |
+| WS9 | Docs & internal-docs consolidation | P0 | ✅ | [ws9-docs-consolidation.md](plans/ws9-docs-consolidation.md) |
 
 ## Release Philosophy
 
@@ -101,6 +101,7 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 - `LocalStackContainerOptions` immutability (todo #4) — tension with the `configureContainer` mutation pattern; design call needed.
 - `UseLocalStack` mutates `builder.Resources` via Remove/Insert to order CDK bootstrap — works but fragile.
 - Suppress the noisy client-side `"Failed to connect to AWS using AWS SDK config..."` warning (todo #15).
+- Fix the misleading eager-service error message in `LocalStackResourceBuilderExtensions.cs` — it reports a service "is not supported by LocalStack" when the real cause is a missing CLI-name mapping in `LocalStack.Client` (from the PR #8 review).
 
 ### WS7 — LocalStack platform tracking · P2
 
@@ -112,11 +113,12 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
 - Surface individual AWS/LocalStack resources (CloudFormation stacks, Lambdas, S3 buckets, SQS queues, DynamoDB tables) on the Aspire dashboard (todo #1) and/or a standalone resource-viewer UI (todo #16) — these overlap; consolidate. Inspired by the AWS .NET team's Lambda Test Tool UI.
 - **#26** — provide an escape hatch to the underlying container (bind mounts / init scripts) and/or a resource-ready provisioning hook (e.g. SES `VerifyEmailIdentity`). Relates to Pro (WS7).
+- Optional: a dedicated `playground/eager-loading/` example AppHost — eager loading is currently exercised only in integration tests, not shown as a runnable sample (from the PR #8 review).
 
 ### WS9 — Docs & internal-docs consolidation · P0 (light, do early)
 
-- Migrate live items from `internal-docs/` into this roadmap and GitHub issues; archive the historical docs (`release-onboarding.md`, `pr-8-eager-loading-review.md`, and the completed parts of `sqs-analytics-testing-plan.md` / `integration-tests-roadmap.md` — most describe work already shipped ~8 months ago). Then delete `internal-docs/`.
-- Fix doc drift surfaced in WS4 and `KNOWN_ISSUES.md`.
+- ✅ Consolidated `internal-docs/` into this roadmap and deleted the folder (gitignored/historical; all live items captured in the triage table and workstreams). Raw notes now go to the Inbox section below instead of `internal-docs/todo.md`. See `docs/plans/ws9-docs-consolidation.md`.
+- Remaining: fix doc drift surfaced in WS4 and `KNOWN_ISSUES.md`.
 
 ## todo.md Triage
 
@@ -170,3 +172,9 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 
 - **#9** defaulted to "drop" (superseded by #7/WS3) — confirm.
 - **WS6 / `LocalStackContainerOptions` immutability** — resolve the design tension with the mutation-based `configureContainer` callback.
+
+## Inbox / Untriaged
+
+Drop raw, unsorted ideas here as they come up, then triage them into a workstream (and remove them from this list) during roadmap grooming. This replaces the retired `internal-docs/todo.md` capture spot.
+
+_(empty)_
