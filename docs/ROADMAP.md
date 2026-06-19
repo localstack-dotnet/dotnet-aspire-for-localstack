@@ -6,6 +6,24 @@ Date: 2026-06-19
 
 This is a **phased, prioritized research backlog** — not a ready-to-execute plan. Each workstream below still needs its own deep-dive (research + design) before implementation. Priority indicates ordering and importance, not separate releases.
 
+Progress is tracked **in this document** (the Status column below) — there is no separate progress file. Each workstream's detailed plan lives in `docs/plans/wsN-*.md` and is linked from the table once its deep-dive is done.
+
+## Status & Plan Mapping
+
+Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress · ✅ Done
+
+| WS | Title | Priority | Status | Plan doc |
+|----|-------|----------|--------|----------|
+| WS1 | Full package update (foundation) | P0 | 🔜 | — |
+| WS2 | Aspire/AWS modernization & feature adaptation | P1 | 🔜 | — |
+| WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
+| WS4 | Bugs & correctness | P2 | 🔜 | — |
+| WS5 | Test integrity | P2 | 🔜 | — |
+| WS6 | Refactoring / API quality | P2 | 🔜 | — |
+| WS7 | LocalStack platform tracking | P2 | 🔜 | — |
+| WS8 | Observability / UX features | P3 | 🔜 | — |
+| WS9 | Docs & internal-docs consolidation | P0 | 🔜 | — |
+
 ## Release Philosophy
 
 Everything here ships in **one release**, governed by:

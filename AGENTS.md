@@ -53,6 +53,8 @@ Repository layout for onboarding:
 - `tests/`: unit and integration tests
 - `playground/`: sample AppHosts and workloads
 - `docs/`: project documentation
+- `docs/ROADMAP.md`: phased, prioritized roadmap and in-document progress tracker
+- `docs/plans/`: detailed per-workstream deep-dive plans, linked from the roadmap (created as each workstream is planned)
 - `docs/agents/`: agent-facing guidance and known notes
 
 ## Docs-First Workflow
@@ -72,6 +74,7 @@ Change hygiene:
 - Update docs when behavior, topology, package support, or harness expectations change.
 - Prefer consolidation over new docs when an existing doc is the natural home.
 - Research docs must include a date.
+- Keep `docs/ROADMAP.md` current: it is the single source for backlog and progress. Update the Status column as workstreams move, and link each workstream's plan in `docs/plans/` when its deep-dive lands. Do not start a separate progress file.
 - Code comments and XML docs must be self-contained; do not reference specs, plans, phases, or external file paths from code comments.
 
 ## Quality Notes
