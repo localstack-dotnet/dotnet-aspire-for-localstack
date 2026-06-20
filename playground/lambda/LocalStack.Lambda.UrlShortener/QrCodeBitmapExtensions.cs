@@ -20,7 +20,7 @@ public static class QrCodeBitmapExtensions
         ArgumentNullException.ThrowIfNull(qrCode);
 
         var size = qrCode.Size;
-        var dim = (size + border * 2) * scale;
+        var dim = (size + (border * 2)) * scale;
 
         if (dim > short.MaxValue)
         {

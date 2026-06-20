@@ -2,7 +2,7 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.TestUtilities;
 
 internal static class TestDataBuilders
 {
-        public static (ILocalStackOptions, ConfigOptions, SessionOptions) CreateMockLocalStackOptions(
+    public static (ILocalStackOptions, ConfigOptions, SessionOptions) CreateMockLocalStackOptions(
         bool useLocalStack = true,
         string regionName = "us-east-1",
         int edgePort = 4566,
@@ -49,7 +49,7 @@ internal static class TestDataBuilders
                 return Path.GetFullPath(hit);
             }
 
-            dir = Path.GetDirectoryName(dir);   // climb one level
+            dir = Path.GetDirectoryName(dir); // climb one level
         }
 
         throw new FileNotFoundException($"Could not locate a *.csproj file above {callerFile}");

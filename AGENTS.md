@@ -53,6 +53,8 @@ Repository layout for onboarding:
 - `tests/`: unit and integration tests
 - `playground/`: sample AppHosts and workloads
 - `docs/`: project documentation
+- `docs/ROADMAP.md`: phased, prioritized roadmap and in-document progress tracker
+- `docs/plans/`: detailed per-workstream deep-dive plans, linked from the roadmap (created as each workstream is planned)
 - `docs/agents/`: agent-facing guidance and known notes
 
 ## Docs-First Workflow
@@ -72,6 +74,7 @@ Change hygiene:
 - Update docs when behavior, topology, package support, or harness expectations change.
 - Prefer consolidation over new docs when an existing doc is the natural home.
 - Research docs must include a date.
+- Keep `docs/ROADMAP.md` current: it is the single source for backlog and progress. Update the Status column as workstreams move, and link each workstream's plan in `docs/plans/` when its deep-dive lands. Do not start a separate progress file.
 - Code comments and XML docs must be self-contained; do not reference specs, plans, phases, or external file paths from code comments.
 
 ## Quality Notes
@@ -122,11 +125,17 @@ Official Microsoft Aspire skills may describe newer Aspire versions than this re
 
 Skills encode workflow discipline and retrieval-led reasoning. Use exact installed skill names when invoking skills.
 
-### Always Active
+### Session-Start Preload
+
+Load these project/harness skills explicitly at session start (alongside `using-superpowers`, which the harness auto-loads). All other skills below are **on-demand**: invoke them only when their trigger fires.
+
+- `aspire-source-navigation` — compatibility/source work in `src/` and `tests/`.
+- `subagent-model-routing` — OpenCode only; subagent dispatch and model routing.
+
+### Process Skills (on-demand)
 
 | Skill | Trigger |
 | --- | --- |
-| `using-superpowers` | Start of every session; establishes skill usage rules |
 | `brainstorming` | Feature, behavior, design, or refactor work before implementation |
 | `writing-plans` | Multi-step implementation planning after design approval |
 | `test-driven-development` | Production bugfixes and feature implementation |
@@ -163,6 +172,7 @@ Skills encode workflow discipline and retrieval-led reasoning. Use exact install
 
 ### Specialist Agents
 
+- Harnesses may keep work in the parent model, use native subagents, or choose repo-local specialists when that improves isolation, cost, or quality; ask Deniz when routing is ambiguous or materially changes risk/cost.
 - Use `dotnet-concurrency-specialist` for racy tests, deadlocks, or async timing bugs.
 - Use `dotnet-performance-analyst` only when measured performance data exists.
 - Use `explore` for broad codebase discovery across many files when the harness provides it; otherwise use local search tools.

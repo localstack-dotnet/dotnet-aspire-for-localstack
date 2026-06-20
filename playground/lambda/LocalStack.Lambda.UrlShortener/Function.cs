@@ -1,8 +1,3 @@
-#pragma warning disable CA1822 // Member 'FunctionHandler' does not access instance data and can be marked as static
-#pragma warning disable S2325 // Make 'FunctionHandler' a static method.
-#pragma warning disable CA1812 // Error CA1812 : 'Function.ShortenRequest' is an internal class that is apparently never instantiated.
-#pragma warning disable CA1031 // Modify 'FunctionHandler' to catch a more specific allowed exception type, or rethrow the exception
-
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
@@ -224,7 +219,7 @@ public class Function
     private sealed record ShortenResponse(string Id, string? QrUrl);
 }
 
-public sealed record AnalyticsEvent(
+internal sealed record AnalyticsEvent(
     string EventType, // "url_created" or "url_accessed"
     string Slug,
     string OriginalUrl,

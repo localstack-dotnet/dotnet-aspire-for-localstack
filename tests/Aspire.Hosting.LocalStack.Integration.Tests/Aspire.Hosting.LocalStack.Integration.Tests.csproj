@@ -7,7 +7,7 @@
     <IsAspireHost>false</IsAspireHost>
     <IsTestProject>true</IsTestProject>
     <NoWarn>$(NoWarn);CA2007;CA1515;CA5399</NoWarn>
-    <NoError>$(NoWarn);CA2007;CA1515;CA5399</NoError>
+    <NoError>$(NoError);CA2007;CA1515;CA5399</NoError>
   </PropertyGroup>
 
   <ItemGroup>

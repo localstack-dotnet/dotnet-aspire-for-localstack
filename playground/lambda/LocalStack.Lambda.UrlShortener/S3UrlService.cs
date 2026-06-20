@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace LocalStack.Lambda.UrlShortener;
 
-public class S3UrlService : IS3UrlService
+internal sealed class S3UrlService : IS3UrlService
 {
     private readonly LocalStackOptions _localStackOptions;
 
@@ -13,14 +13,14 @@ public class S3UrlService : IS3UrlService
         _localStackOptions = localStackOptions.Value;
     }
 
-    public string GetS3Url(IAmazonS3 amazonS3, string bucket, string key)
+    string IS3UrlService.GetS3Url(IAmazonS3 amazonS3, string bucket, string key)
     {
         if (_localStackOptions.UseLocalStack)
         {
             return $"http://{_localStackOptions.Config.LocalStackHost}:{_localStackOptions.Config.EdgePort}/{bucket}/{key}";
         }
 
-        string? awsRegion = Environment.GetEnvironmentVariable("AWS_REGION ") ?? Environment.GetEnvironmentVariable("AWS_DEFAULT_REGION");
+        var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION") ?? Environment.GetEnvironmentVariable("AWS_DEFAULT_REGION");
 
         if (string.IsNullOrWhiteSpace(awsRegion))
         {
@@ -32,7 +32,7 @@ public class S3UrlService : IS3UrlService
     }
 }
 
-public interface IS3UrlService
+internal interface IS3UrlService
 {
-    string GetS3Url(IAmazonS3 amazonS3, string bucket, string key);
+    public string GetS3Url(IAmazonS3 amazonS3, string bucket, string key);
 }

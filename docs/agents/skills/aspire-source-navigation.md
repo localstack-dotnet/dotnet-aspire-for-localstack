@@ -11,6 +11,8 @@ This repository maintains an Aspire hosting integration package. Compatibility-s
 
 Use source evidence before editing compatibility-sensitive code. Keep this skill version-light: package versions and concrete refs belong in `Directory.Packages.props`, local `external/` checkouts, and the upstream repositories.
 
+The expected outcome is a short evidence trail: exact package versions, verified upstream refs or an explicit missing-source note, source locations checked, and the compatibility conclusion that drives the change.
+
 ## When To Use
 
 Use this skill for work involving:
@@ -35,6 +37,18 @@ Do not use this skill for ordinary Markdown edits, general C# cleanup, or playgr
 7. Cross-check this repository's implementation and tests against the verified upstream source.
 8. Report evidence with file paths and refs before recommending or making changes.
 
+## Package-To-Source Map
+
+Resolve package versions from `Directory.Packages.props` each time. Do not copy versions into this skill.
+
+| Package or behavior | Upstream source | Local checkout root |
+| --- | --- | --- |
+| `Aspire.Hosting`, `Aspire.Hosting.AppHost`, `Aspire.Hosting.Testing` | `dotnet/aspire` | `external/aspire/{ref}/` |
+| `Aspire.Hosting.AWS`, CloudFormation, CDK, Lambda emulator integration | `aws/integrations-on-dotnet-aspire-for-aws` | `external/aws-integrations/{ref}/` |
+| `LocalStack.Client`, `LocalStack.Client.Extensions`, `ILocalStackOptions`, session/config options | `localstack-dotnet/localstack-dotnet-client` | `external/localstack-dotnet-client/{ref}/` |
+
+When a task spans multiple packages, verify every involved source. Example: `UseLocalStack()` with Lambda SQS event sources usually involves this repository, `Aspire.Hosting.AWS`, and possibly LocalStack client configuration behavior.
+
 ## Local Checkout Layout
 
 Use this layout when local source is available:
@@ -46,6 +60,79 @@ external/localstack-dotnet-client/{ref}/
 ```
 
 `{ref}` should be derived from the package version and verified against upstream tags/releases. The `external/` tree is ignored by git. Do not commit upstream source checkouts.
+
+## Ref Verification
+
+Before trusting local upstream source:
+
+1. Read the package version from `Directory.Packages.props`.
+2. Inspect the local checkout's current ref using git metadata.
+3. Verify that ref against upstream tags, release branches, or commits for the package version.
+4. If the mapping is not obvious, say so and use a targeted upstream lookup to establish the mapping.
+
+Acceptable evidence includes a tag name, release branch, commit SHA, or upstream release page that ties the package version to the source. Unacceptable evidence includes repository default branches, approximate version names, or unchecked local folder names.
+
+### Resolving A Version To A Ref
+
+Upstream repositories do not all tag releases the same way. Determine the repository's release scheme first, then resolve the package version to a ref:
+
+- **Semver tags** (e.g. `vX.Y.Z`): match the package version directly to the tag.
+- **Non-semver tags** (date-based, build-numbered, or otherwise): the version usually lives in the release notes, not the tag. Do not walk tags one by one. List releases and match the package version string in the release bodies, then take that release's tag and commit SHA. Releases are usually chronological, so a coarse search converges in a few lookups.
+
+A package's major version may be realigned to track another dependency, so a low major does not imply old source; rely on the resolved ref, not the version's shape. If a repository's scheme is unclear, inspect a couple of recent releases to learn it before resolving. Record each resolved version-to-ref mapping (tag plus SHA) so the lookup is not repeated.
+
+## Missing Or Stale Source
+
+If the matching local checkout does not exist, do not silently continue with default-branch source. Report the gap before making compatibility-sensitive conclusions.
+
+Use this wording pattern:
+
+```text
+Upstream source status:
+- Aspire.Hosting {version}: no matching local checkout under external/aspire/{ref}; using targeted GitHub fallback for {symbols/files} only.
+- Aspire.Hosting.AWS {version}: local checkout {path} verified at {ref-or-sha}.
+- LocalStack.Client {version}: not involved in this change.
+```
+
+Create or refresh `external/` checkouts only when the user has approved that setup work or when the current task explicitly includes source setup. Keep those checkouts uncommitted.
+
+### Setting Up Checkouts
+
+When approved, create one checkout per resolved ref. Use a shallow clone to limit size:
+
+```bash
+git clone --depth 1 --branch {ref} {repo-url} external/{name}/{ref}
+```
+
+- `{name}` is the checkout root from the package-to-source map; `{ref}` is the resolved tag, used verbatim (including non-semver forms).
+- `external/` is gitignored, so these clones never enter repository status. Do not commit them.
+- After cloning, confirm the checkout's `HEAD` matches the resolved commit SHA before trusting it.
+
+## Evidence Report
+
+Before recommending or making changes, provide the evidence in this shape:
+
+```text
+Compatibility evidence:
+- Package versions: Aspire.Hosting {version}, Aspire.Hosting.AWS {version}, LocalStack.Client {version-or-not-involved}.
+- Upstream refs checked: {repo}@{ref-or-sha}, ...
+- Upstream files/symbols checked: {file}:{symbol}, ...
+- Repo files/tests checked: {file}:{symbol-or-test}, ...
+- Conclusion: {what changed, what is compatible, what is risky, or what remains unverified}.
+```
+
+Keep the report short, but include enough detail that another agent can reproduce the source lookup.
+
+## Search Guidance
+
+Search by the exact behavior under review:
+
+- Extension methods: `AddLocalStack`, `UseLocalStack`, `WithReference`, `WithEnvironment`, `WaitFor`, `ExcludeFromManifest`.
+- Aspire resource model: annotations, `IResourceWithEnvironment`, `IResourceWithWaitSupport`, endpoint references, connection string callbacks, manifest publishing.
+- AWS integration: CloudFormation resources, CDK stacks/bootstrap, Lambda emulator resources, SQS event source resources, output/reference annotations.
+- LocalStack client: `ILocalStackOptions`, `LocalStackOptions`, `SessionOptions`, `ConfigOptions`, `AddLocalStack`, `AddAwsService`, environment variable binding.
+
+These are starting points, not a fixed checklist. Add or remove searches based on the concrete task.
 
 ## Official Aspire Skills Cross-Check
 
@@ -76,3 +163,5 @@ Installed local skills can supplement this one:
 - Do not copy examples from external testing guidance without adapting them to this repo's test framework.
 - Do not commit `external/` source checkouts.
 - Do not treat GitHub MCP as the default source-reading path when local source is available.
+- Do not claim source compatibility from this repository's tests alone; upstream API shape must be checked for version-sensitive behavior.
+- Do not leave the evidence trail implicit in chat history; summarize refs and file paths before the recommendation or edit.

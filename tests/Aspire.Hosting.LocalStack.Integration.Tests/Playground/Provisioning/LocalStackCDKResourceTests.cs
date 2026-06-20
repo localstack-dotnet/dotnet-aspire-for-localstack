@@ -46,7 +46,7 @@ public class LocalStackCdkResourceTests(LocalStackCdkFixture fixture)
     }
 
     [Test]
-    public async Task S3_Bucket_Should_Exist(CancellationToken cancellationToken)
+    public async Task S3_Bucket_Should_Exist()
     {
         var bucketName = fixture.StackOutputs.GetOutput("BucketName")
             ?? throw new InvalidOperationException("BucketName output not found");

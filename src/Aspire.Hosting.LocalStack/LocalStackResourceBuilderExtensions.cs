@@ -67,13 +67,8 @@ public static class LocalStackResourceBuilderExtensions
         if (hasStackResources)
         {
             // Create a CDK bootstrap resource once for all CDK stacks
-            cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStack);
-
-            if (cdkBootstrap == null)
-            {
-                // If we couldn't create a CDK bootstrap resource, we can't proceed
-                throw new InvalidOperationException("Failed to create CDK bootstrap CloudFormation template resource.");
-            }
+            cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStack)
+                           ?? throw new InvalidOperationException("Failed to create CDK bootstrap CloudFormation template resource.");
 
             // Move the CDK bootstrap resource to be right after LocalStack for proper startup ordering
             var localStackIndex = builder.Resources.IndexOf(localStack.Resource);
@@ -218,7 +213,7 @@ public static class LocalStackResourceBuilderExtensions
             resourceBuilder = resourceBuilder.WithEnvironment("SERVICES", servicesValue);
         }
 
-        resourceBuilder.ConfigureHealthCheck(builder, [..serviceNames]);
+        resourceBuilder.ConfigureHealthCheck(builder, [.. serviceNames]);
 
         // Configure callback for dynamic resource configuration
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
@@ -302,7 +297,7 @@ public static class LocalStackResourceBuilderExtensions
         return options;
     }
 
-    private static IResourceBuilder<LocalStackResource> ConfigureHealthCheck(
+    private static void ConfigureHealthCheck(
         this IResourceBuilder<LocalStackResource> resourceBuilder,
         IDistributedApplicationBuilder builder,
         ImmutableArray<string> serviceNames)
@@ -316,7 +311,7 @@ public static class LocalStackResourceBuilderExtensions
             logging.AddFilter($"System.Net.Http.HttpClient.{Constants.LocalStackHealthClientName}.LogicalHandler", LogLevel.Warning);
         });
 
-        EndpointReference endpoint = resourceBuilder.Resource.GetEndpoint(LocalStackResource.PrimaryEndpointName);
+        var endpoint = resourceBuilder.Resource.GetEndpoint(LocalStackResource.PrimaryEndpointName);
 
         builder.Services.AddHealthChecks().Add(new HealthCheckRegistration(
             Constants.LocalStackHealthCheckName,
@@ -337,6 +332,6 @@ public static class LocalStackResourceBuilderExtensions
             tags: ["localstack", serviceNames.Length > 0 ? "eager" : "lazy"]));
 
         // Associate the health check with the resource
-        return resourceBuilder.WithHealthCheck(Constants.LocalStackHealthCheckName);
+        resourceBuilder.WithHealthCheck(Constants.LocalStackHealthCheckName);
     }
 }
