@@ -14,6 +14,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 
 | WS | Title | Priority | Status | Plan doc |
 |----|-------|----------|--------|----------|
+| WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
 | WS1 | Full package update (foundation) | P0 | 🔜 | — |
 | WS2 | Aspire/AWS modernization & feature adaptation | P1 | 🔜 | — |
 | WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
@@ -54,7 +55,7 @@ Everything here ships in **one release**, governed by:
 
 Bring all dependencies to current. Gate for WS2.
 
-- Aspire `13.1.0` → latest `13.4.x`; **`Aspire.Hosting.AWS` `9.3.0` → `13.x`** (major realign — the big one); `LocalStack.Client`, AWSSDK family, analyzers.
+- Aspire `13.1.0` → latest `13.4.x`; **`Aspire.Hosting.AWS` `9.3.0` → `13.x`** (major realign — the big one); `LocalStack.Client`, AWSSDK family.
 - Decide strategy for the manually-maintained `<Version>` in `Aspire.Hosting.LocalStack.csproj`.
 - Refresh the verified `external/` upstream checkouts to the new target refs before WS2.
 
@@ -84,7 +85,6 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 ### WS4 — Bugs & correctness · P2
 
 - **#24** — `LOCALSTACK_HOST` conflates host port with internal port. In `LocalStackConnectionStringAvailableCallback.cs:42` it is set to the host-facing `{host}:{port}`; when a custom host `Port` is pinned, internal consumers (awslocal, health checks) must still target the internal port `4566`. Tied to todo #7.
-- **Trailing-space env lookup** — `playground/lambda/LocalStack.Lambda.UrlShortener/S3UrlService.cs` reads `"AWS_REGION "` (trailing space).
 - **Image-tag / docs drift** — default tag is `4.12.0` (`LocalStackContainerImageTags.cs`) while README/CONFIGURATION examples say `4.10.0`.
 
 ### WS5 — Test integrity · P2
@@ -149,7 +149,6 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 |------|------------|
 | PR template mentions older Aspire/.NET wording | WS9 |
 | `docs/CONFIGURATION.md` drifts from image-version default | WS4/WS9 |
-| Trailing-space `AWS_REGION ` in `S3UrlService.cs` | WS4 |
 | Version-sensitive type-name string matching | WS2 |
 | Fixed-delay waits in Lambda integration tests | WS5 |
 | Temporary direct `AWSSDK.Core` / `MessagePack` pins | WS3 (decoupling should remove) |

@@ -1,5 +1,3 @@
-#pragma warning disable S4143
-
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Container;
 
 public class LocalStackContainerOptionsTests

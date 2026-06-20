@@ -59,7 +59,7 @@ You are an engineer picking up `dotnet-aspire-for-localstack` (the `LocalStack.A
 - **Acceptance:** solution builds with warnings-as-errors clean; TUnit unit + integration tests pass (integration needs Docker); slopwatch clean if available. Produce the WS1 plan at `docs/plans/ws1-package-update.md` and flip the roadmap Status row.
 - **Carry-forward into WS2:** enumerate the `Aspire.Hosting.AWS` 9.3→13.x breaking changes you hit — that list seeds WS2.
 
-Alternative (smaller, if Deniz wants a quick win first): pick off a WS4 bug (#24 `LOCALSTACK_HOST` or the trailing-space `AWS_REGION`) under TDD. Out of scope unless asked: WS8 features, #18 Azure.
+Alternative (smaller, if Deniz wants a quick win first): pick off WS4 bug #24 (`LOCALSTACK_HOST`) under TDD. Out of scope unless asked: WS8 features, #18 Azure.
 
 ## Mandatory Grounding (read in this order)
 

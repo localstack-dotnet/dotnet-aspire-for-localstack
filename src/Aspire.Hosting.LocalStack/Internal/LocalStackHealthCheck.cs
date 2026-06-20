@@ -11,7 +11,7 @@ internal sealed class LocalStackHealthCheck(IHttpClientFactory httpClientFactory
     {
         try
         {
-            HttpClient httpClient = httpClientFactory.CreateClient(Constants.LocalStackHealthClientName);
+            var httpClient = httpClientFactory.CreateClient(Constants.LocalStackHealthClientName);
             using var response = await httpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)

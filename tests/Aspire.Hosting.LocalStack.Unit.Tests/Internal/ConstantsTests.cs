@@ -1,5 +1,3 @@
-using System.Reflection;
-
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 
 public class ConstantsTests

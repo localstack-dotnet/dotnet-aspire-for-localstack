@@ -46,7 +46,7 @@ public class LocalStackLambdaResourceTests(LocalStackLambdaFixture fixture)
     }
 
     [Test]
-    public async Task S3_QrBucket_Should_Exist(CancellationToken cancellationToken)
+    public async Task S3_QrBucket_Should_Exist()
     {
         var bucketName = fixture.StackOutputs.GetOutput("QrBucketName")
                          ?? throw new InvalidOperationException("QrBucketName output not found");

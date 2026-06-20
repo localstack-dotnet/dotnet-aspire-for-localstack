@@ -8,10 +8,17 @@ namespace Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda;
 [ClassDataSource<LocalStackLambdaFixture>(Shared = SharedType.PerTestSession)]
 public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
 {
-    // Cache JsonSerializerOptions to avoid creating new instances for each test (CA1869)
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+    /// <summary>
+    /// Cached JSON serializer options for reading Lambda responses with case-insensitive property matching.
+    /// </summary>
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
 
-    // JsonSerializerOptions for posting requests - use default naming (PascalCase) to match Lambda expectations
+    /// <summary>
+    /// JSON serializer options for posting requests with default PascalCase property names to match Lambda expectations.
+    /// </summary>
     private static readonly JsonSerializerOptions PostJsonOptions = new()
     {
         PropertyNamingPolicy = null, // Use default PascalCase, not camelCase
@@ -22,7 +29,11 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
-        var request = new { Url = "https://aws.amazon.com", Format = (string?)null };
+        var request = new
+        {
+            Url = "https://aws.amazon.com",
+            Format = (string?)null
+        };
 
         // Act
         var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, cancellationToken);
@@ -49,7 +60,11 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
-        var request = new { Url = "https://localstack.cloud", Format = "qr" };
+        var request = new
+        {
+            Url = "https://localstack.cloud",
+            Format = "qr"
+        };
 
         // Act
         var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, cancellationToken);
@@ -76,7 +91,11 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         using var httpClient = fixture.CreateApiGatewayClient();
         httpClient.Timeout = TimeSpan.FromSeconds(90);
 
-        var createRequest = new { Url = "https://docs.localstack.cloud", Format = (string?)null };
+        var createRequest = new
+        {
+            Url = "https://docs.localstack.cloud",
+            Format = (string?)null
+        };
         var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
         var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
         var createResult = JsonSerializer.Deserialize<ShortenResponse>(createContent, JsonOptions);
@@ -135,12 +154,18 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         {
             TableName = analyticsTableName,
             FilterExpression = "Slug = :slug AND EventType = :eventType",
-            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>
-                (StringComparer.OrdinalIgnoreCase)
+            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                [":slug"] = new()
                 {
-                    [":slug"] = new() { S = createResult.Id },
-                    [":eventType"] = new() { S = "url_created" },
+                    S = createResult.Id,
                 },
+                [":eventType"] = new()
+                {
+                    S = "url_created",
+                },
+            },
         }, cancellationToken);
 
         await Assert.That(scanResponse.Items).IsNotEmpty();
@@ -166,7 +191,11 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
                                  ?? throw new InvalidOperationException("AnalyticsTableName not found");
 
         var testUrl = $"https://redirect-analytics-test.example.com/{Guid.NewGuid()}";
-        var createRequest = new { Url = testUrl, Format = (string?)null };
+        var createRequest = new
+        {
+            Url = testUrl,
+            Format = (string?)null
+        };
         var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
         var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
         var createResult = JsonSerializer.Deserialize<ShortenResponse>(createContent, JsonOptions);
@@ -196,11 +225,14 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         {
             TableName = analyticsTableName,
             FilterExpression = "Slug = :slug",
-            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>
-                (StringComparer.OrdinalIgnoreCase)
+            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                [":slug"] = new()
                 {
-                    [":slug"] = new() { S = createResult.Id },
+                    S = createResult.Id,
                 },
+            },
         }, cancellationToken);
 
         await Assert.That(scanResponse.Items).IsNotEmpty();
@@ -216,7 +248,5 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
     /// <summary>
     /// Response from the URL shortener Lambda function.
     /// </summary>
-#pragma warning disable CA1812 // Class is instantiated via JSON deserialization
     private sealed record ShortenResponse(string? Id, string? QrUrl);
-#pragma warning restore CA1812
 }

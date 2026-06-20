@@ -1,6 +1,3 @@
-#pragma warning disable IDE0130, MA0045
-// ReSharper disable CheckNamespace
-
 using System.Reflection;
 using System.Security.Cryptography;
 using static System.Convert;
@@ -24,6 +21,7 @@ internal static class CdkBootstrapManager
     /// <returns>The full path to the valid template file on disk.</returns>
     internal static string GetBootstrapTemplatePath(string? templateDirectory = null) => ExtractBootstrapTemplate(templateDirectory);
 
+#pragma warning disable MA0045
     private static string ExtractBootstrapTemplate(string? templateDirectory = null)
     {
         using var resource = Assembly.GetExecutingAssembly().GetManifestResourceStream(ResourceName)
@@ -118,4 +116,5 @@ internal static class CdkBootstrapManager
             }
         }
     }
+#pragma warning restore MA0045
 }

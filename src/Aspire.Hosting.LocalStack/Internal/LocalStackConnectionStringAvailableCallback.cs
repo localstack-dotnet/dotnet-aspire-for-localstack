@@ -28,13 +28,9 @@ internal static class LocalStackConnectionStringAvailableCallback
                 return;
             }
 
-            var connectionString = await localStackResource.ConnectionStringExpression.GetValueAsync(ct).ConfigureAwait(false);
-
-            if (connectionString == null)
-            {
-                throw new DistributedApplicationException(
-                    $"ConnectionStringAvailableEvent was published for the '{localStackResource.Name}' resource but the connection string was null.");
-            }
+            var connectionString = await localStackResource.ConnectionStringExpression.GetValueAsync(ct).ConfigureAwait(false)
+                                   ?? throw new DistributedApplicationException(
+                                       $"ConnectionStringAvailableEvent was published for the '{localStackResource.Name}' resource but the connection string was null.");
 
             var localStackUrl = new Uri(connectionString);
 
@@ -55,8 +51,7 @@ internal static class LocalStackConnectionStringAvailableCallback
                 {
                     LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, localStackOptions);
                 }
-                else if (resource is ExecutableResource er &&
-                         string.Equals(er.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
+                else if (resource is ExecutableResource er && string.Equals(er.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
                 {
                     var executableResourceBuilder = builder.CreateResourceBuilder(er);
                     LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);

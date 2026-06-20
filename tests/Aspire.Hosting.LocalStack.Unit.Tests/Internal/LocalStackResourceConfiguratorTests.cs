@@ -144,7 +144,7 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
-        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(ann => mockExecutableResource.Annotations.Add(ann)), Arg.Any<ResourceAnnotationMutationBehavior>())
+        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(mockExecutableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
             .Returns(mockBuilder);
 
         var localStackUrl = new Uri("http://localhost:4566");
@@ -172,7 +172,7 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
-        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(ann => mockExecutableResource.Annotations.Add(ann)), Arg.Any<ResourceAnnotationMutationBehavior>())
+        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(mockExecutableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
             .Returns(mockBuilder);
 
         // Add some existing annotations
@@ -204,7 +204,7 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
-        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(ann => mockExecutableResource.Annotations.Add(ann)), Arg.Any<ResourceAnnotationMutationBehavior>())
+        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(mockExecutableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
             .Returns(mockBuilder);
 
         var initialAnnotationCount = mockExecutableResource.Annotations.Count;
@@ -229,7 +229,7 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
-        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(ann => mockExecutableResource.Annotations.Add(ann)), Arg.Any<ResourceAnnotationMutationBehavior>())
+        mockBuilder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(mockExecutableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
             .Returns(mockBuilder);
 
         var customLocalStackUrl = new Uri("https://custom-host:9999");

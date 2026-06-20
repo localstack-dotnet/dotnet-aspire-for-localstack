@@ -185,6 +185,7 @@ public sealed class LocalStackHealthCheckTests : IDisposable
         await Assert.That(result.Description).Contains("timed out");
         await Assert.That(result.Exception).IsNotNull();
     }
+
     [Test]
     public async Task CheckHealthAsync_Returns_Unhealthy_When_IOException_Occurs()
     {
@@ -214,9 +215,9 @@ public sealed class LocalStackHealthCheckTests : IDisposable
         await Assert.That(async () => await healthCheck.CheckHealthAsync(new HealthCheckContext(), CancellationToken.None))
             .ThrowsExactly<OperationCanceledException>();
     }
-
-
-    // Custom HttpMessageHandler for testing
+    /// <summary>
+    /// Custom <see cref="HttpMessageHandler"/> for testing.
+    /// </summary>
     private sealed class TestHttpMessageHandler : HttpMessageHandler
     {
         private HttpResponseMessage? _response;

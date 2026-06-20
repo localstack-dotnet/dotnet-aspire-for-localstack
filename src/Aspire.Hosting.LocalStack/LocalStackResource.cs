@@ -10,7 +10,7 @@ public interface ILocalStackResource : IResourceWithWaitSupport, IResourceWithCo
     /// <summary>
     /// Gets the LocalStack configuration options.
     /// </summary>
-    ILocalStackOptions Options { get; }
+    public ILocalStackOptions Options { get; }
 }
 
 /// <summary>

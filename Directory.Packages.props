@@ -1,15 +1,13 @@
 <Project>
   <ItemGroup>
     <!-- third-party analyzers -->
-    <PackageVersion Include="Meziantou.Analyzer" Version="2.0.261"/>
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.105"/>
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0"/>
-    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.101"/>
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.301"/>
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="17.14.15"/>
     <PackageVersion Include="Roslynator.Analyzers" Version="4.15.0"/>
-    <PackageVersion Include="Roslynator.CodeAnalysis.Analyzers" Version="4.15.0"/>
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="4.15.0"/>
-    <PackageVersion Include="SecurityCodeScan.VS2019" Version="5.6.7"/>
-    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.17.0.131074"/>
+    <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.27.0.140913"/>
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17"/>
     <!-- aspire packages -->
     <PackageVersion Include="Aspire.Hosting" Version="13.1.0"/>

@@ -165,7 +165,6 @@ app.MapGet("/healthcheck/dynamodb", async (HttpContext httpContext) =>
     }
 });
 
-
 app.MapGet("/healthcheck/cloudformation", (HttpContext _) =>
 {
     // Confirm the WithEnvironment behavior
@@ -184,6 +183,5 @@ app.MapGet("/healthcheck/cloudformation", (HttpContext _) =>
         ? Results.BadRequest("Missing ChatTopicArn")
         : Results.Ok("Success");
 });
-
 
 await app.RunAsync().ConfigureAwait(false);

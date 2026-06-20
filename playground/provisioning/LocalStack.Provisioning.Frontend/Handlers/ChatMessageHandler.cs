@@ -2,8 +2,6 @@
 // Originally copied from https://github.com/aws/integrations-on-dotnet-aspire-for-aws
 // and adjusted for Aspire.Hosting.LocalStack. All rights reserved.
 
-#pragma warning disable CA1812 // Mark members as static
-
 using System.Globalization;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
@@ -18,15 +16,11 @@ namespace LocalStack.Provisioning.Frontend.Handlers;
 internal sealed partial class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfiguration configuration, ILogger<ChatMessageHandler> logger)
     : IMessageHandler<ChatMessage>
 {
-    public async Task<MessageProcessStatus> HandleAsync(
-        MessageEnvelope<ChatMessage> messageEnvelope,
-        CancellationToken token = default)
+    public async Task<MessageProcessStatus> HandleAsync(MessageEnvelope<ChatMessage> messageEnvelope, CancellationToken token = default)
     {
         ArgumentNullException.ThrowIfNull(messageEnvelope);
 
-        LogProcessingChatMessage(logger,
-            messageEnvelope.Message.Message,
-            messageEnvelope.Message.Recipient);
+        LogProcessingChatMessage(logger, messageEnvelope.Message.Message, messageEnvelope.Message.Recipient);
 
         try
         {

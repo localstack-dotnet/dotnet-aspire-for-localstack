@@ -15,9 +15,13 @@ using OpenTelemetry.Trace;
 
 namespace Microsoft.Extensions.Hosting;
 
-// Adds common .NET Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
-// This project should be referenced by each service project in your solution.
-// To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
+/// <summary>
+/// Adds common .NET Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
+/// </summary>
+/// <remarks>
+/// Reference this project from each service project in your solution.
+/// To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults.
+/// </remarks>
 public static class LocalStackPlaygroundExtensions
 {
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
@@ -54,11 +58,11 @@ public static class LocalStackPlaygroundExtensions
             })
             .WithTracing(tracing =>
             {
+                // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package).
+                // tracing.AddGrpcClientInstrumentation();
+
                 tracing.AddAspNetCoreInstrumentation()
-                    // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
-                    //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation()
-                    // Add instrumentation for the AWS .NET SDK.
                     .AddAWSInstrumentation()
                     .AddAWSLambdaConfigurations(options => options.DisableAwsXRayContextExtraction = true)
                     .AddAWSMessagingInstrumentation()
@@ -71,7 +75,7 @@ public static class LocalStackPlaygroundExtensions
         return builder;
     }
 
-    private static TBuilder AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    private static void AddOpenTelemetryExporters<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         var useOtlpExporter = !string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]);
 
@@ -79,14 +83,12 @@ public static class LocalStackPlaygroundExtensions
         {
             builder.Services.AddOpenTelemetry().UseOtlpExporter();
         }
-
-        return builder;
     }
 
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
+        // Add a default liveness check to ensure the app is responsive.
         builder.Services.AddHealthChecks()
-            // Add a default liveness check to ensure the app is responsive
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
         return builder;
