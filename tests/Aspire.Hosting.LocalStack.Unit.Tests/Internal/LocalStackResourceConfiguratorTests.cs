@@ -239,4 +239,39 @@ public class LocalStackResourceConfiguratorTests
         var envAnnotation = mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().FirstOrDefault();
         await Assert.That(envAnnotation).IsNotNull();
     }
+
+    [Test]
+    public async Task ConfigureStackResource_Should_Assign_Config_With_LocalStack_Region()
+    {
+        var stackResource = Substitute.For<IStackResource>();
+        IAWSSDKConfig? assigned = null;
+        stackResource.AWSSDKConfig.Returns(_ => assigned);
+        stackResource
+            .When(static r => r.AWSSDKConfig = Arg.Any<IAWSSDKConfig?>())
+            .Do(callInfo => assigned = callInfo.Arg<IAWSSDKConfig?>());
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "eu-central-1");
+
+        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, options);
+
+        await Assert.That(assigned).IsNotNull();
+        await Assert.That(assigned!.Region).IsEqualTo(Amazon.RegionEndpoint.EUCentral1);
+        await Assert.That(assigned.Profile).IsNull();
+    }
+
+    [Test]
+    public async Task ConfigureStackResource_Should_Default_Region_When_Option_Region_Empty()
+    {
+        var stackResource = Substitute.For<IStackResource>();
+        IAWSSDKConfig? assigned = null;
+        stackResource.AWSSDKConfig.Returns(_ => assigned);
+        stackResource
+            .When(static r => r.AWSSDKConfig = Arg.Any<IAWSSDKConfig?>())
+            .Do(callInfo => assigned = callInfo.Arg<IAWSSDKConfig?>());
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "");
+
+        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, options);
+
+        await Assert.That(assigned).IsNotNull();
+        await Assert.That(assigned!.Region).IsEqualTo(Amazon.RegionEndpoint.USEast1);
+    }
 }

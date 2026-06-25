@@ -15,7 +15,8 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS | Title | Priority | Status | Plan doc |
 |----|-------|----------|--------|----------|
 | WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
-| WS1 | Full package update (foundation) | P0 | 🔜 | — |
+| WS1 | Full package update (foundation) | P0 | ✅ | — |
+| WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
 | WS2 | Aspire/AWS modernization & feature adaptation | P1 | 🔜 | — |
 | WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
@@ -23,7 +24,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS6 | Refactoring / API quality | P2 | 🔜 | — |
 | WS7 | LocalStack platform tracking | P2 | 🔜 | — |
 | WS8 | Observability / UX features | P3 | 🔜 | — |
-| WS9 | Docs & internal-docs consolidation | P0 | ✅ | [ws9-docs-consolidation.md](plans/ws9-docs-consolidation.md) |
+| WS9 | Docs & internal-docs consolidation | P0 | ✅ | — |
 
 ## Release Philosophy
 
@@ -117,7 +118,7 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
 ### WS9 — Docs & internal-docs consolidation · P0 (light, do early)
 
-- ✅ Consolidated `internal-docs/` into this roadmap and deleted the folder (gitignored/historical; all live items captured in the triage table and workstreams). Raw notes now go to the Inbox section below instead of `internal-docs/todo.md`. See `docs/plans/ws9-docs-consolidation.md`.
+- ✅ Consolidated `internal-docs/` into this roadmap and deleted the folder (gitignored/historical; all live items captured in the triage table and workstreams). Raw notes now go to the Inbox section below instead of `internal-docs/todo.md`.
 - Remaining: fix doc drift surfaced in WS4 and `KNOWN_ISSUES.md`.
 
 ## todo.md Triage
