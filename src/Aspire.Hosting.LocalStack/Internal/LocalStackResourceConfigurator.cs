@@ -1,6 +1,8 @@
 ﻿using System.Globalization;
+using Amazon;
 using Amazon.CloudFormation;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.AWS.CDK;
 using Aspire.Hosting.AWS.CloudFormation;
 using LocalStack.Client;
 using LocalStack.Client.Contracts;
@@ -33,6 +35,25 @@ internal static class LocalStackResourceConfigurator
             .Create();
 
         cloudFormationResource.CloudFormationClient = session.CreateClientByImplementation<AmazonCloudFormationClient>();
+    }
+
+    /// <summary>
+    /// Pins the LocalStack region on the CDK stack's AWS SDK config so the asset uploader's STS and S3
+    /// clients target the same region as the rest of LocalStack configuration. Credentials and endpoint
+    /// are handled by <see cref="LocalStackCdkCredentialsOverride"/> and
+    /// <see cref="LocalStackCdkAssetUploadEndpointCustomizer"/>.
+    /// </summary>
+    /// <param name="stackResource">The CDK stack resource to configure.</param>
+    /// <param name="options">The LocalStack configuration options.</param>
+    internal static void ConfigureStackResource(IStackResource stackResource, ILocalStackOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(stackResource);
+        ArgumentNullException.ThrowIfNull(options);
+
+        var regionName = string.IsNullOrEmpty(options.Session.RegionName) ? "us-east-1" : options.Session.RegionName;
+        var region = RegionEndpoint.GetBySystemName(regionName);
+
+        stackResource.AWSSDKConfig = new LocalStackAwsSdkConfig(region, stackResource.AWSSDKConfig?.SDKValidationEnabled ?? false);
     }
 
     /// <summary>
