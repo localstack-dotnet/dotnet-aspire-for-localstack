@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [13.4.0] - 2026-06-25
+
+### Fixed
+
+- **CDK stack provisioning now works under LocalStack.** With `Aspire.Hosting.AWS` 13.x, CDK file-asset upload runs before CloudFormation and builds its own STS/S3 clients — separate from the CloudFormation client this integration already routed. Those clients resolved real AWS credentials (for example an expired SSO profile) and broke provisioning with `SSO Token has expired and failed to refresh`. The uploader's STS and S3 clients are now routed to LocalStack via the AWS SDK's typed credential and runtime-pipeline hooks — scoped to the S3 and STS clients, with no process environment-variable mutation. ([#29](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/29))
+
+### Changed
+
+- Updated .NET Aspire to `13.4.6` and `Aspire.Hosting.AWS` to `13.3.1`, with aligned AWSSDK, TUnit, SkiaSharp, and related dependency updates.
+
 ## [13.1.0] - 2025-12-18
 
 ### Added
