@@ -24,7 +24,7 @@ public sealed class LocalStackLambdaFixture : IAsyncInitializer, IAsyncDisposabl
     /// <summary>
     /// Creates an HTTP client for the API Gateway emulator.
     /// </summary>
-    public HttpClient CreateApiGatewayClient() => App.CreateHttpClient("APIGatewayEmulator");
+    public HttpClient CreateApiGatewayClient() => App.CreateHttpClient("APIGatewayEmulator", "http");
 
     public async Task InitializeAsync()
     {
