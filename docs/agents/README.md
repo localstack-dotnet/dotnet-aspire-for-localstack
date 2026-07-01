@@ -1,12 +1,16 @@
 # Agent Harness Guide
 
-Date: 2026-06-18
+Date: 2026-07-01
 
 This directory contains repository-specific guidance for AI coding agents.
 
 ## Source Of Truth
 
 `AGENTS.md` is the canonical always-on contract. Harness-specific files relay to it or expose native discovery points, but they do not own policy.
+
+`AGENTS.md` intentionally stays compact and capability-oriented. Keep mandatory repository policy there; keep harness-native names, local setup details, marketplace repair notes, LSP wiring, and skill relay maintenance in this adapter guide.
+
+Changes to `AGENTS.md`, approval gates, capability routing, skill triggers, or harness adapter behavior are policy/infrastructure changes. They require explicit approval even when the edit is Markdown-only.
 
 | File | Purpose |
 | --- | --- |
@@ -68,7 +72,11 @@ Tier meanings:
 
 OpenCode exposes skill frontmatter names. Official Microsoft skills are installed with `ms-dotnet-*` prefixes to avoid collisions with generic names and Aaron's `dotnet-skills` set. Specialist agents are not skills in OpenCode; dispatch them with `task` only when the harness exposes the matching `subagent_type`.
 
-`aspire-source-navigation` is a narrow project skill for compatibility-sensitive source checks. Do not invoke it just because a task mentions Aspire; invoke it when the task depends on upstream Aspire/AWS/LocalStack internals, package-version alignment, or source-level API shape.
+If a bootstrap or process skill is already active, follow it immediately. Use this adapter guide to map additional capabilities after the active process workflow tells you what to invoke.
+
+`aspire-source-navigation` is a narrow project skill for compatibility-sensitive source checks. Do not invoke it just because a task mentions Aspire; invoke it when the task depends on upstream Aspire/AWS/LocalStack internals, package-version alignment, source-level API shape, or a compatibility conclusion. For read-only explanation questions, inspect this repository's docs/code first and invoke the skill only when upstream version-specific evidence is needed.
+
+For package version updates, use the package-management capability for Central Package Management and `dotnet` command mechanics. Use `aspire-source-navigation` for compatibility evidence and upstream source checks. If the guidance overlaps, package-management governs how packages are edited; source navigation governs whether the version/API behavior is compatible.
 
 Official Microsoft **Aspire** orchestration skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`, and may not be installed. Use the harness-native name only if the harness exposes it.
 
@@ -111,6 +119,8 @@ If the registry is already wrong, back up the files first, then repair directly:
 ## Skill Maintenance
 
 The canonical skill body lives in `docs/agents/skills/aspire-source-navigation.md`. Native `SKILL.md` files should stay small and point back to the canonical document.
+
+When changing agent guidance, update `AGENTS.md` only for mandatory cross-harness policy. Update this file for adapter mechanics. Update native skill relay files only when their trigger description or canonical path changes.
 
 When changing the skill:
 
