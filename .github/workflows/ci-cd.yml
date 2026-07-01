@@ -45,12 +45,12 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0 # Full history for better caching
 
       - name: "Setup .NET SDK"
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
@@ -59,7 +59,7 @@ jobs:
 
       - name: "Setup Node.js"
         if: runner.os == 'Linux'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
 
@@ -68,7 +68,7 @@ jobs:
         run: npm install -g aws-cdk@2.x
 
       - name: "Cache NuGet packages"
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ runner.os == 'Windows' && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
           key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
@@ -95,7 +95,7 @@ jobs:
 
       - name: "Publish Test Results"
         id: test-results
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v3
         if: success() || failure()
         # Allow fork PRs to fail gracefully (permission error) without breaking the workflow
         continue-on-error: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -125,7 +125,7 @@ jobs:
           hmac_secret: '${{ secrets.TESTDATASECRET }}'
 
       - name: "Upload Test Artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         continue-on-error: true
         with:
@@ -136,7 +136,7 @@ jobs:
 
   continuous-deployment:
     name: "Continuous Deployment"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     needs: build-and-test
     if: |
       github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack' &&
@@ -151,12 +151,12 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: "Setup .NET SDK"
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
@@ -164,7 +164,7 @@ jobs:
             10.0.x
 
       - name: "Cache NuGet packages"
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
           key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
@@ -244,7 +244,7 @@ jobs:
             --skip-duplicate
 
       - name: "Upload Package Artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: "packages-${{ steps.version.outputs.artifact_suffix }}"
           path: |

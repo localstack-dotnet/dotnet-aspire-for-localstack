@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.AWS.CDK;
 using Aspire.Hosting.AWS.CloudFormation;
 using Aspire.Hosting.LocalStack.Annotations;
 
@@ -15,7 +16,8 @@ internal static class LocalStackConnectionStringAvailableCallback
     /// </summary>
     /// <param name="builder">The distributed application builder.</param>
     /// <returns>A callback function for LocalStack connection string availability.</returns>
-    internal static Func<ILocalStackResource, ConnectionStringAvailableEvent, CancellationToken, Task> CreateCallback(IDistributedApplicationBuilder builder)
+    internal static Func<ILocalStackResource, ConnectionStringAvailableEvent, CancellationToken, Task> CreateCallback(
+        IDistributedApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -38,6 +40,8 @@ internal static class LocalStackConnectionStringAvailableCallback
             resourceBuilder.WithEnvironment("LOCALSTACK_HOST", $"{localStackUrl.Host}:{localStackUrl.Port.ToString(CultureInfo.InvariantCulture)}");
 
             var referencedResources = localStackResource.Annotations.OfType<LocalStackReferenceAnnotation>();
+            var hasCdkStackResources = false;
+
             foreach (var resource in referencedResources.Select(annotation => annotation.Resource))
             {
                 var hasLocalStackEnabledAnnotation = resource.HasAnnotationOfType<LocalStackEnabledAnnotation>();
@@ -47,7 +51,13 @@ internal static class LocalStackConnectionStringAvailableCallback
                     continue;
                 }
 
-                if (resource is ICloudFormationTemplateResource cft)
+                if (resource is IStackResource stackResource)
+                {
+                    LocalStackResourceConfigurator.ConfigureCloudFormationResource(stackResource, localStackUrl, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureStackResource(stackResource, localStackOptions);
+                    hasCdkStackResources = true;
+                }
+                else if (resource is ICloudFormationTemplateResource cft)
                 {
                     LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, localStackOptions);
                 }
@@ -65,6 +75,12 @@ internal static class LocalStackConnectionStringAvailableCallback
 
                     LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder, localStackUrl, localStackOptions);
                 }
+            }
+
+            if (hasCdkStackResources)
+            {
+                LocalStackCdkCredentialsOverride.Apply(localStackOptions);
+                LocalStackCdkAssetUploadEndpointCustomizer.Register(localStackUrl);
             }
         };
     }

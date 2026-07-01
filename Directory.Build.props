@@ -19,7 +19,7 @@
     <CheckEolTargetFramework>true</CheckEolTargetFramework>
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
 
-    <AspireAppHostSdkVersion>13.1.0</AspireAppHostSdkVersion>
+    <AspireAppHostSdkVersion>13.4.6</AspireAppHostSdkVersion>
 
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

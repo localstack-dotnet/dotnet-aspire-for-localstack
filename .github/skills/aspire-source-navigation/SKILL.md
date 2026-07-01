@@ -1,6 +1,6 @@
 ---
 name: aspire-source-navigation
-description: Use when working on Aspire.Hosting.LocalStack source compatibility, Aspire/AWS/LocalStack package internals, Directory.Packages.props version bumps, or AddLocalStack/UseLocalStack/WithReference behavior.
+description: Use when compatibility-sensitive Aspire.Hosting.LocalStack work depends on Aspire/AWS/LocalStack upstream source, package-version alignment, AddLocalStack/UseLocalStack/WithReference behavior, endpoint/configuration flow, or AWS SDK/LocalStack.Client wiring.
 ---
 
 # Aspire Source Navigation

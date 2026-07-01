@@ -9,6 +9,7 @@ global using System.Text.Json;
 global using Amazon.CloudFormation;
 global using Aspire.Hosting.ApplicationModel;
 global using Aspire.Hosting.AWS;
+global using Aspire.Hosting.AWS.CDK;
 global using Aspire.Hosting.AWS.CloudFormation;
 global using Aspire.Hosting.LocalStack.Annotations;
 global using Aspire.Hosting.LocalStack.CDK;

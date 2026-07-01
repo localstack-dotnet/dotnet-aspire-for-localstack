@@ -1,6 +1,6 @@
 ---
 name: aspire-source-navigation
-description: Use when working on Aspire.Hosting.LocalStack source compatibility, Aspire/AWS/LocalStack package internals, Directory.Packages.props version bumps, or AddLocalStack/UseLocalStack/WithReference behavior.
+description: Use when compatibility-sensitive Aspire.Hosting.LocalStack work depends on Aspire/AWS/LocalStack upstream source, package-version alignment, AddLocalStack/UseLocalStack/WithReference behavior, endpoint/configuration flow, or AWS SDK/LocalStack.Client wiring.
 ---
 
 # Aspire Source Navigation
@@ -23,6 +23,8 @@ Use this skill for work involving:
 - `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint/configuration flow, manifest behavior, CloudFormation/CDK, Lambda, or AWS SDK wiring
 - String-based references to upstream AWS Aspire integration types
 - Reviews of Aspire hosting compatibility or package-version drift
+
+For read-only explanation questions, use this skill only when the answer depends on upstream source, version-specific API shape, or a compatibility conclusion. Otherwise inspect this repository's docs/code directly.
 
 Do not use this skill for ordinary Markdown edits, general C# cleanup, or playground-only work that does not depend on Aspire/AWS/LocalStack internals.
 

@@ -1,5 +1,3 @@
-#pragma warning disable CA2252 // Using 'AddAWSLambdaFunction' requires opting into preview features.
-
 using Amazon;
 using Aspire.Hosting.AWS.Lambda;
 using Aspire.Hosting.LocalStack.Container;

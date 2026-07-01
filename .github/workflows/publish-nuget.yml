@@ -23,7 +23,7 @@ env:
 jobs:
   publish-manual:
     name: "Publish to ${{ github.event.inputs.package-source }}"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: "Setup .NET SDK"
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: |
             8.0.x
@@ -44,7 +44,7 @@ jobs:
             10.0.x
 
       - name: "Cache NuGet packages"
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ github.workspace }}/.nuget/packages
           key: ${{ runner.os }}-nugetv2-${{ hashFiles('**/Directory.Packages.props') }}-${{ hashFiles('**/*.csproj') }}-${{ hashFiles('**/packages.lock.json') }}
@@ -111,7 +111,7 @@ jobs:
             --skip-duplicate
 
       - name: "Upload Package Artifacts"
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: "packages-localstack-aspire-hosting-${{ github.event.inputs.package-version }}"
           path: |
