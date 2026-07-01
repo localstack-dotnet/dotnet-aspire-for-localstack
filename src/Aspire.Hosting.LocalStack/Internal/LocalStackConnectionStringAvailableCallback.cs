@@ -21,7 +21,7 @@ internal static class LocalStackConnectionStringAvailableCallback
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        return async (localStackResource, connectionStringAvailableEvent, ct) =>
+        return async (localStackResource, _, ct) =>
         {
             var localStackOptions = localStackResource.Options;
 
