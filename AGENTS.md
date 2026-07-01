@@ -93,15 +93,9 @@ slopwatch analyze --fail-on warning --exclude "external/**,artifacts/**,**/bin/*
 ## Harness Portability
 
 - `AGENTS.md` is the canonical repository contract.
-- `CLAUDE.md` stays relay-only and points to `AGENTS.md`.
-- `.github/copilot-instructions.md` stays relay-only and points to `AGENTS.md`.
-- Harness-specific skill files are adapters, not policy sources.
-- Canonical project skill content lives in `docs/agents/skills/aspire-source-navigation.md`.
-- This repo maintains native adapters under `.claude/skills/`, `.opencode/skills/`, and `.github/skills/`.
-- Do not create `.vscode` skill folders. GitHub Copilot Agent Skills also support `.agents/skills/`, but this repo intentionally does not maintain that extra adapter location.
-- Never commit secrets, OAuth tokens, personal machine paths, or local MCP config.
-
-OpenCode loads project skills when the session starts. After changing `.opencode/skills/**`, tell the user to restart OpenCode if they need the new skill active in the running UI.
+- Harness-specific instructions and skill files are adapters, not policy sources; keep relay files lightweight and pointed back to this contract.
+- Harness adapter locations, capability mapping, LSP wiring, and local-only setup notes live in `docs/agents/README.md`.
+- Never commit secrets, OAuth tokens, personal machine paths, local MCP config, or personal OpenCode model-routing config.
 
 ## Source Navigation For Aspire Compatibility
 
@@ -121,51 +115,66 @@ The `external/` tree is local-only and ignored by git. GitHub MCP is allowed for
 
 Official Microsoft Aspire skills may describe newer Aspire versions than this repo uses. Verify API shape against `Directory.Packages.props` and local upstream source before applying newer guidance.
 
-## Skills Used In This Project
+## Skills And Agents Used In This Project
 
-Skills encode workflow discipline and retrieval-led reasoning. Use exact installed skill names when invoking skills.
+Skills and specialist agents encode workflow discipline and retrieval-led reasoning. Use them by **capability**, not by memorized harness names:
 
-### Session-Start Preload
+1. Identify the capability needed from the routing sections below.
+2. Resolve the harness-native invocation from `docs/agents/README.md`.
+3. Invoke the harness-native skill or dispatch the harness-native specialist agent before acting.
+4. If an optional capability is unavailable, skip it or ask before replacing it with a different tool.
 
-Load these project/harness skills explicitly at session start (alongside `using-superpowers`, which the harness auto-loads). All other skills below are **on-demand**: invoke them only when their trigger fires.
+Availability is not activation. Except for the Superpowers bootstrap, skills do not run automatically; matching triggers require explicit skill invocation or specialist-agent dispatch.
 
-- `aspire-source-navigation` — compatibility/source work in `src/` and `tests/`.
-- `subagent-model-routing` — OpenCode only; subagent dispatch and model routing.
+Capability tiers:
 
-### Process Skills (on-demand)
+- **Tier 0** — bootstrap/process discipline; follow when injected by the harness.
+- **Tier 1** — required when triggered for this repo's Aspire/LocalStack package work; invoke before acting when installed or shipped.
+- **Tier 2** — optional by judgment; use when it materially improves correctness, safety, test quality, or diagnostics.
+- **Tier 3** — local-only convenience; use when present, never assume fresh checkouts have it.
+- **Out of scope** — do not use unless this repo adds that technology or Deniz explicitly asks.
 
-| Skill | Trigger |
-| --- | --- |
-| `brainstorming` | Feature, behavior, design, or refactor work before implementation |
-| `writing-plans` | Multi-step implementation planning after design approval |
-| `test-driven-development` | Production bugfixes and feature implementation |
-| `systematic-debugging` | Bugs, test failures, unexpected behavior, flaky behavior |
-| `verification-before-completion` | Before claiming work is complete or passing |
-| `requesting-code-review` / `receiving-code-review` | Review workflows and review feedback |
+Skill and agent sources:
+
+- **`superpowers:*`** — process discipline (auto-loaded bootstrap plus on-demand skills).
+- **`dotnet-skills:*`** (Aaron Stannard) — opinionated .NET conventions and optional specialist agents.
+- **`dotnet-test:*` / `dotnet-diag:*`** (official Microsoft `dotnet-agent-skills`) — test and diagnostic procedures. Optional; install per harness.
+- **Native project skills** — `aspire-source-navigation` ships with the repo; `subagent-model-routing` may exist in local OpenCode setup.
+
+Harness setup, capability-to-invocation mapping, marketplace naming/repair, local-only OpenCode model routing, and LSP wiring live in `docs/agents/README.md`. Never invent a skill or agent ID when a mapped capability is absent.
+
+### Native Project Skills
+
+Harnesses may discover project skill files at session start, but discovery is not invocation. Invoke custom skills only when their trigger fires:
+
+- `aspire-source-navigation` (Tier 1) — compatibility-sensitive work that depends on Aspire/AWS/LocalStack upstream source, package version alignment, or source-level API shape.
+- `subagent-model-routing` (Tier 3) — OpenCode-only local skill for choosing configured subagents/models; use when present, but do not require it in other harnesses or fresh checkouts.
+
+### Process Skills
+
+Use the relevant Superpowers process capability before creative work, planning, implementation, debugging, verification, or review workflows. The harness-native names are mapped in `docs/agents/README.md`.
 
 ### .NET And Package Work
 
-| Skill | Trigger |
-| --- | --- |
-| `dotnet-project-structure` | Solution, project, target framework, SDK, or shared MSBuild changes |
-| `package-management` | NuGet package additions, removals, or version changes |
-| `modern-csharp-coding-standards` | C# production or test code changes |
-| `type-design-performance` | Public type shape, collections, allocation-sensitive choices |
-| `csharp-concurrency-patterns` | Async, synchronization, delays, channels, task scheduling |
-| `dependency-injection-patterns` | DI registrations or service composition |
-| `microsoft-extensions-configuration` | Options/configuration binding or validation |
-| `serialization` | JSON or other serialization contract changes |
-| `dotnet-slopwatch` | After LLM-authored code, project, or test changes when available |
+Use the relevant Aaron `dotnet-skills:*` capability for C# code, public type shape, project/MSBuild structure, NuGet package management, DI, options/configuration, serialization, Aspire domain patterns, and Slopwatch quality gates. Resolve exact harness names from `docs/agents/README.md`.
+
+### Testing
+
+Official Microsoft `dotnet-test:*` and `dotnet-diag:*` skills are optional per harness. When installed, invoke them by capability for test running/filtering, test anti-pattern audits, test gap analysis, coverage/CRAP analysis, or diagnostics. Do not require the entire Microsoft skill catalog for routine work.
+
+TUnit filters with `--treenode-filter`; plain `--filter` / `--nologo` silently run **zero** tests (false green). Prefer `dotnet test --project <csproj>` and confirm total > 0.
 
 ### Aspire Routing
 
 | Trigger | Preferred route |
 | --- | --- |
-| Core package work under `src/` | `aspire-source-navigation` plus relevant .NET skill |
-| Integration tests under `tests/` | `aspire-source-navigation`; add `aspire-integration-testing` for `DistributedApplicationTestingBuilder` patterns and adapt examples to this repo's test framework |
-| Package version compatibility in `Directory.Packages.props` | `aspire-source-navigation` plus `package-management` |
-| Explicit AppHost-to-service configuration, `WithEnvironment`, `LocalStack__*`, fallback behavior | `aspire-configuration` plus `aspire-source-navigation` |
-| Playground ServiceDefaults or observability defaults | `aspire-service-defaults` |
+| Compatibility-sensitive package work under `src/` or `tests/` that depends on Aspire, AWS integration, or LocalStack.Client upstream internals | `aspire-source-navigation` plus relevant .NET skill |
+| Ordinary C# changes under `src/` or `tests/` that do not depend on upstream Aspire/AWS/LocalStack internals | Relevant .NET skill only; do not invoke `aspire-source-navigation` |
+| Integration tests under `tests/` | Use `dotnet-skills:aspire-integration-testing` for `DistributedApplicationTestingBuilder` patterns; add `aspire-source-navigation` only for source compatibility or upstream API-shape questions |
+| Package version compatibility in `Directory.Packages.props` | `aspire-source-navigation` plus `dotnet-skills:package-management` |
+| App-only explicit configuration, `WithEnvironment`, or service environment variable wiring | `dotnet-skills:aspire-configuration` |
+| Package/runtime fallback binding, `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint flow, or LocalStack.Client behavior | `dotnet-skills:aspire-configuration` plus `aspire-source-navigation` |
+| Playground ServiceDefaults or observability defaults | `dotnet-skills:aspire-service-defaults` |
 | AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Microsoft `aspire`, `aspire-orchestration`, `aspire-monitoring`, or `aspire-deployment` if available |
 | New Aspire skeleton creation | Official Microsoft `aspire-init` if available; normally out of scope here |
 | AppHost wiring/scaffold/resource graph work | Official Microsoft `aspireify` if available; verify against this repo's package versions |
@@ -173,8 +182,10 @@ Load these project/harness skills explicitly at session start (alongside `using-
 ### Specialist Agents
 
 - Harnesses may keep work in the parent model, use native subagents, or choose repo-local specialists when that improves isolation, cost, or quality; ask Deniz when routing is ambiguous or materially changes risk/cost.
-- Use `dotnet-concurrency-specialist` for racy tests, deadlocks, or async timing bugs.
-- Use `dotnet-performance-analyst` only when measured performance data exists.
+- Use the .NET concurrency specialist capability for racy tests, deadlocks, or async timing bugs.
+- Use the .NET performance analyst capability only when measured performance data exists.
+- Use the .NET benchmark designer capability when designing or reviewing BenchmarkDotNet/custom benchmark work.
+- Use the Microsoft test-generation capability to generate/analyze/improve a test suite end-to-end, when installed. In some harnesses this is a skill named like an agent, not a native subagent.
 - Use `explore` for broad codebase discovery across many files when the harness provides it; otherwise use local search tools.
 - Use `general` for bounded multi-step research tasks when the harness provides it; otherwise keep the research in the main session.
 
@@ -185,6 +196,7 @@ Load these project/harness skills explicitly at session start (alongside `using-
 - EF Core/database performance skills unless a real persistence layer is added.
 - Playwright skills unless browser UI tests are added.
 - Marketplace publishing skills.
+- `dotnet-test:writing-mstest-tests` (this repo uses TUnit, not MSTest) and `dotnet-diag` mobile-crash symbolication skills.
 
 ## Semantic Code Navigation
 
@@ -195,7 +207,9 @@ When Rider MCP tools are available, prefer semantic tools for C# symbol question
 - Solution/project shape: `get_solution_projects`, `get_project_dependencies`
 - Renames and type moves: semantic refactoring tools when approval allows mutation
 
-Use text search for docs, manifests, comments, literal strings, and when Rider is unavailable.
+When Rider is not running, use the current harness's headless LSP for the same symbol questions before falling back to text search. Per-harness LSP wiring and known issues live in `docs/agents/README.md`.
+
+Use text search for docs, manifests, comments, literal strings, and when no semantic tooling is available.
 
 Agent-facing known notes live in `docs/agents/KNOWN_ISSUES.md`. Treat them as triage hints, not permission to refactor unrelated code.
 
