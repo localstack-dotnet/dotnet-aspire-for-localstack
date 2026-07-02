@@ -17,7 +17,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
-| WS2 | Aspire/AWS modernization & feature adaptation | P1 | 🔜 | — |
+| WS2 | Aspire/AWS modernization & feature adaptation | P1 | 🔬 | [research](plans/ws2-aspire-aws-modernization-research.md) |
 | WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
 | WS5 | Test integrity | P2 | 🔜 | — |
@@ -66,6 +66,8 @@ Bring all dependencies to current. Gate for WS2.
 
 Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
+**Research:** see [`docs/plans/ws2-aspire-aws-modernization-research.md`](plans/ws2-aspire-aws-modernization-research.md) — re-validated 2026-07-02 against `external/` source and web sources. Current conclusion: Aspire core is compatible; the main actionable AWS feature gap is LocalStack support for Lambda DynamoDB Streams event sources (viable on LocalStack, with evidence-backed design constraints in the research doc). AgentCore and AWS publish/deploy are deferred.
+
 - **Validate string-typename matching** against the new AWS-integration source. The host matches AWS internals by full type-name string (`Constants.SQSEventSourceResource`, `Constants.CloudFormationReferenceAnnotation`) — version-sensitive and most at risk in the 9.3→13.x jump.
 - **Catalog new AWS-integration features** since 9.3.0 and decide which to support on LocalStack: HTTPS Lambda/API Gateway emulators, publish/deploy support, SQS event-source dedupe fix, `AddAWSDynamoDBLocal` return-type change, AgentCore (experimental).
 - Audit new Aspire resource-model/interfaces worth adopting.
@@ -85,12 +87,12 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
 ### WS4 — Bugs & correctness · P2
 
-- **#24** — `LOCALSTACK_HOST` conflates host port with internal port. In `LocalStackConnectionStringAvailableCallback.cs:42` it is set to the host-facing `{host}:{port}`; when a custom host `Port` is pinned, internal consumers (awslocal, health checks) must still target the internal port `4566`. Tied to todo #7.
+- **#24** — `LOCALSTACK_HOST` conflates host port with internal port. In `LocalStackConnectionStringAvailableCallback.cs:40` it is set to the host-facing `{host}:{port}`; when a custom host `Port` is pinned, internal consumers (awslocal, health checks) must still target the internal port `4566`. Tied to todo #7.
 - **Image-tag / docs drift** — default tag is `4.12.0` (`LocalStackContainerImageTags.cs`) while README/CONFIGURATION examples say `4.10.0`.
 
 ### WS5 — Test integrity · P2
 
-- **Complete `LocalStackConnectionStringAvailableCallbackTests`** — currently a stub (only creation/null/disabled paths); the core callback behavior (env injection, CF reference setup) is untested. todo #8.
+- **Complete `LocalStackConnectionStringAvailableCallbackTests`** — partially covered (one real CDK-branch test exists, and env injection is covered in `LocalStackResourceConfiguratorTests`); still untested through the callback: SQS/project branch dispatch and the `LOCALSTACK_HOST` assignment. todo #8.
 - **De-flake integration tests** — replace fixed `Task.Delay(10s)` waits in the Lambda functional tests with polling / `WaitForResourceHealthyAsync` or AWS-state polling.
 - **Slow tests in a separate collection** — todo #13.
 - **CDK bootstrap & error-path coverage**; review unit tests (todo #11), enrich integration tests (todo #12).
@@ -106,7 +108,7 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
 ### WS7 — LocalStack platform tracking · P2
 
-- **New unified single image** migration; native `LOCALSTACK_AUTH_TOKEN` support (issue #25 — low urgency, already achievable via `AdditionalEnvironmentVariables`).
+- **New unified single image** migration; native `LOCALSTACK_AUTH_TOKEN` support (issue #25). Urgency raised 2026-07-02: since 2026-03-23 new LocalStack releases ship as a single image and require an auth token (including in CI); the pinned default `4.12.0` stays token-free but frozen. Workaround remains `AdditionalEnvironmentVariables`. Couples with WS2's integration-test image choice — see the LocalStack Platform Constraints section of the WS2 research doc.
 - **Pro features** — research which we can support natively (todo #6).
 - **Lambda debugging support** (todo #5).
 
@@ -160,7 +162,7 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 |-------|---------|-------------|
 | #12 | `IResourceWithEndpoints` / native `AWS_ENDPOINT_URL_*` so no client dep needed | WS3 |
 | #24 | `LOCALSTACK_HOST` port mismatch with custom port | WS4 |
-| #25 | Single-image `LOCALSTACK_AUTH_TOKEN` requirement | WS7 (low urgency; workaround exists) |
+| #25 | Single-image `LOCALSTACK_AUTH_TOKEN` requirement | WS7 (urgency raised — transition live since 2026-03-23; workaround exists) |
 | #26 | SES v1 needs Pro; no public container exposure | WS8 (escape hatch) + WS7 (Pro) |
 | #18 | LocalStack for Azure | **Out of scope** (future, large) |
 
