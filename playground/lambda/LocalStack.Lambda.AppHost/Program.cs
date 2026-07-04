@@ -46,6 +46,12 @@ builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_Analyzer>(
     .WithSQSEventSource(urlShortenerStack.GetOutput("AnalyticsQueueUrl"))
     .WithReference(urlShortenerStack);
 
+builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_QrCodeGenerator>(
+        name: "QrCodeGeneratorLambda",
+        lambdaHandler: "LocalStack.Lambda.QrCodeGenerator::LocalStack.Lambda.QrCodeGenerator.Function::FunctionHandler")
+    .WithDynamoDBStreamsEventSource(urlShortenerStack.GetOutput("UrlsTableName"))
+    .WithReference(urlShortenerStack);
+
 builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
     .WithReference(urlShortenerLambda, Method.Post, "/shorten")
     .WithReference(redirectorLambda, Method.Get, "/{slug}");

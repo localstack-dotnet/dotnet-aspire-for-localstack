@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="$(AspireAppHostSdkVersion)"/>
+  <Sdk Name="Aspire.AppHost.Sdk" Version="$(AspireAppHostSdkVersion)" />
 
   <PropertyGroup>
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
@@ -9,17 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Integration.Tests"/>
+    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Integration.Tests" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost"/>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" IsAspireProjectResource="false"/>
+    <ProjectReference Include="..\..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" IsAspireProjectResource="false" />
     <ProjectReference Include="..\LocalStack.Lambda.Analyzer\LocalStack.Lambda.Analyzer.csproj" />
-    <ProjectReference Include="..\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj"/>
-    <ProjectReference Include="..\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj"/>
+    <ProjectReference Include="..\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj" />
+    <ProjectReference Include="..\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj" />
+    <ProjectReference Include="..\LocalStack.Lambda.QrCodeGenerator\LocalStack.Lambda.QrCodeGenerator.csproj" />
   </ItemGroup>
 </Project>

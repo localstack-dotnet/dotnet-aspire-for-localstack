@@ -28,6 +28,7 @@ internal sealed class UrlShortenerStack : Stack
             TableName = "Urls",
             PartitionKey = new Attribute { Name = "Slug", Type = AttributeType.STRING },
             BillingMode = BillingMode.PAY_PER_REQUEST,
+            Stream = StreamViewType.NEW_IMAGE,
         });
 
         QrBucket = new Bucket(this, "QrBucket", new BucketProps
