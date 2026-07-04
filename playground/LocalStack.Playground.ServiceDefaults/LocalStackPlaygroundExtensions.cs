@@ -67,6 +67,7 @@ public static class LocalStackPlaygroundExtensions
                     .AddAWSLambdaConfigurations(options => options.DisableAwsXRayContextExtraction = true)
                     .AddAWSMessagingInstrumentation()
                     .AddSource(UrlShortenerActivitySource.ActivitySourceName)
+                    .AddSource(QrCodeGeneratorActivitySource.ActivitySourceName)
                     .AddSource(RedirectorActivitySource.ActivitySourceName);
             });
 
