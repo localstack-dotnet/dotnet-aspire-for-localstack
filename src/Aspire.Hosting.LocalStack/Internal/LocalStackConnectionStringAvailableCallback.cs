@@ -66,6 +66,12 @@ internal static class LocalStackConnectionStringAvailableCallback
                     var executableResourceBuilder = builder.CreateResourceBuilder(er);
                     LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);
                 }
+                else if (resource is ExecutableResource dynamoDbStreamsResource &&
+                         string.Equals(dynamoDbStreamsResource.GetType().FullName, Constants.DynamoDbStreamsEventSourceResource, StringComparison.Ordinal))
+                {
+                    var executableResourceBuilder = builder.CreateResourceBuilder(dynamoDbStreamsResource);
+                    LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);
+                }
                 else if (resource.Annotations.Any(a =>
                              a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
                              && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))

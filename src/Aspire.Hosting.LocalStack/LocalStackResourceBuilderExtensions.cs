@@ -100,10 +100,11 @@ public static class LocalStackResourceBuilderExtensions
                     awsResourceBuilder.WaitFor(cdkBootstrap);
                 }
             }
-            else if (resource is ExecutableResource sqsResource &&
-                     string.Equals(sqsResource.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
+            else if (resource is ExecutableResource eventSourceResource &&
+                     (string.Equals(eventSourceResource.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal) ||
+                      string.Equals(eventSourceResource.GetType().FullName, Constants.DynamoDbStreamsEventSourceResource, StringComparison.Ordinal)))
             {
-                builder.CreateResourceBuilder(sqsResource).WithReference(localStack);
+                builder.CreateResourceBuilder(eventSourceResource).WithReference(localStack);
             }
             else if (resource.Annotations.Any(a =>
                          a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
