@@ -5,8 +5,12 @@ using AWSCDK.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Set up a configuration for the AWS .NET SDK
-var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+// Set up a configuration for the AWS .NET SDK.
+// us-east-1 is deliberate: Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region whenever
+// AWS_ENDPOINT_URL* variables are set, so its DynamoDB Streams poller always signs for us-east-1.
+// LocalStack scopes tables and streams per region, so any other region leaves the poller unable to
+// find the stream until the tool ships a fixed SDK.
+var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.USEast1);
 
 // Bootstrap the localstack container with enhanced configuration
 var localstack = builder
@@ -15,11 +19,6 @@ var localstack = builder
         container.Lifetime = ContainerLifetime.Session;
         container.DebugLevel = 1;
         container.LogLevel = LocalStackLogLevel.Debug;
-
-        // Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region when AWS_ENDPOINT_URL* variables
-        // are set, so its DynamoDB Streams poller signs for us-east-1 while this stack deploys to eu-central-1.
-        // Sharing the DynamoDB database across regions keeps the stream reachable until the tool ships a fixed SDK.
-        container.AdditionalEnvironmentVariables["DYNAMODB_SHARE_DB"] = "1";
     });
 
 var urlShortenerStack = builder
