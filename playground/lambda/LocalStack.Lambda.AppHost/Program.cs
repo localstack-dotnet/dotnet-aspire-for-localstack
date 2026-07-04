@@ -54,7 +54,8 @@ builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_QrCodeGenerator>(
 
 builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
     .WithReference(urlShortenerLambda, Method.Post, "/shorten")
-    .WithReference(redirectorLambda, Method.Get, "/{slug}");
+    .WithReference(redirectorLambda, Method.Get, "/{slug}")
+    .WithReference(redirectorLambda, Method.Get, "/{slug}/qr");
 
 // Autoconfigures the LocalStack for both AWS Cloudformation and CDK resources adds LocalStack reference to all resources that uses AWS references
 builder.UseLocalStack(localstack);

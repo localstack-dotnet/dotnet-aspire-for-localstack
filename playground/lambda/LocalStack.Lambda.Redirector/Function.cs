@@ -5,6 +5,8 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
+using Amazon.S3;
+using Amazon.S3.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using LocalStack.Client.Extensions;
@@ -21,13 +23,18 @@ namespace LocalStack.Lambda.Redirector;
 
 public class Function
 {
+    private const string QrRouteKey = "GET /{slug}/qr";
+    private const string QrPathSuffix = "/qr";
+
     private readonly TracerProvider _traceProvider;
 
     private readonly IAmazonDynamoDB _amazonDynamoDb;
     private readonly IAmazonSQS _amazonSqs;
+    private readonly IAmazonS3 _amazonS3;
 
     private readonly string _urlsTable;
     private readonly string _analyticsQueueUrl;
+    private readonly string _qrBucketName;
 
     public Function()
     {
@@ -38,15 +45,18 @@ public class Function
         builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddAwsService<IAmazonDynamoDB>();
         builder.Services.AddAwsService<IAmazonSQS>();
+        builder.Services.AddAwsService<IAmazonS3>();
 
         var host = builder.Build();
 
         _traceProvider = host.Services.GetRequiredService<TracerProvider>();
         _amazonDynamoDb = host.Services.GetRequiredService<IAmazonDynamoDB>();
         _amazonSqs = host.Services.GetRequiredService<IAmazonSQS>();
+        _amazonS3 = host.Services.GetRequiredService<IAmazonS3>();
 
         _urlsTable = builder.Configuration["AWS:Resources:UrlsTableName"] ?? throw new InvalidOperationException("Missing AWS:Resources:UrlsTableName");
         _analyticsQueueUrl = builder.Configuration["AWS:Resources:AnalyticsQueueUrl"] ?? throw new InvalidOperationException("Missing AWS:Resources:AnalyticsQueueUrl");
+        _qrBucketName = builder.Configuration["AWS:Resources:QrBucketName"] ?? throw new InvalidOperationException("Missing AWS:Resources:QrBucketName");
     }
 
     public Task<APIGatewayHttpApiV2ProxyResponse> FunctionHandler(APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
@@ -62,20 +72,20 @@ public class Function
                 return NotFound();
             }
 
-            var dbResp = await _amazonDynamoDb.GetItemAsync(_urlsTable,
-                new Dictionary<string, AttributeValue>(StringComparer.Ordinal)
-                {
-                    ["Slug"] = new() { S = slug },
-                }).ConfigureAwait(false);
+            if (IsQrStatusRoute(proxyRequest))
+            {
+                return await HandleQrStatusAsync(slug, lambdaContext).ConfigureAwait(false);
+            }
 
-            if (!dbResp.IsItemSet)
+            var item = await GetUrlItemAsync(slug).ConfigureAwait(false);
+            if (item is null)
             {
                 activity?.SetStatus(ActivityStatusCode.Error);
                 activity?.AddTag("slug", slug);
                 return NotFound();
             }
 
-            var originalUrl = dbResp.Item["Url"].S;
+            var originalUrl = item["Url"].S;
 
             // Send analytics event (fire-and-forget, don't block the redirect)
             try
@@ -90,6 +100,67 @@ public class Function
 
             return Found(originalUrl);
         }, request, context);
+    }
+
+    private static bool IsQrStatusRoute(APIGatewayHttpApiV2ProxyRequest proxyRequest) =>
+        string.Equals(proxyRequest.RequestContext?.RouteKey, QrRouteKey, StringComparison.Ordinal)
+        || (proxyRequest.RawPath?.EndsWith(QrPathSuffix, StringComparison.Ordinal) ?? false);
+
+    private async Task<Dictionary<string, AttributeValue>?> GetUrlItemAsync(string slug)
+    {
+        var dbResp = await _amazonDynamoDb.GetItemAsync(_urlsTable,
+            new Dictionary<string, AttributeValue>(StringComparer.Ordinal)
+            {
+                ["Slug"] = new() { S = slug },
+            }).ConfigureAwait(false);
+
+        return dbResp.IsItemSet ? dbResp.Item : null;
+    }
+
+    private async Task<APIGatewayHttpApiV2ProxyResponse> HandleQrStatusAsync(string slug, ILambdaContext context)
+    {
+        using var activity = RedirectorActivitySource.ActivitySource.StartActivity(nameof(HandleQrStatusAsync));
+        activity?.AddTag("slug", slug);
+
+        var item = await GetUrlItemAsync(slug).ConfigureAwait(false);
+        if (item is null)
+        {
+            activity?.SetStatus(ActivityStatusCode.Error);
+            return NotFound();
+        }
+
+        var sanitizedSlug = slug.Replace("\r", string.Empty, StringComparison.Ordinal).Replace("\n", string.Empty, StringComparison.Ordinal);
+
+        var isReady = item.TryGetValue("QrStatus", out var status)
+                      && string.Equals(status.S, "Ready", StringComparison.Ordinal)
+                      && item.TryGetValue("QrObjectKey", out _);
+
+        if (!isReady)
+        {
+            context.Logger.LogInformation($"QR code pending for slug: {sanitizedSlug}");
+
+            return new APIGatewayHttpApiV2ProxyResponse
+            {
+                StatusCode = (int)HttpStatusCode.Accepted,
+                Body = JsonSerializer.Serialize(new { slug, qrStatus = "Pending" }),
+                Headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Content-Type"] = "application/json" },
+            };
+        }
+
+        var presignedUrl = await _amazonS3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
+        {
+            BucketName = _qrBucketName,
+            Key = item["QrObjectKey"].S,
+            Expires = DateTime.UtcNow.AddMinutes(5),
+        }).ConfigureAwait(false);
+
+        context.Logger.LogInformation($"Redirecting to QR code for slug: {sanitizedSlug}");
+
+        return new APIGatewayHttpApiV2ProxyResponse
+        {
+            StatusCode = (int)HttpStatusCode.Found,
+            Headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Location"] = presignedUrl },
+        };
     }
 
     private async Task SendAnalyticsEventAsync(string slug, string originalUrl, APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
