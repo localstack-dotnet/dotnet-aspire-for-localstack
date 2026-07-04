@@ -31,8 +31,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         using var httpClient = fixture.CreateApiGatewayClient();
         var request = new
         {
-            Url = "https://aws.amazon.com",
-            Format = (string?)null
+            Url = "https://aws.amazon.com"
         };
 
         // Act
@@ -50,38 +49,66 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         await Assert.That(result).IsNotNull();
         await Assert.That(result.Id).IsNotNull();
         await Assert.That(result.Id).IsNotEmpty();
-        await Assert.That(result.QrUrl).IsNull(); // No QR code requested
+        await Assert.That(result.QrStatus).IsEqualTo("Pending"); // QR generation is asynchronous
+        await Assert.That(result.QrPath).IsEqualTo($"/{result.Id}/qr");
 
         await TestOutputHelper.WriteLineAsync($"Created short URL with ID: {result.Id}");
     }
 
     [Test]
-    public async Task UrlShortener_Should_Create_Short_Url_With_QrCode(CancellationToken cancellationToken)
+    public async Task UrlShortener_Should_Generate_QrCode_Asynchronously(CancellationToken cancellationToken)
     {
         // Arrange
         using var httpClient = fixture.CreateApiGatewayClient();
+        httpClient.Timeout = TimeSpan.FromSeconds(90);
         var request = new
         {
-            Url = "https://localstack.cloud",
-            Format = "qr"
+            Url = "https://localstack.cloud"
         };
 
-        // Act
+        // Act: creating the short URL triggers QR generation through the DynamoDB Streams event source
         var response = await httpClient.PostAsJsonAsync("/shorten", request, PostJsonOptions, cancellationToken);
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        // Assert
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Created);
 
         var result = JsonSerializer.Deserialize<ShortenResponse>(content, JsonOptions);
         await Assert.That(result).IsNotNull();
         await Assert.That(result.Id).IsNotNull();
-        await Assert.That(result.Id).IsNotEmpty();
-        await Assert.That(result.QrUrl).IsNotNull(); // QR code was requested
-        await Assert.That(result.QrUrl).IsNotEmpty();
+        await Assert.That(result.QrStatus).IsEqualTo("Pending");
 
-        await TestOutputHelper.WriteLineAsync($"Created short URL with ID: {result.Id}");
-        await TestOutputHelper.WriteLineAsync($"QR Code URL: {result.QrUrl}");
+        // Poll the QR status route until the stream processor flips it from 202 Accepted to a 302 redirect
+        using var handler = new HttpClientHandler();
+        handler.AllowAutoRedirect = false;
+        using var qrClient = new HttpClient(handler);
+        qrClient.BaseAddress = httpClient.BaseAddress;
+        qrClient.Timeout = TimeSpan.FromSeconds(90);
+
+        Uri? qrLocation = null;
+        for (var attempt = 0; attempt < 60; attempt++)
+        {
+            var qrResponse = await qrClient.GetAsync(new Uri($"/{result.Id}/qr", UriKind.Relative), cancellationToken);
+            if (qrResponse.StatusCode == HttpStatusCode.Found)
+            {
+                qrLocation = qrResponse.Headers.Location;
+                break;
+            }
+
+            await Assert.That(qrResponse.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+            await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+        }
+
+        // Assert: the redirect points at the generated object and serves a real PNG
+        await Assert.That(qrLocation).IsNotNull();
+        await Assert.That(qrLocation.ToString()).Contains($"/qr-bucket/qr/{result.Id}.png");
+
+        using var pngClient = new HttpClient();
+        var pngBytes = await pngClient.GetByteArrayAsync(qrLocation, cancellationToken);
+        var pngMagic = new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+        await Assert.That(pngBytes.Length).IsGreaterThan(pngMagic.Length);
+        await Assert.That(pngBytes.Take(pngMagic.Length).SequenceEqual(pngMagic)).IsTrue();
+
+        await TestOutputHelper.WriteLineAsync($"QR code ready at: {qrLocation}");
     }
 
     [Test]
@@ -93,8 +120,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
 
         var createRequest = new
         {
-            Url = "https://docs.localstack.cloud",
-            Format = (string?)null
+            Url = "https://docs.localstack.cloud"
         };
         var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
         var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -134,7 +160,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
                                  ?? throw new InvalidOperationException("AnalyticsTableName not found");
 
         var testUrl = $"https://analyzer-test.example.com/{Guid.NewGuid()}";
-        var payload = $$"""{ "Url": "{{testUrl}}", "Format": "qr" }""";
+        var payload = $$"""{ "Url": "{{testUrl}}" }""";
         using var stringContent = new StringContent(payload, System.Text.Encoding.UTF8, "application/json");
 
         // Act: Create a short URL (this triggers analytics event → SQS → Analyzer Lambda)
@@ -193,8 +219,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         var testUrl = $"https://redirect-analytics-test.example.com/{Guid.NewGuid()}";
         var createRequest = new
         {
-            Url = testUrl,
-            Format = (string?)null
+            Url = testUrl
         };
         var createResponse = await httpClient.PostAsJsonAsync("/shorten", createRequest, PostJsonOptions, cancellationToken);
         var createContent = await createResponse.Content.ReadAsStringAsync(cancellationToken);
@@ -248,5 +273,5 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
     /// <summary>
     /// Response from the URL shortener Lambda function.
     /// </summary>
-    private sealed record ShortenResponse(string? Id, string? QrUrl);
+    private sealed record ShortenResponse(string? Id, string? QrStatus, string? QrPath);
 }
