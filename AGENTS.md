@@ -151,7 +151,7 @@ The full capability-to-harness mapping and curated skill roster live in `docs/ag
 | App-only explicit configuration, `WithEnvironment`, or service environment variable wiring | Aspire configuration capability |
 | Package/runtime fallback binding, `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint flow, or LocalStack.Client behavior | Aspire configuration capability plus `aspire-source-navigation` |
 | Playground ServiceDefaults or observability defaults | Aspire ServiceDefaults capability |
-| AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Aspire orchestration/monitoring/deployment capability when available; deployment remains approval-gated |
+| AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Aspire orchestration/monitoring/deployment capability when available, plus the Aspire MCP server for runtime resource state/logs/traces of CLI-launched AppHosts; deployment remains approval-gated |
 | Running or filtering tests | .NET test-running capability; this repo uses TUnit on Microsoft.Testing.Platform, so avoid false-green filters and confirm total tests run is greater than zero |
 | Public API shape, namespace/package identity, or compatibility-sensitive extension methods | Public API design capability plus relevant .NET skill |
 | Performance-sensitive code or benchmarks | Benchmark/performance capability; require measured data before optimization claims |
