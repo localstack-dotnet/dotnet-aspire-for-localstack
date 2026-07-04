@@ -56,7 +56,9 @@ Additional verified facts:
 - **NOT affected: LocalStack.Client's default proxy mode.** It routes via `ProxyHost`/`ProxyPort` while the request URI keeps the region-bearing `*.amazonaws.com` hostname, which `RegionFinder` parses correctly. The library's proxy design is accidentally immune to Bug 2 — worth stating in consumer docs.
 - This package's env emission itself is spec-correct; the defect is entirely in the SDK's signing path.
 
-## Fix Options (decision pending)
+## Fix Options
+
+Decision (2026-07-04): upstream issue/PR filing (options 1-2) is **deferred** — filing should be a structured, separately-prepared effort, not a same-day action. The repro package (oracle + bisect matrix + this document) stays ready for whenever that happens. Options 3-4 are applied: the constraint is documented as a known issue in README/CHANGELOG and tracked as an upstream watch in the roadmap.
 
 1. **aws-sdk-net issue (report the live regression).** No open issue exists post-revert. We hold a minimal deterministic repro (oracle + version matrix) and can propose a regression-safe re-fix: prefer the client's already-resolved `RegionEndpoint`/`AuthenticationRegion` in the custom-endpoint signing path instead of walking `FallbackRegionFactory` (whose IMDS tail caused #4444). Optionally follow with a PR.
 2. **aws-lambda-dotnet issue + small PR (the pragmatic near-term fix).** In the test tool's event-source client construction, set `AuthenticationRegion` from the config string's `Region` or the environment (`AWS_REGION`/`AWS_DEFAULT_REGION`). One-line-per-client, no SDK bump, oracle-verified to work on both the bundled and the current Core. Once a tool release ships it, Aspire consumers get it automatically (the tool updater installs the minimum-or-newer version; `LambdaEmulatorOptions.OverrideMinimumInstallVersion` can force it earlier).
