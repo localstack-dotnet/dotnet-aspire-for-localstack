@@ -6,7 +6,6 @@ using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using Amazon.S3;
-using Amazon.S3.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using LocalStack.Client.Extensions;
@@ -31,6 +30,7 @@ public class Function
     private readonly IAmazonDynamoDB _amazonDynamoDb;
     private readonly IAmazonSQS _amazonSqs;
     private readonly IAmazonS3 _amazonS3;
+    private readonly IS3UrlService _s3UrlService;
 
     private readonly string _urlsTable;
     private readonly string _analyticsQueueUrl;
@@ -45,11 +45,9 @@ public class Function
         builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddAwsService<IAmazonDynamoDB>();
         builder.Services.AddAwsService<IAmazonSQS>();
+        builder.Services.AddAwsService<IAmazonS3>();
 
-        // The default registration routes requests to LocalStack through proxy settings while the request URI
-        // keeps the AWS regional host, which leaks that host into presigned URLs handed to browsers.
-        // ServiceURL mode makes generated URLs carry the LocalStack endpoint instead.
-        builder.Services.AddAwsService<IAmazonS3>(useServiceUrl: true);
+        builder.Services.AddTransient<IS3UrlService, S3UrlService>();
 
         var host = builder.Build();
 
@@ -57,6 +55,7 @@ public class Function
         _amazonDynamoDb = host.Services.GetRequiredService<IAmazonDynamoDB>();
         _amazonSqs = host.Services.GetRequiredService<IAmazonSQS>();
         _amazonS3 = host.Services.GetRequiredService<IAmazonS3>();
+        _s3UrlService = host.Services.GetRequiredService<IS3UrlService>();
 
         _urlsTable = builder.Configuration["AWS:Resources:UrlsTableName"] ?? throw new InvalidOperationException("Missing AWS:Resources:UrlsTableName");
         _analyticsQueueUrl = builder.Configuration["AWS:Resources:AnalyticsQueueUrl"] ?? throw new InvalidOperationException("Missing AWS:Resources:AnalyticsQueueUrl");
@@ -151,21 +150,14 @@ public class Function
             };
         }
 
-        var presignedUrl = await _amazonS3.GetPreSignedURLAsync(new GetPreSignedUrlRequest
-        {
-            BucketName = _qrBucketName,
-            Key = item["QrObjectKey"].S,
-            Expires = DateTime.UtcNow.AddMinutes(5),
-            // The presigner defaults to https regardless of the client scheme; match the endpoint's actual scheme.
-            Protocol = _amazonS3.Config.UseHttp ? Protocol.HTTP : Protocol.HTTPS,
-        }).ConfigureAwait(false);
+        var qrUrl = _s3UrlService.GetS3Url(_amazonS3, _qrBucketName, item["QrObjectKey"].S);
 
         context.Logger.LogInformation($"Redirecting to QR code for slug: {sanitizedSlug}");
 
         return new APIGatewayHttpApiV2ProxyResponse
         {
             StatusCode = (int)HttpStatusCode.Found,
-            Headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Location"] = presignedUrl },
+            Headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Location"] = qrUrl },
         };
     }
 

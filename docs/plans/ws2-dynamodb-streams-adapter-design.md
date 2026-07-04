@@ -40,7 +40,7 @@ Known upstream limitation, found during runtime verification (2026-07-04): Amazo
 Two further runtime findings (2026-07-04), both playground-scoped:
 
 - The API Gateway emulator stores **one route per Lambda resource** — the route-config environment variable is keyed by resource name, so a second `WithReference(lambda, method, path)` silently overwrites the first. The playground therefore registers `QrStatusLambda` as a second Lambda resource backed by the same Redirector project (the handler already dispatches on route). Candidate upstream issue.
-- LocalStack.Client's default client registration routes requests through **proxy settings** while the request URI keeps the AWS regional host. Data-plane calls work, but **presigned URLs leak the AWS host** and are dead links for browsers. The Redirector registers its S3 client with `AddAwsService<IAmazonS3>(useServiceUrl: true)` and pins the presign `Protocol` to the client scheme. Worth documenting as consumer guidance (WS3/WS9): any consumer generating presigned URLs against LocalStack needs ServiceURL mode.
+- LocalStack.Client's default client registration routes requests through **proxy settings** while the request URI keeps the AWS regional host. Data-plane calls work, but any **generated URL string (presigned URLs) leaks the AWS host** and is a dead link for browsers. The playground therefore does not presign: the Redirector builds the QR object URL with the `S3UrlService` helper pattern (LocalStack → `http://{host}:{port}/{bucket}/{key}`, real AWS → the regional S3 URL). Consumer guidance (WS3/WS9): consumers that genuinely need presigned URLs against LocalStack must register the client in ServiceURL mode (`AddAwsService<T>(useServiceUrl: true)`) and pin the presign `Protocol` to the endpoint scheme.
 
 ## Test Strategy
 
@@ -74,7 +74,7 @@ The Redirector Lambda gains a second API Gateway route, `GET /{slug}/qr`:
 
 - Unknown slug: `404`.
 - `QrStatus` not yet `Ready`: `202` with a small JSON status body.
-- `QrStatus = Ready`: `302` to a short-lived presigned S3 URL for the QR PNG.
+- `QrStatus = Ready`: `302` to the QR PNG's S3 object URL, built by the LocalStack-aware `S3UrlService` helper (LocalStack endpoint locally, regional S3 URL on real AWS).
 
 This makes eventual consistency externally observable through the same public API: creation returns immediately, and the QR route flips from `202` to `302` when the stream processor catches up. A browser `img` element pointed at the route renders the PNG by following the redirect.
 

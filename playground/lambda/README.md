@@ -31,7 +31,7 @@ This example builds a **URL Shortener service** that leverages the best of both 
        ▼                                                    │ (INSERT only)
  User Browser                                               ▼
                                                    ┌────────────────────┐
-GET /{slug}/qr → 202 pending / 302 to presigned   │ QrCodeGeneratorFn  │
+GET /{slug}/qr → 202 pending / 302 to QR PNG      │ QrCodeGeneratorFn  │
 PNG (served by RedirectorFn as QrStatusLambda)    │     (Lambda)        │
                                                    └──────────┬──────────┘
                                                               │ PNG bytes, then
@@ -119,7 +119,7 @@ curl -d '{"Url":"https://aws.amazon.com"}' \
 # 3. Poll the QR status route until the stream processor catches up (typically ~1-2s)
 curl -I {GATEWAY_BASE_URL}/abc123/qr
 # → 202 Accepted while QrStatus is still "Pending"
-# → 302 Found, Location: a LocalStack presigned S3 URL for the QR PNG, once QrStatus is "Ready"
+# → 302 Found, Location: the LocalStack S3 object URL for the QR PNG, once QrStatus is "Ready"
 
 # 4. Follow the short URL
 curl -I {GATEWAY_BASE_URL}/abc123
@@ -179,7 +179,7 @@ aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names
 5. **GET {GATEWAY_BASE_URL}/{slug}/qr**
    - Unknown slug → *404*
    - `QrStatus` still `Pending` → *202 Accepted* with a small JSON status body
-   - `QrStatus` is `Ready` → *302 Found* to a short-lived LocalStack presigned S3 URL for the PNG
+   - `QrStatus` is `Ready` → *302 Found* to the LocalStack S3 object URL for the PNG
 
 ## AWS Emulator Integration
 
