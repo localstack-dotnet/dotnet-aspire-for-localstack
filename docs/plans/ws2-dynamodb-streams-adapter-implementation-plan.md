@@ -155,6 +155,7 @@ public async Task ConfigureDynamoDbStreamsEventSourceResource_Should_Emit_Global
     await Assert.That(env["AWS_SECRET_ACCESS_KEY"]).IsEqualTo("test-secret");
     await Assert.That(env["AWS_SESSION_TOKEN"]).IsEqualTo("test-token");
     await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
+    await Assert.That(env["AWS_REGION"]).IsEqualTo("eu-central-1");
 }
 ```
 
@@ -192,6 +193,7 @@ public async Task ConfigureDynamoDbStreamsEventSourceResource_Should_Not_Overrid
     await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://ddb-local:8000");
     await Assert.That(env["AWS_ENDPOINT_URL"]).IsEqualTo("http://localhost:4566/");
     await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
+    await Assert.That(env["AWS_REGION"]).IsEqualTo("eu-central-1");
 }
 ```
 
@@ -240,6 +242,8 @@ internal static void ConfigureDynamoDbStreamsEventSourceResource(IResourceBuilde
         context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
         context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
         context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
+        // The .NET SDK resolves region from AWS_REGION; AWS_DEFAULT_REGION is kept for CLI-convention compatibility.
+        context.EnvironmentVariables["AWS_REGION"] = options.Session.RegionName;
         context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
     });
 }
