@@ -17,7 +17,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
-| WS2 | Aspire/AWS modernization & feature adaptation | P1 | 📐 | [research](plans/ws2-aspire-aws-modernization-research.md), [design](plans/ws2-dynamodb-streams-adapter-design.md), [implementation plan](plans/ws2-dynamodb-streams-adapter-implementation-plan.md) |
+| WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | [research](plans/ws2-aspire-aws-modernization-research.md), [design](plans/ws2-dynamodb-streams-adapter-design.md), [implementation plan](plans/ws2-dynamodb-streams-adapter-implementation-plan.md) — implemented + runtime-verified 2026-07-04; integration tests stay gated on WS7 |
 | WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
 | WS5 | Test integrity | P2 | 🔜 | — |
