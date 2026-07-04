@@ -101,4 +101,38 @@ internal static class LocalStackResourceConfigurator
             context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
         });
     }
+
+    /// <summary>
+    /// Configures a DynamoDB Streams event source resource with LocalStack environment variables.
+    /// The helper is an external Lambda Test Tool process, so endpoint routing must use AWS SDK environment variables.
+    /// </summary>
+    /// <param name="resourceBuilder">The DynamoDB Streams event source resource to configure.</param>
+    /// <param name="localStackUrl">The LocalStack URL.</param>
+    /// <param name="options">The LocalStack configuration options.</param>
+    internal static void ConfigureDynamoDbStreamsEventSourceResource(IResourceBuilder<ExecutableResource> resourceBuilder, Uri localStackUrl, ILocalStackOptions options)
+    {
+        resourceBuilder.WithEnvironment(context =>
+        {
+            var endpoint = localStackUrl.ToString();
+            context.EnvironmentVariables["AWS_ENDPOINT_URL"] = endpoint;
+
+            // A pre-existing service-specific endpoint wins over LocalStack: the AWS integration wires these
+            // to its DynamoDB Local container when the Lambda references one, and users may override them
+            // explicitly. Both callbacks run before this one, so present keys mean LocalStack must defer.
+            if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB"))
+            {
+                context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB"] = endpoint;
+            }
+
+            if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB_STREAMS"))
+            {
+                context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = endpoint;
+            }
+
+            context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
+            context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
+            context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
+            context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
+        });
+    }
 }

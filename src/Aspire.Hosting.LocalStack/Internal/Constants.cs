@@ -9,6 +9,7 @@ internal static class Constants
 
     internal const string CloudFormationReferenceAnnotation = "Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation";
     internal const string SQSEventSourceResource = "Aspire.Hosting.AWS.Lambda.SQSEventSourceResource";
+    internal const string DynamoDbStreamsEventSourceResource = "Aspire.Hosting.AWS.Lambda.DynamoDBStreamsEventSourceResource";
 
     internal const string CdkAssetUploadPipelineCustomizeName = "Aspire.Hosting.LocalStack.CdkAssetUpload";
 

@@ -35,6 +35,14 @@ public class ConstantsTests
     }
 
     [Test]
+    public async Task DynamoDbStreamsEventSourceResource_Should_Have_Correct_Type_Name()
+    {
+#pragma warning disable TUnitAssertions0005 // These tests intentionally verify constant values
+        await Assert.That(Constants.DynamoDbStreamsEventSourceResource).IsEqualTo("Aspire.Hosting.AWS.Lambda.DynamoDBStreamsEventSourceResource");
+#pragma warning restore TUnitAssertions0005
+    }
+
+    [Test]
     public async Task CloudFormationReferenceAnnotation_Type_Should_Exist_In_AWS_Assembly()
     {
         // Act & Assert
@@ -61,8 +69,20 @@ public class ConstantsTests
     }
 
     [Test]
+    public async Task DynamoDbStreamsEventSourceResource_Type_Should_Exist_In_AWS_Assembly()
+    {
+        var type = GetTypeByName(Constants.DynamoDbStreamsEventSourceResource);
+        await Assert.That(type).IsNotNull();
+        await Assert.That(type!.FullName).IsEqualTo(Constants.DynamoDbStreamsEventSourceResource);
+
+        await Assert.That(typeof(ExecutableResource).IsAssignableFrom(type)).IsTrue()
+            .Because($"Type {Constants.DynamoDbStreamsEventSourceResource} should inherit from ExecutableResource");
+    }
+
+    [Test]
     [Arguments("Aspire.Hosting.AWS.CloudFormation.CloudFormationReferenceAnnotation")]
     [Arguments("Aspire.Hosting.AWS.Lambda.SQSEventSourceResource")]
+    [Arguments("Aspire.Hosting.AWS.Lambda.DynamoDBStreamsEventSourceResource")]
     public async Task AWS_Types_Should_Be_Accessible_From_Current_Assembly_Context(string typeName)
     {
         // This test ensures we can find AWS types at runtime
