@@ -132,8 +132,6 @@ internal static class LocalStackResourceConfigurator
             context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
             context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
             context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
-            // The .NET SDK resolves region from AWS_REGION; AWS_DEFAULT_REGION is kept for CLI-convention compatibility.
-            context.EnvironmentVariables["AWS_REGION"] = options.Session.RegionName;
             context.EnvironmentVariables["AWS_DEFAULT_REGION"] = options.Session.RegionName;
         });
     }
