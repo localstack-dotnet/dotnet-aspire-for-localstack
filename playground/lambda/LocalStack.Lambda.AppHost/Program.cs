@@ -15,6 +15,11 @@ var localstack = builder
         container.Lifetime = ContainerLifetime.Session;
         container.DebugLevel = 1;
         container.LogLevel = LocalStackLogLevel.Debug;
+
+        // Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region when AWS_ENDPOINT_URL* variables
+        // are set, so its DynamoDB Streams poller signs for us-east-1 while this stack deploys to eu-central-1.
+        // Sharing the DynamoDB database across regions keeps the stream reachable until the tool ships a fixed SDK.
+        container.AdditionalEnvironmentVariables["DYNAMODB_SHARE_DB"] = "1";
     });
 
 var urlShortenerStack = builder

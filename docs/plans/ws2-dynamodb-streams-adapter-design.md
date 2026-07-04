@@ -35,6 +35,8 @@ Endpoint emission must not clobber pre-existing service-specific endpoints. Env 
 
 Known limitation, accepted for WS2: in the mixed scenario the helper still receives `WithReference(localstack)` and thus a spurious `WaitFor(localstack)`, because `UseLocalStack()` matches helpers by type name without knowing their backing store. Fixing attachment targeting is a dispatcher redesign — recorded as a WS3 design input, out of WS2 scope.
 
+Known upstream limitation, found during runtime verification (2026-07-04): Amazon.Lambda.TestTool (verified at 0.14.1/0.15.0, bundling AWSSDK.Core 4.0.7.x) loses the client's signing region whenever any `AWS_ENDPOINT_URL*` environment variable applies a ServiceURL — the region nulls out and requests sign for us-east-1 regardless of `AWS_REGION`, `AWS_DEFAULT_REGION`, or even an explicitly set `RegionEndpoint` (verified empirically across all combinations; fixed in newer AWSSDK.Core — 4.0.9.x preserves the region). DynamoDB Local is not region-scoped so upstream never sees this; LocalStack is, so for non-us-east-1 regions the streams poller gets `ResourceNotFoundException` from `DescribeTable`. Until the tool ships a fixed SDK, non-us-east-1 AppHosts must set `DYNAMODB_SHARE_DB=1` on the LocalStack container (the playground does this via `AdditionalEnvironmentVariables`) or deploy to us-east-1. This package's env emission is correct per the AWS SDK contract and needs no change when the tool updates.
+
 ## Test Strategy
 
 Unit tests are the WS2 gate.
