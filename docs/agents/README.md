@@ -19,7 +19,6 @@ Changes to `AGENTS.md`, approval gates, capability routing, skill triggers, or h
 | `.github/copilot-instructions.md` | GitHub Copilot relay to `AGENTS.md` |
 | `docs/agents/README.md` | Harness adapter guide and capability mapping (this file) |
 | `docs/agents/KNOWN_ISSUES.md` | Agent-facing known notes and triage hints |
-| `docs/agents/handover-prompts/` | Session-pickup templates for stateful handovers |
 | `docs/agents/skills/aspire-source-navigation.md` | Canonical project skill content |
 | `.claude/skills/aspire-source-navigation/SKILL.md` | Claude Code native skill relay |
 | `.opencode/skills/aspire-source-navigation/SKILL.md` | OpenCode native skill relay |
@@ -132,23 +131,19 @@ Performance work requires measured data before optimization claims. Prefer sourc
 
 ### Tier 2 — Official Aspire skills and Aspire MCP server (playground run/debug)
 
-Installed 2026-07-04 from the `microsoft/aspire-skills` marketplace (Claude Code plugin `aspire@aspire-skills`, user scope; bundle targets Aspire 13.4, matching this repo's pinned `Aspire.Hosting`). The Aspire MCP server is registered per-developer in Claude Code local scope (`claude mcp add aspire -- aspire agent mcp`) — never as committed workspace config. Both require Aspire CLI 13.3+ (`aspire agent mcp`); update the CLI with the official install script if `aspire agent` is missing.
+Official Microsoft Aspire skills and MCP server are local harness setup, not committed project infrastructure. They require Aspire CLI 13.3+ (`aspire agent mcp`).
 
 | Capability | Claude Code | Copilot CLI | OpenCode |
 | --- | --- | --- | --- |
-| AppHost lifecycle routing + safety guardrails (`aspire start`, never `dotnet run` on AppHosts) | `aspire:aspire` | Not installed (`aspire agent init --skill-locations standard`) | `aspire` |
-| Start/stop/restart/wait/inspect playground AppHost resources | `aspire:aspire-orchestration` | Not installed | `aspire-orchestration` |
-| Resource logs, traces, metrics, dashboard telemetry | `aspire:aspire-monitoring` | Not installed | `aspire-monitoring` |
-| Runtime resource state/logs/traces/commands over MCP | `aspire` MCP server (`aspire agent mcp`, stdio; tools surface as `mcp__aspire__*`) | Not configured | `aspire` MCP server (`aspire agent mcp`, stdio; local `opencode.jsonc`) |
-
-Usage notes:
+| AppHost lifecycle routing + safety guardrails (`aspire start`, never `dotnet run` on AppHosts) | `aspire:aspire` | `aspire` | `aspire` |
+| Start/stop/restart/wait/inspect playground AppHost resources | `aspire:aspire-orchestration` | `aspire-orchestration` | `aspire-orchestration` |
+| Resource logs, traces, metrics, dashboard telemetry | `aspire:aspire-monitoring` | `aspire-monitoring` | `aspire-monitoring` |
+| Runtime resource state/logs/traces/commands over MCP | `aspire` MCP server (`aspire agent mcp`, stdio; tools surface as `mcp__aspire__*`) | `aspire` MCP server (`aspire agent mcp`, stdio; user `~/.copilot/mcp-config.json`) | `aspire` MCP server (`aspire agent mcp`, stdio; local `opencode.jsonc`) |
 
 - The MCP server only discovers AppHosts launched with `aspire start` from the workspace directory. In-process `DistributedApplicationTestingBuilder` AppHosts used by integration tests are invisible to it — test debugging stays log/debugger-based.
-- The MCP server does not expose environment variable values or secrets; use `ExcludeFromMcp()` on resources that should not be agent-visible.
 - These skills/tools are for *consuming* Aspire (running and debugging playground AppHosts). They do not replace `aspire-source-navigation` for upstream source-compatibility work; on conflict, verified package source wins.
 - The bundle also ships `aspire-init` and `aspireify` (not for this repo — AppHosts already exist) and `aspire-deployment` (approval-gated and real-AWS targeted; LocalStack playgrounds do not deploy).
-- To set up another harness (Copilot CLI, OpenCode), run the task prompt in `docs/agents/handover-prompts/harness-aspire-skills-setup.prompt.md` from that harness; it installs the skills, registers the MCP server locally, and updates this table's cells for that harness.
-- Verified end-to-end 2026-07-04 on the Lambda playground: `aspire start` → `list_resources` shows the full graph including this package's LocalStack wiring (SQS helper env keys, WaitFor/Reference relationships, the `localstack_health` report); env values stay hidden, only keys are visible. `list_console_logs` supports per-resource full-text search. `list_integrations` catalogs official + CommunityToolkit packages only — this package is not listed. The Claude Code plugin also bundles a `context7` docs MCP server (`plugin:aspire:context7`) for general library-docs lookups.
+- Set up each harness locally and update only that harness's cells after verifying the native skill IDs and MCP status.
 
 ### Tier 3 — Local-only
 
@@ -172,7 +167,7 @@ Do not invoke these unless the repo adds the technology or Deniz explicitly asks
 - **Generators / DocFX / unrelated platform work**: `roslyn-incremental-generator-specialist`, `docfx-specialist`, crash-symbolication skills, and `dotnet-devcert-trust` are out of scope unless the repo adds that concern.
 - **Academic-only test smell taxonomy**: `ms-dotnet-test-test-smell-detection` and `ms-dotnet-test-test-tagging` are narrow tools; use only when explicitly requested.
 
-Official Microsoft **Aspire** skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`. They are installed for Claude Code — see the "Official Aspire skills and Aspire MCP server" Tier 2 section above for the roster, MCP wiring, and usage limits. Deployment remains approval-gated.
+Official Microsoft **Aspire** skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`. They are installed per harness — see the "Official Aspire skills and Aspire MCP server" Tier 2 section above for the roster, MCP wiring, and usage limits. Deployment remains approval-gated.
 
 Availability is not activation. Except for the process bootstrap, skills do not run automatically; invoke the mapped skill or dispatch the mapped specialist agent when the trigger applies. If a mapped capability is not loaded in the current harness, skip optional rows or ask before installing, changing harness configuration, or substituting another tool. Do not invent an ID.
 
