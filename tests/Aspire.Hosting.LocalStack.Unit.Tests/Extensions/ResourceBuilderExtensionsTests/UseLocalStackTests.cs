@@ -204,6 +204,19 @@ public class UseLocalStackTests
         await localStackResource.ShouldHaveReferenceToResource(helperResource);
     }
 
+    [Test]
+    public async Task UseLocalStack_Should_Throw_When_DynamoDb_Local_Is_Present()
+    {
+        await Assert.That(() => TestApplicationBuilder.Create(builder =>
+        {
+            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+            var localStack = builder.AddLocalStack(localStackOptions: options);
+            builder.AddAWSDynamoDBLocal("dynamodb-local");
+
+            builder.UseLocalStack(localStack);
+        })).ThrowsExactly<DistributedApplicationException>();
+    }
+
     private static ExecutableResource CreateExecutableResourceByTypeName(string typeName, string name)
     {
         // Assembly.Load fallback mirrors ConstantsTests: type discovery must not depend on whether
