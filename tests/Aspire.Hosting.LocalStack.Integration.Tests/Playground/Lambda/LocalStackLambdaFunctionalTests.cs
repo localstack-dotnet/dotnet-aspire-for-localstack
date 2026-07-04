@@ -95,6 +95,10 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
             }
 
             await Assert.That(qrResponse.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+
+            // Bounded polling interval, not a race mask: the QR pipeline is genuinely asynchronous
+            // (DynamoDB Streams -> Lambda -> S3) and exposes no completion signal other than the
+            // status route flipping from 202 to 302, so the test polls with an attempt cap.
             await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
         }
 
