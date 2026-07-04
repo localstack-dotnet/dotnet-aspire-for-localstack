@@ -182,6 +182,7 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 | Version-sensitive type-name string matching | WS2 |
 | Fixed-delay waits in Lambda integration tests | WS5 |
 | Temporary direct `AWSSDK.Core` / `MessagePack` pins | WS3 (decoupling should remove) |
+| DynamoDB Streams event sources require `us-east-1` (upstream SDK signing regression; see `docs/plans/aws-sdk-signing-region-investigation.md`) | Upstream watch — lift playground pin + README/CHANGELOG known-issue when fixed |
 
 ## Open GitHub Issues Mapping
 

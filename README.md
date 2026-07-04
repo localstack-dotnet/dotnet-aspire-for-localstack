@@ -178,6 +178,11 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 - **Container Lifecycle Management**: Configurable container with session/persistent lifetime options
 - **Eager Service Loading**: Pre-load specific AWS services for faster startup in CI/CD environments
 - **Extension-Based**: Works alongside official AWS integrations for .NET Aspire without code changes
+- **Lambda Event Sources**: SQS and DynamoDB Streams event-source emulators (`WithSQSEventSource`, `WithDynamoDBStreamsEventSource`) are automatically wired to LocalStack
+
+## Known Limitations
+
+- **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region — and LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect, verified with a full version timeline in [docs/plans/aws-sdk-signing-region-investigation.md](docs/plans/aws-sdk-signing-region-investigation.md); this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources and regular AWS service clients are not affected.
 
 ## Examples
 
