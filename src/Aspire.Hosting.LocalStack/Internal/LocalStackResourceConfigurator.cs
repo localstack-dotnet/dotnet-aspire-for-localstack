@@ -115,20 +115,8 @@ internal static class LocalStackResourceConfigurator
         {
             var endpoint = localStackUrl.ToString();
             context.EnvironmentVariables["AWS_ENDPOINT_URL"] = endpoint;
-
-            // A pre-existing service-specific endpoint wins over LocalStack: the AWS integration wires these
-            // to its DynamoDB Local container when the Lambda references one, and users may override them
-            // explicitly. Both callbacks run before this one, so present keys mean LocalStack must defer.
-            if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB"))
-            {
-                context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB"] = endpoint;
-            }
-
-            if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB_STREAMS"))
-            {
-                context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = endpoint;
-            }
-
+            context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB"] = endpoint;
+            context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = endpoint;
             context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
             context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
             context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;

@@ -271,39 +271,6 @@ public class LocalStackResourceConfiguratorTests
     }
 
     [Test]
-    public async Task ConfigureDynamoDbStreamsEventSourceResource_Should_Not_Override_Existing_Service_Specific_Endpoints()
-    {
-        var executableResource = new ExecutableResource("test-ddb-streams-resource", "test-command", "test-workdir");
-        var builder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "eu-central-1");
-
-        builder.Resource.Returns(executableResource);
-        builder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(executableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
-            .Returns(builder);
-
-        var localStackUrl = new Uri("http://localhost:4566");
-
-        LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(builder, localStackUrl, options);
-
-        var envAnnotation = executableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
-
-        // Simulate upstream's DynamoDB Local wiring having run first.
-        var env = new Dictionary<string, object>(StringComparer.Ordinal)
-        {
-            ["AWS_ENDPOINT_URL_DYNAMODB"] = "http://ddb-local:8000",
-            ["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = "http://ddb-local:8000",
-        };
-        var context = new EnvironmentCallbackContext(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), executableResource, env);
-
-        await envAnnotation.Callback(context);
-
-        await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB"]).IsEqualTo("http://ddb-local:8000");
-        await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://ddb-local:8000");
-        await Assert.That(env["AWS_ENDPOINT_URL"]).IsEqualTo("http://localhost:4566/");
-        await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
-    }
-
-    [Test]
     public async Task ConfigureStackResource_Should_Assign_Config_With_LocalStack_Region()
     {
         var stackResource = Substitute.For<IStackResource>();
