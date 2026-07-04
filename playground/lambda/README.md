@@ -15,32 +15,42 @@ This example builds a **URL Shortener service** that leverages the best of both 
 ## Architecture
 
 ```text
-┌───────────────┐     POST /shorten            ┌───────────────┐
-│  API Gateway  ├─────────────────────────────▶│  ShortenFn    │
-│   Emulator    │                              │   (Lambda)    │
-└──────┬────────┘                              └──────┬────────┘
-       │                                              │ write & analytics
- GET /{id} 302                                        │ id → URL
-       ▼                                              ▼
-┌───────────────┐   lookup id            ┌────────────────────┐
-│  RedirectFn   ├───────────────────────▶│ DynamoDB (Urls)    │
-│   (Lambda)    │                        │   (LocalStack)     │
-└──────┬────────┘                        └────────────────────┘
-       │ 302 & analytics                      ▲       ▲
-       │                                      │       │ presign
-       │                           PNG bytes  │       │ URL
-       ▼                                      │       │
- User Browser ◀────── download ───────────────┘   S3 bucket
-                                              (LocalStack)
+┌───────────────┐     POST /shorten            ┌────────────────────┐
+│  API Gateway  ├─────────────────────────────▶│ UrlShortenerFn     │
+│   Emulator    │                              │    (Lambda)         │
+└──────┬────────┘                              └──────────┬──────────┘
+       │                                                  │ write (QrStatus=Pending)
+ GET /{slug} → 302                                        │ + url_created event
+       │                                                  ▼
+       ▼                                        ┌────────────────────┐
+┌───────────────┐   lookup slug                 │ DynamoDB (Urls)    │
+│  RedirectorFn ├───────────────────────────────▶│   (LocalStack)     │
+│   (Lambda)    │                                └──────────┬──────────┘
+└──────┬────────┘                                           │
+       │ 302 & url_accessed event                           │ DynamoDB Streams
+       ▼                                                    │ (INSERT only)
+ User Browser                                               ▼
+                                                   ┌────────────────────┐
+GET /{slug}/qr → 202 pending / 302 to presigned   │ QrCodeGeneratorFn  │
+PNG (served by RedirectorFn as QrStatusLambda)    │     (Lambda)        │
+                                                   └──────────┬──────────┘
+                                                              │ PNG bytes, then
+                                                              │ update QrStatus=Ready
+                                                              ▼
+                                                   ┌────────────────────┐
+                                                   │ S3 bucket           │
+                                                   │ `qr-bucket`         │
+                                                   │ (LocalStack)        │
+                                                   └────────────────────┘
 
                    Analytics Event Flow
-┌─────────────┐                    ┌─────────────┐
-│ ShortenFn   │──url_created──────▶│             │
-└─────────────┘                    │ SQS Queue   │
+┌─────────────────┐                ┌─────────────┐
+│ UrlShortenerFn   │──url_created──▶│             │
+└─────────────────┘                │ SQS Queue   │
                                    │ (LocalStack)│
-┌─────────────┐                    │             │
-│ RedirectFn  │──url_accessed─────▶│             │
-└─────────────┘                    └──────┬──────┘
+┌─────────────────┐                │             │
+│ RedirectorFn     │──url_accessed─▶│             │
+└─────────────────┘                └──────┬──────┘
                                           │
                                           │ SQS Event Source
                                           ▼
@@ -57,13 +67,18 @@ This example builds a **URL Shortener service** that leverages the best of both 
                                    └────────────────────┘
 ```
 
+> **Note on tracing**: DynamoDB stream records don't propagate trace context, so `QrCodeGeneratorFn`'s activities always start as new root traces in the Aspire Dashboard rather than continuing the `POST /shorten` trace. This is a DynamoDB Streams limitation, not a bug in the sample.
+
 ## Resource Inventory
+
+The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` project backs two API Gateway routes, so it is registered as both `RedirectorLambda` and `QrStatusLambda`), an API Gateway emulator, a Frontend project, LocalStack, and a CDK stack. Two independent event paths run side by side: **SQS** (analytics) and **DynamoDB Streams** (QR generation).
 
 | Layer | Service | Local Runtime | Provisioned via |
 |-------|---------|---------------|-----------------|
-| **Compute & Edge** | 3 × Lambda Functions | **AWS Lambda Emulator** | `AddAWSLambdaFunction()` |
+| **Compute & Edge** | 5 × Lambda resources: `UrlShortenerLambda`, `RedirectorLambda`, `QrStatusLambda` (same Redirector project), `AnalyzerLambda`, `QrCodeGeneratorLambda` | **AWS Lambda Emulator** | `AddAWSLambdaFunction()` |
 | | HTTP API Gateway | **API Gateway Emulator** | `AddAWSAPIGatewayEmulator()` |
-| **Data** | DynamoDB table `Urls` | **LocalStack** | CDK Stack |
+| **Frontend** | Control-room web UI (`LocalStack.Lambda.Frontend`) | ASP.NET Core project | `AddProject()` |
+| **Data** | DynamoDB table `Urls` (Streams enabled, `NEW_IMAGE`) | **LocalStack** | CDK Stack |
 | | DynamoDB table `UrlAnalytics` | **LocalStack** | CDK Stack |
 | **Messaging** | SQS Queue `url-analytics-events` | **LocalStack** | CDK Stack |
 | **Storage** | S3 bucket `qr-bucket` | **LocalStack** | CDK Stack |
@@ -71,9 +86,11 @@ This example builds a **URL Shortener service** that leverages the best of both 
 ## Projects Structure
 
 - **`LocalStack.Lambda.AppHost`** - Aspire orchestration with auto-configuration
-- **`LocalStack.Lambda.UrlShortener`** - Lambda function for creating short URLs with QR codes
-- **`LocalStack.Lambda.Redirector`** - Lambda function for redirecting short URLs to original URLs
+- **`LocalStack.Lambda.UrlShortener`** - Lambda function for creating short URLs, written to DynamoDB with `QrStatus = Pending`
+- **`LocalStack.Lambda.Redirector`** - Lambda function backing two routes: `GET /{slug}` (redirect to the original URL) and `GET /{slug}/qr` (QR status/redirect, registered as the separate `QrStatusLambda` resource)
 - **`LocalStack.Lambda.Analyzer`** - Lambda function for processing analytics events from SQS (demonstrates SQS Event Source with LocalStack)
+- **`LocalStack.Lambda.QrCodeGenerator`** - Lambda function triggered by DynamoDB Streams `INSERT` events; renders a QR PNG, uploads it to S3, and updates the URL item with `QrStatus = Ready`
+- **`LocalStack.Lambda.Frontend`** - ASP.NET Core control-room page that shortens URLs, lists links with live QR status, and shows the analytics feed
 
 ## Quick Demo
 
@@ -86,19 +103,25 @@ dotnet run --project LocalStack.Lambda.AppHost
 
 - **APIGatewayEmulator**: For making HTTP requests to your Lambda functions
 - **Lambda Test Tool**: For testing individual Lambda functions with sample payloads
+- **Frontend**: The control-room page — the easiest way to watch the shorten → QR flow and the analytics feed update live, without hand-rolling curl commands
 
 ### Using the API Gateway Emulator
 
 ```bash
 # Get the APIGatewayEmulator base URL from Aspire Dashboard, then:
 
-# 2. Shorten a URL with QR code
-curl -d '{"url":"https://aws.amazon.com","format":"qr"}' \
+# 2. Shorten a URL
+curl -d '{"Url":"https://aws.amazon.com"}' \
      -H "Content-Type: application/json" \
      -X POST {GATEWAY_BASE_URL}/shorten
-# → { "id":"abc123", "qrUrl":"http://localhost:4566/…/qr/abc123.png" }
+# → { "Id":"abc123", "QrStatus":"Pending", "QrPath":"/abc123/qr" }
 
-# 3. Follow the short URL
+# 3. Poll the QR status route until the stream processor catches up (typically ~1-2s)
+curl -I {GATEWAY_BASE_URL}/abc123/qr
+# → 202 Accepted while QrStatus is still "Pending"
+# → 302 Found, Location: a LocalStack presigned S3 URL for the QR PNG, once QrStatus is "Ready"
+
+# 4. Follow the short URL
 curl -I {GATEWAY_BASE_URL}/abc123
 # → 302 Found, Location: https://aws.amazon.com
 ```
@@ -116,26 +139,28 @@ For advanced testing, you can use AWS CLI commands (get LocalStack endpoint from
 
 ```bash
 # Inspect URLs table
-aws dynamodb scan --table-name Urls --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+aws dynamodb scan --table-name Urls --endpoint-url {LOCALSTACK_ENDPOINT} --region us-east-1
 
 # Check analytics events
-aws dynamodb scan --table-name UrlAnalytics --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+aws dynamodb scan --table-name UrlAnalytics --endpoint-url {LOCALSTACK_ENDPOINT} --region us-east-1
 
 # List S3 objects
-aws s3api list-objects --bucket "qr-bucket" --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+aws s3api list-objects --bucket "qr-bucket" --endpoint-url {LOCALSTACK_ENDPOINT} --region us-east-1
 
 # Check SQS queue (see pending messages)
-aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names All --endpoint-url {LOCALSTACK_ENDPOINT} --region eu-central-1
+aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names All --endpoint-url {LOCALSTACK_ENDPOINT} --region us-east-1
 ```
+
+> **💡 Why `us-east-1`**: The AppHost pins the region to `us-east-1` because Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region whenever `AWS_ENDPOINT_URL*` environment variables are set, so its DynamoDB Streams poller always signs for `us-east-1` regardless of the configured region. See `docs/plans/ws2-dynamodb-streams-adapter-design.md` for the full investigation.
 
 ## Request Flow
 
 > **💡 Base URL**: Get the APIGatewayEmulator base URL from the Aspire Dashboard to make requests to your Lambda functions.
 
 1. **POST {GATEWAY_BASE_URL}/shorten**
-   - *Validate & slugify* → store `{ slug, originalUrl }` in DynamoDB
+   - *Validate & slugify* → store `{ Slug, Url, QrStatus: "Pending" }` in DynamoDB
    - Send `url_created` analytics event to SQS queue
-   - If `format=qr`, generate PNG via **[QrCodeGenerator](https://github.com/manuelbl/QrCodeGenerator)** and **[SkiaSharp](https://github.com/mono/SkiaSharp)**, upload to S3, return URL
+   - Respond immediately with `{ Id, QrStatus: "Pending", QrPath }` — QR generation happens asynchronously (see step 4)
 
 2. **GET {GATEWAY_BASE_URL}/{slug}**
    - Lookup in DynamoDB → respond *302 Found* to the original URL
@@ -146,6 +171,16 @@ aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names
    - Processes both `url_created` and `url_accessed` events
    - Stores analytics data in UrlAnalytics DynamoDB table
 
+4. **QR Generation (Background, DynamoDB Streams)**
+   - The `Urls` table has DynamoDB Streams enabled with a new-image stream view
+   - The `INSERT` from step 1 triggers `QrCodeGeneratorLambda`; `MODIFY` events (its own status update) are ignored so the write doesn't recursively re-trigger itself
+   - Generates a PNG via **[QrCodeGenerator](https://github.com/manuelbl/QrCodeGenerator)** and **[SkiaSharp](https://github.com/mono/SkiaSharp)**, uploads it to S3, then updates the same item with `QrStatus: "Ready"`, `QrObjectKey`, and `QrGeneratedAt`
+
+5. **GET {GATEWAY_BASE_URL}/{slug}/qr**
+   - Unknown slug → *404*
+   - `QrStatus` still `Pending` → *202 Accepted* with a small JSON status body
+   - `QrStatus` is `Ready` → *302 Found* to a short-lived LocalStack presigned S3 URL for the PNG
+
 ## AWS Emulator Integration
 
 This example demonstrates how LocalStack works seamlessly with the new AWS emulators introduced in [.NET Aspire 9.x](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-1/):
@@ -154,8 +189,9 @@ This example demonstrates how LocalStack works seamlessly with the new AWS emula
 - **API Gateway Emulator**: Local HTTP API Gateway for routing
 - **LocalStack Services**: DynamoDB, S3, and SQS with full AWS API compatibility
 - **SQS Event Source**: Demonstrates Lambda triggers from SQS queues with LocalStack
+- **DynamoDB Streams Event Source**: Demonstrates change-data-capture — table writes trigger async processing without the producer publishing a second event
 
-The auto-configuration feature automatically detects and configures all these resources with a single `UseLocalStack(localstack)` call, including the critical `AWS_ENDPOINT_URL` environment variable for SQS Event Sources.
+The auto-configuration feature automatically detects and configures all these resources with a single `UseLocalStack(localstack)` call, including the critical `AWS_ENDPOINT_URL` environment variable for the SQS and DynamoDB Streams event sources.
 
 ## Development Benefits
 
@@ -164,7 +200,7 @@ The auto-configuration feature automatically detects and configures all these re
 - **Fast Feedback**: Lambda changes reflect instantly via emulators
 - **Production Parity**: Same AWS APIs, locally emulated
 - **Auto-Configuration**: Minimal setup with automatic resource discovery
-- **Event-Driven Testing**: Test SQS Event Sources and async processing locally
+- **Event-Driven Testing**: Test SQS and DynamoDB Streams event sources and async processing locally
 
 ## Related Resources
 
