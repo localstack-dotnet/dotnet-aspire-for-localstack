@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **DynamoDB Streams Lambda event sources now work under LocalStack.** `WithDynamoDBStreamsEventSource(...)` helper resources are detected by `UseLocalStack()`, attached to the LocalStack container, and receive the AWS SDK endpoint/credential environment (`AWS_ENDPOINT_URL`, `AWS_ENDPOINT_URL_DYNAMODB`, `AWS_ENDPOINT_URL_DYNAMODB_STREAMS`, credentials, and region) — mirroring the existing SQS event-source support. Service-specific endpoints already set by AWS's own DynamoDB Local wiring (or by the user) are never overwritten.
+- **DynamoDB Streams Lambda event sources now work under LocalStack.** `WithDynamoDBStreamsEventSource(...)` helper resources are detected by `UseLocalStack()`, attached to the LocalStack container, and receive the AWS SDK endpoint/credential environment (`AWS_ENDPOINT_URL`, `AWS_ENDPOINT_URL_DYNAMODB`, `AWS_ENDPOINT_URL_DYNAMODB_STREAMS`, credentials, and region) — mirroring the existing SQS event-source support.
+- **`UseLocalStack()` now fails fast when `AddAWSDynamoDBLocal` is present.** DynamoDB Local and LocalStack's DynamoDB are competing backends; combining them would silently split DynamoDB state across two stores, so the combination is rejected with an actionable error.
 - **Lambda playground: change-data-capture demo.** URL creation returns immediately (`QrStatus: Pending`) while a DynamoDB Streams-driven Lambda generates the QR code asynchronously; a new `GET /{slug}/qr` route flips from `202` to a `302` PNG redirect when ready, and a control-room web frontend shows the streams (CDC) path next to the SQS analytics path live.
 
 ### Known Issues

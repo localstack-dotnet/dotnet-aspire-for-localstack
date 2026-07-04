@@ -182,6 +182,7 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 
 ## Known Limitations
 
+- **`AddAWSDynamoDBLocal` cannot be combined with `UseLocalStack()`.** DynamoDB Local and LocalStack's DynamoDB are competing backends — data written to one is invisible to the other — so `UseLocalStack()` fails fast with a clear error instead of silently splitting DynamoDB state. Model DynamoDB through the CDK/CloudFormation path so LocalStack serves it, or drop `UseLocalStack()` to keep DynamoDB Local. Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain fully supported.
 - **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region — and LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect, verified with a full version timeline in [docs/plans/aws-sdk-signing-region-investigation.md](docs/plans/aws-sdk-signing-region-investigation.md); this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources and regular AWS service clients are not affected.
 
 ## Examples

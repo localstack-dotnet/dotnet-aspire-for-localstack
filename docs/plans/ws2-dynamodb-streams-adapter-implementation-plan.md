@@ -158,42 +158,7 @@ public async Task ConfigureDynamoDbStreamsEventSourceResource_Should_Emit_Global
 }
 ```
 
-In the same file, add the endpoint-precedence guard test. Upstream's DynamoDB Local callback runs before this package's callback, so values it already placed in the environment dictionary must win:
-
-```csharp
-[Test]
-public async Task ConfigureDynamoDbStreamsEventSourceResource_Should_Not_Override_Existing_Service_Specific_Endpoints()
-{
-    var executableResource = new ExecutableResource("test-ddb-streams-resource", "test-command", "test-workdir");
-    var builder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-    var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "eu-central-1");
-
-    builder.Resource.Returns(executableResource);
-    builder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(executableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
-        .Returns(builder);
-
-    var localStackUrl = new Uri("http://localhost:4566");
-
-    LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(builder, localStackUrl, options);
-
-    var envAnnotation = executableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
-
-    // Simulate upstream's DynamoDB Local wiring having run first.
-    var env = new Dictionary<string, object>(StringComparer.Ordinal)
-    {
-        ["AWS_ENDPOINT_URL_DYNAMODB"] = "http://ddb-local:8000",
-        ["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = "http://ddb-local:8000",
-    };
-    var context = new EnvironmentCallbackContext(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), executableResource, env);
-
-    await envAnnotation.Callback(context);
-
-    await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB"]).IsEqualTo("http://ddb-local:8000");
-    await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://ddb-local:8000");
-    await Assert.That(env["AWS_ENDPOINT_URL"]).IsEqualTo("http://localhost:4566/");
-    await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
-}
-```
+*(Post-execution amendment, 2026-07-04: an endpoint-precedence guard test originally added here was removed together with the configurator's don't-clobber guard after DynamoDB Local coexistence was rejected fail-fast in `UseLocalStack()` — see the design doc's Package Design section.)*
 
 - [ ] **Step 6: Run configurator test and verify it fails**
 
@@ -223,20 +188,8 @@ internal static void ConfigureDynamoDbStreamsEventSourceResource(IResourceBuilde
     {
         var endpoint = localStackUrl.ToString();
         context.EnvironmentVariables["AWS_ENDPOINT_URL"] = endpoint;
-
-        // A pre-existing service-specific endpoint wins over LocalStack: the AWS integration wires these
-        // to its DynamoDB Local container when the Lambda references one, and users may override them
-        // explicitly. Both callbacks run before this one, so present keys mean LocalStack must defer.
-        if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB"))
-        {
-            context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB"] = endpoint;
-        }
-
-        if (!context.EnvironmentVariables.ContainsKey("AWS_ENDPOINT_URL_DYNAMODB_STREAMS"))
-        {
-            context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = endpoint;
-        }
-
+        context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB"] = endpoint;
+        context.EnvironmentVariables["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"] = endpoint;
         context.EnvironmentVariables["AWS_ACCESS_KEY_ID"] = options.Session.AwsAccessKeyId;
         context.EnvironmentVariables["AWS_SECRET_ACCESS_KEY"] = options.Session.AwsAccessKey;
         context.EnvironmentVariables["AWS_SESSION_TOKEN"] = options.Session.AwsSessionToken;
@@ -244,6 +197,8 @@ internal static void ConfigureDynamoDbStreamsEventSourceResource(IResourceBuilde
     });
 }
 ```
+
+*(Post-execution amendment, 2026-07-04: the snippet originally guarded the two service-specific keys with `ContainsKey` checks; the guard was removed when DynamoDB Local coexistence was rejected fail-fast.)*
 
 - [ ] **Step 8: Run task tests and verify they pass**
 
@@ -1200,7 +1155,7 @@ Present a concise summary and proposed commit message:
 ```text
 Summary:
 - Added LocalStack wiring for AWS Aspire DynamoDB Streams helper resources with guarded endpoint precedence.
-- Added unit coverage for reflected helper type, endpoint env injection (set-when-absent and don't-clobber), UseLocalStack detection, and callback dispatch.
+- Added unit coverage for reflected helper type, endpoint env injection, the DynamoDB Local fail-fast, UseLocalStack detection, and callback dispatch.
 - Extended the Lambda playground with async QR generation driven by DynamoDB Streams, a GET /{slug}/qr status route, and a control-room frontend showing the CDC and SQS paths side by side.
 - Preserved WS3/WS6/WS7 follow-up debt for endpoint-precedence contract, helper-resource cleanup, and LocalStack image/auth-token strategy.
 
