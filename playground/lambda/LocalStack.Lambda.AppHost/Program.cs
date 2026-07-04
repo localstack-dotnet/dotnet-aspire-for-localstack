@@ -52,10 +52,16 @@ builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_QrCodeGenerator>(
     .WithDynamoDBStreamsEventSource(urlShortenerStack.GetOutput("UrlsTableName"))
     .WithReference(urlShortenerStack);
 
-builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
+var apiGateway = builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
     .WithReference(urlShortenerLambda, Method.Post, "/shorten")
     .WithReference(redirectorLambda, Method.Get, "/{slug}")
     .WithReference(redirectorLambda, Method.Get, "/{slug}/qr");
+
+builder.AddProject<Projects.LocalStack_Lambda_Frontend>("Frontend")
+    .WithReference(urlShortenerStack)
+    .WithEnvironment("ApiGateway__BaseUrl", apiGateway.GetEndpoint("http"))
+    .WithExternalHttpEndpoints()
+    .WaitFor(apiGateway);
 
 // Autoconfigures the LocalStack for both AWS Cloudformation and CDK resources adds LocalStack reference to all resources that uses AWS references
 builder.UseLocalStack(localstack);

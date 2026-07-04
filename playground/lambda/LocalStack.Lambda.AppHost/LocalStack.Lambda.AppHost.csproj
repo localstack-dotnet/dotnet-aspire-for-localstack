@@ -22,5 +22,6 @@
     <ProjectReference Include="..\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj" />
     <ProjectReference Include="..\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj" />
     <ProjectReference Include="..\LocalStack.Lambda.QrCodeGenerator\LocalStack.Lambda.QrCodeGenerator.csproj" />
+    <ProjectReference Include="..\LocalStack.Lambda.Frontend\LocalStack.Lambda.Frontend.csproj" />
   </ItemGroup>
 </Project>
