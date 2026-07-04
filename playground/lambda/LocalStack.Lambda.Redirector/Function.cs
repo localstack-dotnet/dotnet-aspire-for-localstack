@@ -45,7 +45,11 @@ public class Function
         builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddAwsService<IAmazonDynamoDB>();
         builder.Services.AddAwsService<IAmazonSQS>();
-        builder.Services.AddAwsService<IAmazonS3>();
+
+        // The default registration routes requests to LocalStack through proxy settings while the request URI
+        // keeps the AWS regional host, which leaks that host into presigned URLs handed to browsers.
+        // ServiceURL mode makes generated URLs carry the LocalStack endpoint instead.
+        builder.Services.AddAwsService<IAmazonS3>(useServiceUrl: true);
 
         var host = builder.Build();
 
@@ -152,6 +156,8 @@ public class Function
             BucketName = _qrBucketName,
             Key = item["QrObjectKey"].S,
             Expires = DateTime.UtcNow.AddMinutes(5),
+            // The presigner defaults to https regardless of the client scheme; match the endpoint's actual scheme.
+            Protocol = _amazonS3.Config.UseHttp ? Protocol.HTTP : Protocol.HTTPS,
         }).ConfigureAwait(false);
 
         context.Logger.LogInformation($"Redirecting to QR code for slug: {sanitizedSlug}");
