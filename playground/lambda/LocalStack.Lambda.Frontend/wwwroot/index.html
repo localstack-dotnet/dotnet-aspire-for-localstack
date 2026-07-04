@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LocalStack Control Room</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Control Room</h1>
+    <p class="subtitle">
+      Watch the CDC path (DynamoDB Streams &rarr; QR code) and the SQS path (analytics) side by side.
+    </p>
+  </header>
+
+  <main class="layout">
+    <section class="panel" aria-labelledby="links-heading">
+      <h2 id="links-heading">Shortened Links</h2>
+
+      <form id="shorten-form" class="shorten-form">
+        <input type="url" id="url-input" name="url" placeholder="https://example.com" required />
+        <button type="submit">Shorten</button>
+      </form>
+      <p id="shorten-error" class="error" role="alert" hidden></p>
+
+      <table class="links-table">
+        <thead>
+          <tr>
+            <th>Short URL</th>
+            <th>Original URL</th>
+            <th>Created</th>
+            <th>QR</th>
+          </tr>
+        </thead>
+        <tbody id="links-body">
+          <tr class="empty-row">
+            <td colspan="4">No links yet. Shorten one above.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel" aria-labelledby="analytics-heading">
+      <h2 id="analytics-heading">Analytics Feed</h2>
+      <ul id="analytics-feed" class="analytics-feed">
+        <li class="empty-row">No events yet.</li>
+      </ul>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

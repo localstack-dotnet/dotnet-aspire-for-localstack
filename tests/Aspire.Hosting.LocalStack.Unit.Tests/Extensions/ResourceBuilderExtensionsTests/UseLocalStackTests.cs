@@ -1,3 +1,5 @@
+using Aspire.Hosting.Eventing;
+
 namespace Aspire.Hosting.LocalStack.Unit.Tests.Extensions.ResourceBuilderExtensionsTests;
 
 public class UseLocalStackTests
@@ -182,5 +184,70 @@ public class UseLocalStackTests
 
         // CloudFormation resource should be enabled for LocalStack
         await cfResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
+    }
+
+    [Test]
+    public async Task UseLocalStack_Should_Configure_DynamoDb_Streams_Event_Source_Resources_With_LocalStack_Reference()
+    {
+        await using var app = TestApplicationBuilder.Create(builder =>
+        {
+            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+            var localStack = builder.AddLocalStack(localStackOptions: options);
+            builder.AddResource(CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper"));
+
+            builder.UseLocalStack(localStack);
+        });
+
+        var localStackResource = app.GetResource<ILocalStackResource>("localstack");
+        var helperResource = app.GetResource<ExecutableResource>("ddb-streams-helper");
+
+        await helperResource.ShouldHaveLocalStackEnabledAnnotation(localStackResource);
+        await helperResource.ShouldWaitFor(localStackResource);
+        await localStackResource.ShouldHaveReferenceToResource(helperResource);
+    }
+
+    [Test]
+    public async Task UseLocalStack_Should_Throw_When_DynamoDb_Local_Is_Present()
+    {
+        await Assert.That(() => TestApplicationBuilder.Create(builder =>
+        {
+            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+            var localStack = builder.AddLocalStack(localStackOptions: options);
+            builder.AddAWSDynamoDBLocal("dynamodb-local");
+
+            builder.UseLocalStack(localStack);
+        })).ThrowsExactly<DistributedApplicationException>();
+    }
+
+    [Test]
+    public async Task UseLocalStack_Should_Throw_Before_Start_When_DynamoDb_Local_Is_Added_After_UseLocalStack()
+    {
+        var builder = DistributedApplication.CreateBuilder(["--AppHost:Operation=publish"]);
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+        var localStack = builder.AddLocalStack(localStackOptions: options);
+
+        builder.UseLocalStack(localStack);
+        builder.AddAWSDynamoDBLocal("dynamodb-local");
+
+        await using var app = builder.Build();
+
+        var eventing = app.Services.GetRequiredService<IDistributedApplicationEventing>();
+        var model = app.Services.GetRequiredService<DistributedApplicationModel>();
+
+        await Assert.That(async () => await eventing.PublishAsync(new BeforeStartEvent(app.Services, model))).ThrowsExactly<DistributedApplicationException>();
+    }
+
+    private static ExecutableResource CreateExecutableResourceByTypeName(string typeName, string name)
+    {
+        // Assembly.Load fallback mirrors ConstantsTests: type discovery must not depend on whether
+        // another test already forced Aspire.Hosting.AWS into the AppDomain.
+        var type = AppDomain.CurrentDomain.GetAssemblies()
+                       .Select(assembly => assembly.GetType(typeName, throwOnError: false))
+                       .FirstOrDefault(type => type is not null)
+                   ?? System.Reflection.Assembly.Load("Aspire.Hosting.AWS").GetType(typeName, throwOnError: false)
+                   ?? throw new InvalidOperationException($"Type '{typeName}' was not found in the current assembly context.");
+
+        return (ExecutableResource)(Activator.CreateInstance(type, name)
+                                    ?? throw new InvalidOperationException($"Type '{typeName}' could not be created."));
     }
 }

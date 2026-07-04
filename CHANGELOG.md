@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **DynamoDB Streams Lambda event sources now work under LocalStack.** `WithDynamoDBStreamsEventSource(...)` helper resources are detected by `UseLocalStack()`, attached to the LocalStack container, and receive the AWS SDK endpoint/credential environment (`AWS_ENDPOINT_URL`, `AWS_ENDPOINT_URL_DYNAMODB`, `AWS_ENDPOINT_URL_DYNAMODB_STREAMS`, credentials, and region) — mirroring the existing SQS event-source support.
+- **`UseLocalStack()` now fails fast when `AddAWSDynamoDBLocal` is present.** DynamoDB Local and LocalStack's DynamoDB are competing backends; combining them would silently split DynamoDB state across two stores, so the combination is rejected with an actionable error.
+- **Lambda playground: change-data-capture demo.** URL creation returns immediately (`QrStatus: Pending`) while a DynamoDB Streams-driven Lambda generates the QR code asynchronously; a new `GET /{slug}/qr` route flips from `202` to a `302` PNG redirect when ready, and a control-room web frontend shows the streams (CDC) path next to the SQS analytics path live.
+
+### Known Issues
+
+- **DynamoDB Streams event sources require `us-east-1` for now.** The Lambda Test Tool's bundled AWS SDK for .NET signs requests for `us-east-1` whenever a custom endpoint is configured (an upstream SDK regression: fixed in AWSSDK.Core 4.0.9.4, reverted in 4.0.9.7, still present in current releases). LocalStack namespaces resources per signing region, so stream pollers only find tables in `us-east-1`; the Lambda playground pins that region. Full investigation and version timeline: `docs/plans/aws-sdk-signing-region-investigation.md`. No change is required in this package once upstream ships a fix.
+
 ## [13.4.0] - 2026-06-25
 
 ### Fixed

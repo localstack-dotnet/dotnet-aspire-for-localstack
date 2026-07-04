@@ -1,6 +1,6 @@
 # Agent Harness Guide
 
-Date: 2026-07-01
+Date: 2026-07-04
 
 This directory contains repository-specific guidance for AI coding agents.
 
@@ -17,6 +17,7 @@ Changes to `AGENTS.md`, approval gates, capability routing, skill triggers, or h
 | `AGENTS.md` | Canonical repository contract |
 | `CLAUDE.md` | Claude Code relay to `AGENTS.md` |
 | `.github/copilot-instructions.md` | GitHub Copilot relay to `AGENTS.md` |
+| `docs/agents/README.md` | Harness adapter guide and capability mapping (this file) |
 | `docs/agents/KNOWN_ISSUES.md` | Agent-facing known notes and triage hints |
 | `docs/agents/skills/aspire-source-navigation.md` | Canonical project skill content |
 | `.claude/skills/aspire-source-navigation/SKILL.md` | Claude Code native skill relay |
@@ -35,7 +36,7 @@ Do not create `.vscode` skill folders. That is not a canonical Agent Skills loca
 
 ## Capability Mapping
 
-`AGENTS.md` routes by capability so the contract stays harness-neutral. Resolve each capability to the current harness's native invocation before acting:
+`AGENTS.md` routes by capability so the contract stays harness-neutral. Resolve each capability to the current harness's native invocation before acting.
 
 Tier meanings:
 
@@ -45,42 +46,130 @@ Tier meanings:
 - **Tier 3** — local-only convenience; use when present, never assume fresh checkouts have it.
 - **Out of scope** — do not use unless this repo adds that technology or Deniz explicitly asks.
 
-| Capability | Kind | Tier | Claude Code / Copilot CLI | OpenCode |
-| --- | --- | --- | --- | --- |
-| Superpowers process discipline | Process skill | Tier 0 | `superpowers:<name>` via skill invocation | `<name>` via `skill` |
-| Aspire source compatibility | Native project skill | Tier 1; shipped in repo | `aspire-source-navigation` via skill invocation | `aspire-source-navigation` via `skill` |
-| OpenCode local model routing | Local project skill | Tier 3; local-only when present | Not applicable | `subagent-model-routing` via `skill` when present |
-| .NET project structure | Domain skill | Tier 1 when installed | `dotnet-skills:project-structure` via skill invocation | `dotnet-project-structure` via `skill` |
-| NuGet package management | Domain skill | Tier 1 when installed | `dotnet-skills:package-management` via skill invocation | `package-management` via `skill` |
-| C# coding standards | Domain skill | Tier 1 when installed | `dotnet-skills:csharp-coding-standards` via skill invocation | `modern-csharp-coding-standards` via `skill` |
-| C# type design/performance | Domain skill | Tier 1 when installed | `dotnet-skills:csharp-type-design-performance` via skill invocation | `type-design-performance` via `skill` |
-| C# concurrency patterns | Domain skill | Tier 1 when installed | `dotnet-skills:csharp-concurrency-patterns` via skill invocation | `csharp-concurrency-patterns` via `skill` |
-| Dependency injection patterns | Domain skill | Tier 1 when installed | `dotnet-skills:microsoft-extensions-dependency-injection` via skill invocation | `dependency-injection-patterns` via `skill` |
-| Options/configuration patterns | Domain skill | Tier 1 when installed | `dotnet-skills:microsoft-extensions-configuration` via skill invocation | `microsoft-extensions-configuration` via `skill` |
-| Serialization contracts | Domain skill | Tier 1 when installed | `dotnet-skills:serialization` via skill invocation | `serialization` via `skill` |
-| Slopwatch quality gate | Quality skill | Tier 1 when available after LLM-authored code/project/test changes | `dotnet-skills:slopwatch` via skill invocation | `dotnet-slopwatch` via `skill` |
-| Aspire explicit configuration | Domain skill | Tier 1 when installed | `dotnet-skills:aspire-configuration` via skill invocation | `aspire-configuration` via `skill` |
-| Aspire ServiceDefaults | Domain skill | Tier 1 when installed | `dotnet-skills:aspire-service-defaults` via skill invocation | `aspire-service-defaults` via `skill` |
-| Aspire integration testing | Domain skill | Tier 1 when installed | `dotnet-skills:aspire-integration-testing` via skill invocation | `aspire-integration-testing` via `skill` |
-| .NET test running/filtering | Procedure skill | Tier 2; use by judgment when installed | `dotnet-test:run-tests` and `dotnet-test:filter-syntax` via skill invocation | `ms-dotnet-test-run-tests` and `ms-dotnet-test-filter-syntax` via `skill` |
-| .NET test anti-pattern audit | Procedure skill | Tier 2; use by judgment when installed | `dotnet-test:test-anti-patterns` via skill invocation | `ms-dotnet-test-test-anti-patterns` via `skill` |
-| .NET test gap analysis | Procedure skill | Tier 2; use by judgment when installed | `dotnet-test:test-gap-analysis` via skill invocation | `ms-dotnet-test-test-gap-analysis` via `skill` |
-| .NET test generation | Procedure skill | Tier 2; use by judgment when installed | `dotnet-test:code-testing-agent` via skill invocation | `ms-dotnet-test-code-testing-agent` via `skill`; despite the name, this is not an OpenCode `subagent_type` |
-| .NET concurrency specialist | Specialist agent | Tier 2; use when harness exposes a matching agent | Harness-native agent if installed | `dotnet-concurrency-specialist` via `task` when available |
-| .NET performance analyst | Specialist agent | Tier 2; use only with measured performance data | Harness-native agent if installed | `dotnet-performance-analyst` via `task` when available |
-| .NET benchmark designer | Specialist agent | Tier 2; use for BenchmarkDotNet/custom benchmark design | Harness-native agent if installed | `dotnet-benchmark-designer` via `task` when available |
+This repo ships exactly one project skill: `aspire-source-navigation`. Its canonical body lives in `docs/agents/skills/aspire-source-navigation.md`, with thin native relays under `.claude/skills/`, `.opencode/skills/`, and `.github/skills/`.
 
-OpenCode exposes skill frontmatter names. Official Microsoft skills are installed with `ms-dotnet-*` prefixes to avoid collisions with generic names and Aaron's `dotnet-skills` set. Specialist agents are not skills in OpenCode; dispatch them with `task` only when the harness exposes the matching `subagent_type`.
+Claude Code uses plugin-qualified names. Copilot CLI exposes installed skill IDs directly through the running harness's skill list. OpenCode exposes skill frontmatter names, which depend on the local install; the names below reflect the established local convention. Official Microsoft skills carry `ms-dotnet-*` prefixes in OpenCode to avoid colliding with Aaron's `dotnet-skills` set. Specialist agents are not skills in OpenCode; dispatch them with `task` only when the harness exposes the matching `subagent_type`.
 
-If a bootstrap or process skill is already active, follow it immediately. Use this adapter guide to map additional capabilities after the active process workflow tells you what to invoke.
+When importing Microsoft-derived agent markdown into OpenCode, normalize the frontmatter to OpenCode's agent schema before restart. Claude/Copilot fields such as `tools`, `agents`, `handoffs`, `license`, `user-invocable`, `user-invokable`, and `disable-model-invocation` are not valid OpenCode agent metadata and can break startup. Restart OpenCode after changing global or project skill/agent files; running sessions keep the previously loaded registry.
 
-`aspire-source-navigation` is a narrow project skill for compatibility-sensitive source checks. Do not invoke it just because a task mentions Aspire; invoke it when the task depends on upstream Aspire/AWS/LocalStack internals, package-version alignment, source-level API shape, or a compatibility conclusion. For read-only explanation questions, inspect this repository's docs/code first and invoke the skill only when upstream version-specific evidence is needed.
+### Tier 0 — Process discipline
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| Brainstorming, planning, debugging, TDD, review, verification, plan execution | Harness-injected process skills, when installed (for example `superpowers:<name>`) | `<name>` via `skill`, when installed | `<name>` via `skill`, when installed |
+
+Follow a process skill immediately when the harness injects it; use this guide to map additional capabilities after the active process workflow tells you what to invoke. Not every harness ships a process-skill set. If none is present, apply the same discipline manually.
+
+### Tier 1 — Aspire/LocalStack package and .NET domain
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| Aspire source compatibility for upstream Aspire/AWS/LocalStack.Client internals | `aspire-source-navigation` | `aspire-source-navigation` | `aspire-source-navigation` |
+| Modern C# coding standards | `dotnet-skills:csharp-coding-standards` | `modern-csharp-coding-standards` | `modern-csharp-coding-standards` |
+| Type design and performance | `dotnet-skills:csharp-type-design-performance` | `type-design-performance` | `type-design-performance` |
+| Concurrency / async patterns | `dotnet-skills:csharp-concurrency-patterns` | `csharp-concurrency-patterns` | `csharp-concurrency-patterns` |
+| Public API / NuGet package compatibility | `dotnet-skills:api-design` | `api-design` | `api-design` |
+| Project / MSBuild structure | `dotnet-skills:project-structure` | `dotnet-project-structure` | `dotnet-project-structure` |
+| NuGet package management (CPM) | `dotnet-skills:package-management` | `package-management` | `package-management` |
+| Dependency injection patterns | `dotnet-skills:microsoft-extensions-dependency-injection` | `dependency-injection-patterns` | `dependency-injection-patterns` |
+| Options/configuration patterns | `dotnet-skills:microsoft-extensions-configuration` | `microsoft-extensions-configuration` | `microsoft-extensions-configuration` |
+| Serialization contracts | `dotnet-skills:serialization` | `serialization` | `serialization` |
+| Slopwatch quality gate | `dotnet-skills:slopwatch` | `dotnet-slopwatch` | `dotnet-slopwatch` |
+| Aspire explicit configuration | `dotnet-skills:aspire-configuration` | `aspire-configuration` | `aspire-configuration` |
+| Aspire ServiceDefaults | `dotnet-skills:aspire-service-defaults` | `aspire-service-defaults` | `aspire-service-defaults` |
+| Aspire integration testing | `dotnet-skills:aspire-integration-testing` | `aspire-integration-testing` | `aspire-integration-testing` |
+
+`aspire-source-navigation` is narrow by design. Do not invoke it just because a task mentions Aspire; invoke it when the task depends on upstream Aspire/AWS/LocalStack internals, package-version alignment, source-level API shape, or a compatibility conclusion. For read-only explanation questions, inspect this repository's docs/code first and invoke the skill only when upstream version-specific evidence is needed.
 
 For package version updates, use the package-management capability for Central Package Management and `dotnet` command mechanics. Use `aspire-source-navigation` for compatibility evidence and upstream source checks. If the guidance overlaps, package-management governs how packages are edited; source navigation governs whether the version/API behavior is compatible.
 
-Official Microsoft **Aspire** orchestration skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`, and may not be installed. Use the harness-native name only if the harness exposes it.
+### Tier 2 — Test and coverage (TUnit on Microsoft.Testing.Platform)
 
-Availability is not activation. Except for the Superpowers bootstrap, skills do not run automatically; invoke the mapped skill or dispatch the mapped specialist agent when the trigger applies. If a mapped capability is not loaded in the current harness, skip optional rows or ask before installing, changing harness configuration, or substituting another tool. Do not invent an ID.
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| Running / filtering tests | `dotnet-test:run-tests` | `run-tests` | `ms-dotnet-test-run-tests` |
+| Test anti-pattern audit | `dotnet-test:test-anti-patterns` | `test-anti-patterns` | `ms-dotnet-test-test-anti-patterns` |
+| Test gap (mutation-style) analysis | `dotnet-test:test-gap-analysis` | `test-gap-analysis` | `ms-dotnet-test-test-gap-analysis` |
+| Assertion quality analysis | `dotnet-test:assertion-quality` | `assertion-quality` | `ms-dotnet-test-assertion-quality` |
+| Test generation | `dotnet-test:code-testing-agent` | `code-testing-agent`, then `dotnet-test:code-testing-generator` via `task` | `ms-dotnet-test-code-testing-agent`, then `code-testing-generator` via `task` |
+| Find untested sources | `dotnet-test:find-untested-sources` | `find-untested-sources` | `ms-dotnet-test-find-untested-sources` |
+| Mock usage audit (NSubstitute/Moq/FakeItEasy) | Not available (unpublished plugin) | Not available | `ms-dotnet-experimental-exp-mock-usage-analysis` |
+| Test maintainability / duplicate boilerplate audit | Not available (unpublished plugin) | Not available | `ms-dotnet-experimental-exp-test-maintainability` |
+| Coverage + CRAP analysis | `dotnet-test:coverage-analysis`, `dotnet-test:crap-score` | `coverage-analysis`, `crap-score` | `ms-dotnet-test-coverage-analysis`, `ms-dotnet-test-crap-score` |
+| Broad test-suite audit (agent) | `dotnet-test:test-quality-auditor` agent | `dotnet-test:test-quality-auditor` via `task` | `test-quality-auditor` via `task` |
+| Snapshot testing (Verify) for manifest/config/API-surface output | `dotnet-skills:snapshot-testing` | `snapshot-testing` | `snapshot-testing` |
+| Container-backed integration tests (Docker) — alternative to Aspire integration tests, use only when the Aspire path does not fit | `dotnet-skills:testcontainers-integration-tests` | `testcontainers-integration-tests` | `testcontainers-integration-tests` |
+
+This repo uses TUnit on Microsoft.Testing.Platform. Avoid false-green filters: plain `--filter` / `--nologo` can silently run zero tests; prefer `dotnet test --project <csproj>` and TUnit-compatible filtering, and confirm the reported total is greater than zero.
+
+OpenCode notes: use reference-only helper skills such as `ms-dotnet-test-filter-syntax`, `ms-dotnet-test-platform-detection`, `ms-dotnet-test-frameworks`, `ms-dotnet-test-code-testing-extensions`, and `ms-dotnet-test-test-analysis-extensions` only when a parent test workflow asks for framework lookup data. Do not invoke those helpers as standalone task handlers.
+
+Claude Code / Copilot CLI notes: `dotnet-experimental` exists in the marketplace repo but may be unpublished or absent from a given harness. Treat the experimental mock-usage and test-maintainability rows as OpenCode-local unless verified in the running harness.
+
+### Tier 2 — Performance, diagnostics, and specialist agents
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| Microbenchmarking (BenchmarkDotNet or custom benchmarks) | `dotnet-diag:microbenchmarking` | `microbenchmarking` | `ms-dotnet-diag-microbenchmarking` |
+| Performance anti-pattern analysis | `dotnet-diag:analyzing-dotnet-performance` | `analyzing-dotnet-performance` | `ms-dotnet-diag-analyzing-dotnet-performance` |
+| Performance optimization (agent) | `dotnet-diag:optimizing-dotnet-performance` agent | `dotnet-diag:optimizing-dotnet-performance` via `task` | `optimizing-dotnet-performance` via `task` |
+| Benchmark design (agent) | `dotnet-skills:dotnet-benchmark-designer` agent | `dotnet-benchmark-designer` via `task` | `dotnet-benchmark-designer` via `task` |
+| Performance analysis of measured data (agent) | `dotnet-skills:dotnet-performance-analyst` agent | `dotnet-performance-analyst` via `task` | `dotnet-performance-analyst` via `task` |
+| Concurrency / race analysis (agent) | `dotnet-skills:dotnet-concurrency-specialist` agent | `dotnet-concurrency-specialist` via `task` | `dotnet-concurrency-specialist` via `task` |
+| Trace / dump collection | `dotnet-diag:dotnet-trace-collect`, `dotnet-diag:dump-collect` | `dotnet-trace-collect`, `dump-collect` | `ms-dotnet-diag-dotnet-trace-collect`, `ms-dotnet-diag-dump-collect` |
+| Decompile assemblies when source is unavailable | `dotnet-skills:ilspy-decompile` | `ilspy-decompile` | `ilspy-decompile` |
+
+Performance work requires measured data before optimization claims. Prefer source navigation over decompilation when local upstream checkouts under `external/` are available. OpenTelemetry instrumentation work in playground ServiceDefaults or Lambda samples may use the OpenCode-local `OpenTelemetry-NET-Instrumentation` skill when present; do not treat it as package-source routing for ordinary hosting changes.
+
+### Tier 2 — Meta / maintenance
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| Maintain `AGENTS.md` / this file's capability index | `dotnet-skills:skills-index-snippets` | `skills-index-snippets` | `skills-index-snippets` |
+| Working-diff code review (findings-first, severity-ordered) | `code-review` (harness built-in) | `code-review` via `task` | `codex-review` via `task` when present |
+| Broad read-only exploration or bounded research | Harness-native explore/general agent if installed | Harness-native explore/general agent if installed | `explore` or `general` via `task` when useful |
+
+### Tier 2 — Official Aspire skills and Aspire MCP server (playground run/debug)
+
+Official Microsoft Aspire skills and MCP server are local harness setup, not committed project infrastructure. They require Aspire CLI 13.3+ (`aspire agent mcp`).
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| AppHost lifecycle routing + safety guardrails (`aspire start`, never `dotnet run` on AppHosts) | `aspire:aspire` | `aspire` | `aspire` |
+| Start/stop/restart/wait/inspect playground AppHost resources | `aspire:aspire-orchestration` | `aspire-orchestration` | `aspire-orchestration` |
+| Resource logs, traces, metrics, dashboard telemetry | `aspire:aspire-monitoring` | `aspire-monitoring` | `aspire-monitoring` |
+| Runtime resource state/logs/traces/commands over MCP | `aspire` MCP server (`aspire agent mcp`, stdio; tools surface as `mcp__aspire__*`) | `aspire` MCP server (`aspire agent mcp`, stdio; user `~/.copilot/mcp-config.json`) | `aspire` MCP server (`aspire agent mcp`, stdio; local `opencode.jsonc`) |
+
+- The MCP server only discovers AppHosts launched with `aspire start` from the workspace directory. In-process `DistributedApplicationTestingBuilder` AppHosts used by integration tests are invisible to it — test debugging stays log/debugger-based.
+- These skills/tools are for *consuming* Aspire (running and debugging playground AppHosts). They do not replace `aspire-source-navigation` for upstream source-compatibility work; on conflict, verified package source wins.
+- The bundle also ships `aspire-init` and `aspireify` (not for this repo — AppHosts already exist) and `aspire-deployment` (approval-gated and real-AWS targeted; LocalStack playgrounds do not deploy).
+- Set up each harness locally and update only that harness's cells after verifying the native skill IDs and MCP status.
+
+### Tier 3 — Local-only
+
+| Capability | Claude Code | Copilot CLI | OpenCode |
+| --- | --- | --- | --- |
+| OpenCode local model routing | Not applicable | Not applicable | `subagent-model-routing` via `skill` when present |
+
+### Out of scope
+
+Do not invoke these unless the repo adds the technology or Deniz explicitly asks:
+
+- **Akka.NET**: `akka-*` skills and `akka-net-specialist` — no Akka.NET here.
+- **Email/MJML/Mailpit**: `mjml-email-templates`, `verify-email-snapshots`, `mailpit-integration` — no email stack here.
+- **EF Core / SQL database performance**: `efcore-patterns`, `database-performance` — this package configures AWS resources and LocalStack endpoints; it does not use EF/SQL.
+- **Playwright / Blazor UI**: `playwright-blazor-testing`, `playwright-ci-caching` — no browser UI test surface in this package.
+- **Marketplace publishing**: `marketplace-publishing` — this repo is not publishing skills/agents to a marketplace.
+- **MSTest-specific work**: `ms-dotnet-test-writing-mstest-tests` / `writing-mstest-tests` — this repo uses TUnit, not MSTest.
+- **VSTest-to-MTP migration**: `ms-dotnet-test-migration-migrate-vstest-to-mtp` — this repo is already on TUnit/Microsoft.Testing.Platform.
+- **Testability/static-wrapper migrations**: `ms-dotnet-test-detect-static-dependencies`, `ms-dotnet-test-generate-testability-wrappers`, `ms-dotnet-test-migrate-static-to-wrapper`, `testability-migration` — only use if Deniz asks for a dedicated testability migration.
+- **Reactive extensions**: `r3-reactive-extensions` — no R3/Rx usage here.
+- **Generators / DocFX / unrelated platform work**: `roslyn-incremental-generator-specialist`, `docfx-specialist`, crash-symbolication skills, and `dotnet-devcert-trust` are out of scope unless the repo adds that concern.
+- **Academic-only test smell taxonomy**: `ms-dotnet-test-test-smell-detection` and `ms-dotnet-test-test-tagging` are narrow tools; use only when explicitly requested.
+
+Official Microsoft **Aspire** skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`. They are installed per harness — see the "Official Aspire skills and Aspire MCP server" Tier 2 section above for the roster, MCP wiring, and usage limits. Deployment remains approval-gated.
+
+Availability is not activation. Except for the process bootstrap, skills do not run automatically; invoke the mapped skill or dispatch the mapped specialist agent when the trigger applies. If a mapped capability is not loaded in the current harness, skip optional rows or ask before installing, changing harness configuration, or substituting another tool. Do not invent an ID.
 
 Copilot VS Code differs from Copilot CLI: repository skills under `.github/skills/` are discoverable, but external Superpowers, Aaron `dotnet-skills`, and Microsoft `dotnet-agent-skills` availability depends on the active Copilot/agent environment. Resolve them from the running harness instead of assuming Claude-style plugin names.
 
@@ -122,6 +211,8 @@ The canonical skill body lives in `docs/agents/skills/aspire-source-navigation.m
 
 When changing agent guidance, update `AGENTS.md` only for mandatory cross-harness policy. Update this file for adapter mechanics. Update native skill relay files only when their trigger description or canonical path changes.
 
+Use the `skills-index-snippets` capability to keep this capability index consistent when skills are added, retired, renamed, or re-tiered. Change the roster deliberately and keep this file aligned with `AGENTS.md`.
+
 When changing the skill:
 
 1. Update the canonical document first.
@@ -141,4 +232,4 @@ external/aws-integrations/{ref}/
 external/localstack-dotnet-client/{ref}/
 ```
 
-Resolve `{ref}` from package versions in `Directory.Packages.props` and verified upstream tags/releases. The `external/` tree is ignored by git. Do not commit upstream clones.
+Resolve `{ref}` from package versions in `Directory.Packages.props` and verified upstream tags/releases. The `external/` tree is ignored by git, so use an ignored-file-aware check such as `Test-Path external`, `git ls-files --others --ignored --exclude-standard external/`, or a direct directory listing before concluding local source is missing. Do not commit upstream clones.

@@ -120,7 +120,7 @@ builder.AddLocalStack(configureContainer: container =>
 - **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
 - **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
 - **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
-- **`ContainerImageTag`** - Custom image tag/version (default: package version). Use to pin to specific LocalStack version
+- **`ContainerImageTag`** - Custom image tag/version (default: `4.12.0`). Use to pin to a specific LocalStack version
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).
@@ -178,6 +178,12 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 - **Container Lifecycle Management**: Configurable container with session/persistent lifetime options
 - **Eager Service Loading**: Pre-load specific AWS services for faster startup in CI/CD environments
 - **Extension-Based**: Works alongside official AWS integrations for .NET Aspire without code changes
+- **Lambda Event Sources**: SQS and DynamoDB Streams event-source emulators (`WithSQSEventSource`, `WithDynamoDBStreamsEventSource`) are automatically wired to LocalStack
+
+## Known Limitations
+
+- **`AddAWSDynamoDBLocal` cannot be combined with `UseLocalStack()`.** DynamoDB Local and LocalStack's DynamoDB are competing backends — data written to one is invisible to the other — so `UseLocalStack()` fails fast with a clear error instead of silently splitting DynamoDB state. Model DynamoDB through the CDK/CloudFormation path so LocalStack serves it, or drop `UseLocalStack()` to keep DynamoDB Local. Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain fully supported.
+- **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region — and LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect, verified with a full version timeline in [docs/plans/aws-sdk-signing-region-investigation.md](docs/plans/aws-sdk-signing-region-investigation.md); this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources and regular AWS service clients are not affected.
 
 ## Examples
 

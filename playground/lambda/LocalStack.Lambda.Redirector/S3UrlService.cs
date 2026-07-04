@@ -1,8 +1,8 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Options;
 
-namespace LocalStack.Lambda.UrlShortener;
+namespace LocalStack.Lambda.Redirector;
 
 internal sealed class S3UrlService : IS3UrlService
 {

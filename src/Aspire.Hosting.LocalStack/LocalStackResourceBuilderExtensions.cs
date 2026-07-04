@@ -7,6 +7,7 @@ using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS;
 using Aspire.Hosting.AWS.CDK;
 using Aspire.Hosting.AWS.CloudFormation;
+using Aspire.Hosting.AWS.DynamoDB;
 using Aspire.Hosting.LocalStack;
 using Aspire.Hosting.LocalStack.Annotations;
 using Aspire.Hosting.LocalStack.CDK;
@@ -37,6 +38,10 @@ public static class LocalStackResourceBuilderExtensions
     /// <param name="builder">The distributed application builder.</param>
     /// <param name="localStack">The LocalStack resource to connect all AWS resources to. If null or UseLocalStack is false, no configuration is applied.</param>
     /// <returns>The distributed application builder for fluent chaining.</returns>
+    /// <exception cref="DistributedApplicationException">
+    /// Thrown when an <c>AddAWSDynamoDBLocal</c> resource is present: DynamoDB Local and LocalStack's DynamoDB are competing backends,
+    /// so combining them would split DynamoDB state across two stores.
+    /// </exception>
     /// <remarks>
     /// This method performs the following operations:
     /// <list type="bullet">
@@ -56,6 +61,9 @@ public static class LocalStackResourceBuilderExtensions
         {
             return builder;
         }
+
+        ThrowIfDynamoDbLocalPresent(builder.Resources);
+        SubscribeToDynamoDbLocalGuard(builder, localStack.Resource);
 
         // Check if we have any CDK stacks (IStackResource) - if so, we need CDK bootstrap
         var hasStackResources = builder.Resources
@@ -100,10 +108,11 @@ public static class LocalStackResourceBuilderExtensions
                     awsResourceBuilder.WaitFor(cdkBootstrap);
                 }
             }
-            else if (resource is ExecutableResource sqsResource &&
-                     string.Equals(sqsResource.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
+            else if (resource is ExecutableResource eventSourceResource &&
+                     (string.Equals(eventSourceResource.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal) ||
+                      string.Equals(eventSourceResource.GetType().FullName, Constants.DynamoDbStreamsEventSourceResource, StringComparison.Ordinal)))
             {
-                builder.CreateResourceBuilder(sqsResource).WithReference(localStack);
+                builder.CreateResourceBuilder(eventSourceResource).WithReference(localStack);
             }
             else if (resource.Annotations.Any(a =>
                          a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
@@ -296,6 +305,36 @@ public static class LocalStackResourceBuilderExtensions
 
         return options;
     }
+
+    private static void SubscribeToDynamoDbLocalGuard(IDistributedApplicationBuilder builder, ILocalStackResource localStack)
+    {
+        if (localStack.Annotations.Any(annotation => annotation is DynamoDbLocalGuardAnnotation))
+        {
+            return;
+        }
+
+        localStack.Annotations.Add(new DynamoDbLocalGuardAnnotation());
+
+        builder.OnBeforeStart((beforeStartEvent, _) =>
+        {
+            ThrowIfDynamoDbLocalPresent(beforeStartEvent.Model.Resources);
+
+            return Task.CompletedTask;
+        });
+    }
+
+    private static void ThrowIfDynamoDbLocalPresent(IEnumerable<IResource> resources)
+    {
+        if (resources.OfType<IDynamoDBLocalResource>().Any())
+        {
+            throw new DistributedApplicationException(
+                "AddAWSDynamoDBLocal cannot be combined with UseLocalStack(): DynamoDB Local and LocalStack's DynamoDB are competing backends, " +
+                "and data written to one is invisible to the other. Model DynamoDB through the CDK or CloudFormation path so LocalStack serves it, " +
+                "or remove UseLocalStack() to keep using DynamoDB Local.");
+        }
+    }
+
+    private sealed class DynamoDbLocalGuardAnnotation : IResourceAnnotation;
 
     private static void ConfigureHealthCheck(
         this IResourceBuilder<LocalStackResource> resourceBuilder,

@@ -138,17 +138,11 @@ Capability tiers:
 - **Tier 3**: local-only convenience; use when present, never assume fresh checkouts have it.
 - **Out of scope**: do not use unless this repo adds that technology or Deniz explicitly asks.
 
-Required or common capabilities:
-
-- Process skills before creative work, planning, implementation, debugging, verification, or review workflows.
-- Relevant .NET skills for C# code, public API shape, project/MSBuild structure, NuGet packages, DI, options/configuration, serialization, Aspire patterns, and Slopwatch quality gates.
-- `aspire-source-navigation` for compatibility-sensitive Aspire/AWS/LocalStack source checks.
-- Test skills for running/filtering tests, test anti-pattern audits, gap analysis, coverage/CRAP analysis, or diagnostics when installed and relevant.
-- Specialist agents for concurrency, performance, benchmarks, broad exploration, or bounded research when the harness exposes them and the task benefits from isolation.
+The full capability-to-harness mapping and curated skill roster live in `docs/agents/README.md`. Availability is not activation: except for a harness-injected process bootstrap, skills do not run automatically. Invoke the mapped capability when its trigger applies, and do not invent an ID.
 
 ### Critical Aspire Routing
 
-| Trigger | Preferred route |
+| Trigger | Preferred capability |
 | --- | --- |
 | Compatibility-sensitive package work under `src/` or `tests/` that depends on Aspire, AWS integration, or LocalStack.Client upstream internals | `aspire-source-navigation` plus relevant .NET skill |
 | Ordinary C# changes under `src/` or `tests/` that do not depend on upstream Aspire/AWS/LocalStack internals | Relevant .NET skill only |
@@ -157,9 +151,12 @@ Required or common capabilities:
 | App-only explicit configuration, `WithEnvironment`, or service environment variable wiring | Aspire configuration capability |
 | Package/runtime fallback binding, `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint flow, or LocalStack.Client behavior | Aspire configuration capability plus `aspire-source-navigation` |
 | Playground ServiceDefaults or observability defaults | Aspire ServiceDefaults capability |
-| AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Aspire orchestration/monitoring/deployment capability when available; deployment remains approval-gated |
+| AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Aspire orchestration/monitoring/deployment capability when available, plus the Aspire MCP server for runtime resource state/logs/traces of CLI-launched AppHosts; deployment remains approval-gated |
+| Running or filtering tests | .NET test-running capability; this repo uses TUnit on Microsoft.Testing.Platform, so avoid false-green filters and confirm total tests run is greater than zero |
+| Public API shape, namespace/package identity, or compatibility-sensitive extension methods | Public API design capability plus relevant .NET skill |
+| Performance-sensitive code or benchmarks | Benchmark/performance capability; require measured data before optimization claims |
 
-Out of scope unless explicitly needed: Akka.NET, email/MJML/Mailpit, EF Core/database performance, Playwright, marketplace publishing, MSTest-specific skills, and mobile-crash symbolication.
+Out of scope unless explicitly needed: Akka.NET, email/MJML/Mailpit, EF Core/database performance, Playwright, marketplace publishing, MSTest-specific skills, and mobile-crash symbolication. Concrete harness-native IDs and local-only exceptions live in `docs/agents/README.md`.
 
 ## Semantic Code Navigation
 

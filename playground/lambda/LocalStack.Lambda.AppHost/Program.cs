@@ -5,8 +5,12 @@ using AWSCDK.AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-// Set up a configuration for the AWS .NET SDK
-var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
+// Set up a configuration for the AWS .NET SDK.
+// us-east-1 is deliberate: Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region whenever
+// AWS_ENDPOINT_URL* variables are set, so its DynamoDB Streams poller always signs for us-east-1.
+// LocalStack scopes tables and streams per region, so any other region leaves the poller unable to
+// find the stream until the tool ships a fixed SDK.
+var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.USEast1);
 
 // Bootstrap the localstack container with enhanced configuration
 var localstack = builder
@@ -40,15 +44,37 @@ var redirectorLambda = builder
         lambdaHandler: "LocalStack.Lambda.Redirector::LocalStack.Lambda.Redirector.Function::FunctionHandler")
     .WithReference(urlShortenerStack);
 
+// The API Gateway emulator stores one route per Lambda resource (its route-config environment variable is
+// keyed by resource name, so a second WithReference overwrites the first). The QR status route therefore
+// needs its own Lambda resource, backed by the same Redirector project which dispatches on the route.
+var qrStatusLambda = builder
+    .AddAWSLambdaFunction<Projects.LocalStack_Lambda_Redirector>(
+        name: "QrStatusLambda",
+        lambdaHandler: "LocalStack.Lambda.Redirector::LocalStack.Lambda.Redirector.Function::FunctionHandler")
+    .WithReference(urlShortenerStack);
+
 builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_Analyzer>(
         name: "AnalyzerLambda",
         lambdaHandler: "LocalStack.Lambda.Analyzer::LocalStack.Lambda.Analyzer.Function::FunctionHandler")
     .WithSQSEventSource(urlShortenerStack.GetOutput("AnalyticsQueueUrl"))
     .WithReference(urlShortenerStack);
 
-builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
+builder.AddAWSLambdaFunction<Projects.LocalStack_Lambda_QrCodeGenerator>(
+        name: "QrCodeGeneratorLambda",
+        lambdaHandler: "LocalStack.Lambda.QrCodeGenerator::LocalStack.Lambda.QrCodeGenerator.Function::FunctionHandler")
+    .WithDynamoDBStreamsEventSource(urlShortenerStack.GetOutput("UrlsTableName"))
+    .WithReference(urlShortenerStack);
+
+var apiGateway = builder.AddAWSAPIGatewayEmulator("APIGatewayEmulator", APIGatewayType.HttpV2)
     .WithReference(urlShortenerLambda, Method.Post, "/shorten")
-    .WithReference(redirectorLambda, Method.Get, "/{slug}");
+    .WithReference(redirectorLambda, Method.Get, "/{slug}")
+    .WithReference(qrStatusLambda, Method.Get, "/{slug}/qr");
+
+builder.AddProject<Projects.LocalStack_Lambda_Frontend>("Frontend")
+    .WithReference(urlShortenerStack)
+    .WithEnvironment("ApiGateway__BaseUrl", apiGateway.GetEndpoint("http"))
+    .WithExternalHttpEndpoints()
+    .WaitFor(apiGateway);
 
 // Autoconfigures the LocalStack for both AWS Cloudformation and CDK resources adds LocalStack reference to all resources that uses AWS references
 builder.UseLocalStack(localstack);

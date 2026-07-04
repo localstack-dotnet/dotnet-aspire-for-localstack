@@ -3,25 +3,10 @@
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <AWSProjectType>Lambda</AWSProjectType>
-    <!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <!-- Generate ready to run images during publishing to improve cold start time. -->
     <PublishReadyToRun>true</PublishReadyToRun>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" />
-    <PackageReference Include="AWSSDK.S3" />
-    <PackageReference Include="AWSSDK.SQS" />
-    <PackageReference Include="Amazon.Lambda.Core" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
-
-    <PackageReference Include="LocalStack.Client" />
-    <PackageReference Include="LocalStack.Client.Extensions" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj" />
@@ -39,5 +24,19 @@
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
       <DependentUpon>appsettings.json</DependentUpon>
     </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Amazon.Lambda.Core" />
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" />
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
+    <PackageReference Include="AWSSDK.Core" />
+    <PackageReference Include="AWSSDK.DynamoDBv2" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="LocalStack.Client" />
+    <PackageReference Include="LocalStack.Client.Extensions" />
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
   </ItemGroup>
 </Project>

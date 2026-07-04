@@ -1,7 +1,7 @@
-﻿using SkiaSharp;
+using SkiaSharp;
 using Net.Codecrete.QrCodeGenerator;
 
-namespace LocalStack.Lambda.UrlShortener;
+namespace LocalStack.Lambda.QrCodeGenerator;
 
 public static class QrCodeBitmapExtensions
 {
