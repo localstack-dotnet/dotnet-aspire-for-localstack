@@ -439,3 +439,5 @@ playground/lambda/LocalStack.Lambda.AppHost/aspire.config.json
 .opencode/package.json
 .opencode/skill/
 .opencode/skills/subagent-model-routing/
+
+.playwright-mcp
