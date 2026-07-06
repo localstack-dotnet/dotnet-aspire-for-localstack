@@ -422,11 +422,19 @@ tmp/
 
 .fake
 
+# Local AI harness configuration and generated tooling
+.agents/
 .mcp.active
 .mcp.claude.json
 .mcp.copilot-cli.json
 .mcp.json
 opencode.jsonc
 
+.opencode/.gitignore
 .opencode/agents/
+.opencode/bun.lock
+.opencode/node_modules/
+.opencode/package-lock.json
+.opencode/package.json
+.opencode/skill/
 .opencode/skills/subagent-model-routing/
