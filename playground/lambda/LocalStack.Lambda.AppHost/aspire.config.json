@@ -1,5 +1,0 @@
-{
-  "appHost": {
-    "path": "playground/lambda/LocalStack.Lambda.AppHost/LocalStack.Lambda.AppHost.csproj"
-  }
-}
