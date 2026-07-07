@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AWSSDK.Core" />
     <PackageReference Include="AWSSDK.DynamoDBv2" />
     <PackageReference Include="AWSSDK.S3" />

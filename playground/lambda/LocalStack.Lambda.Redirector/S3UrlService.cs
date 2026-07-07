@@ -1,9 +1,6 @@
-using System.Runtime.CompilerServices;
 using Amazon.S3;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Options;
-
-[assembly: InternalsVisibleTo("Aspire.Hosting.LocalStack.Unit.Tests")]
 
 namespace LocalStack.Lambda.Redirector;
 
