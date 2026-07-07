@@ -1,32 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
-    <OutputType>Exe</OutputType>
-    <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
-    <IsAspireHost>false</IsAspireHost>
-    <IsTestProject>true</IsTestProject>
-    <NoWarn>$(NoWarn);CA2007;CA1515;CA5399</NoWarn>
-    <NoError>$(NoError);CA2007;CA1515;CA5399</NoError>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
+        <OutputType>Exe</OutputType>
+        <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+        <IsAspireHost>false</IsAspireHost>
+        <IsTestProject>true</IsTestProject>
+        <NoWarn>$(NoWarn);CA2007;CA1515;CA5399</NoWarn>
+        <NoError>$(NoError);CA2007;CA1515;CA5399</NoError>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost"/>
-    <PackageReference Include="AWSSDK.Core"/>
-    <PackageReference Include="AWSSDK.DynamoDBv2"/>
-    <PackageReference Include="AWSSDK.SQS"/>
-    <PackageReference Include="AWSSDK.S3"/>
-    <PackageReference Include="AWSSDK.SimpleNotificationService"/>
+    <ItemGroup>
+        <PackageReference Include="Aspire.Hosting.AppHost"/>
+        <PackageReference Include="AWSSDK.Core"/>
+        <PackageReference Include="AWSSDK.DynamoDBv2"/>
+        <PackageReference Include="AWSSDK.SQS"/>
+        <PackageReference Include="AWSSDK.S3"/>
+        <PackageReference Include="AWSSDK.SimpleNotificationService"/>
 
-    <PackageReference Include="LocalStack.Client"/>
-  </ItemGroup>
+        <PackageReference Include="LocalStack.Client"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.AppHost\LocalStack.Lambda.AppHost.csproj"/>
-    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj"/>
-    <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
-    <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
-  </ItemGroup>
-
-
+    <ItemGroup>
+        <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.AppHost\LocalStack.Lambda.AppHost.csproj"/>
+        <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.CDK.AppHost\LocalStack.Provisioning.CDK.AppHost.csproj"/>
+        <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
+        <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
+    </ItemGroup>
+  
 </Project>

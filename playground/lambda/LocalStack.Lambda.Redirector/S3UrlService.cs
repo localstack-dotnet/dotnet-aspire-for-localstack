@@ -4,6 +4,11 @@ using Microsoft.Extensions.Options;
 
 namespace LocalStack.Lambda.Redirector;
 
+internal interface IS3UrlService
+{
+    public Task<Uri> GetS3UrlAsync(IAmazonS3 amazonS3, string bucket, string key);
+}
+
 internal sealed class S3UrlService : IS3UrlService
 {
     private readonly LocalStackOptions _localStackOptions;
@@ -13,7 +18,7 @@ internal sealed class S3UrlService : IS3UrlService
         _localStackOptions = localStackOptions.Value;
     }
 
-    public async Task<Uri> GetS3Url(IAmazonS3 amazonS3, string bucket, string key)
+    public async Task<Uri> GetS3UrlAsync(IAmazonS3 amazonS3, string bucket, string key)
     {
         if (_localStackOptions.UseLocalStack)
         {
@@ -30,9 +35,4 @@ internal sealed class S3UrlService : IS3UrlService
         var url = await amazonS3.GetPreSignedURLAsync(request).ConfigureAwait(false);
         return new Uri(url);
     }
-}
-
-internal interface IS3UrlService
-{
-    public Task<Uri> GetS3Url(IAmazonS3 amazonS3, string bucket, string key);
 }

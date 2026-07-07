@@ -25,7 +25,6 @@ public class DynamoDbLocalFailFastTests
 
         await using var app = await builder.BuildAsync(cts.Token);
 
-        await Assert.That(async () => await app.StartAsync(cts.Token))
-            .ThrowsExactly<DistributedApplicationException>();
+        await Assert.That(async () => await app.StartAsync(cts.Token)).ThrowsExactly<DistributedApplicationException>();
     }
 }

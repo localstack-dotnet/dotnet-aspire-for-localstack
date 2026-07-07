@@ -20,7 +20,7 @@ public class S3UrlServiceTests
         var service = new S3UrlService(options);
 
         // Act
-        var result = await service.GetS3Url(s3Client, "test-bucket", "test-key");
+        var result = await service.GetS3UrlAsync(s3Client, "test-bucket", "test-key");
 
         // Assert
         await Assert.That(result.ToString()).Contains("test-bucket/test-key");
@@ -40,7 +40,7 @@ public class S3UrlServiceTests
         var service = new S3UrlService(options);
 
         // Act
-        var result = await service.GetS3Url(s3Client, "test-bucket", "test-key");
+        var result = await service.GetS3UrlAsync(s3Client, "test-bucket", "test-key");
 
         // Assert
         await Assert.That(result.ToString()).IsEqualTo("https://test-bucket.s3.amazonaws.com/test-key?signature=abc123");

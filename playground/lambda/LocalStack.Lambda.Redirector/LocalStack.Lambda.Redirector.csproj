@@ -11,24 +11,24 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests" />
+    <InternalsVisibleTo Include="Aspire.Hosting.LocalStack.Unit.Tests"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.Core" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" />
-    <PackageReference Include="AWSSDK.S3" />
-    <PackageReference Include="AWSSDK.SQS" />
-    <PackageReference Include="Amazon.Lambda.Core" />
-    <PackageReference Include="Amazon.Lambda.APIGatewayEvents" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
+    <PackageReference Include="AWSSDK.Core"/>
+    <PackageReference Include="AWSSDK.DynamoDBv2"/>
+    <PackageReference Include="AWSSDK.S3"/>
+    <PackageReference Include="AWSSDK.SQS"/>
+    <PackageReference Include="Amazon.Lambda.Core"/>
+    <PackageReference Include="Amazon.Lambda.APIGatewayEvents"/>
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson"/>
 
-    <PackageReference Include="LocalStack.Client" />
-    <PackageReference Include="LocalStack.Client.Extensions" />
+    <PackageReference Include="LocalStack.Client"/>
+    <PackageReference Include="LocalStack.Client.Extensions"/>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
