@@ -11,7 +11,7 @@ This guide covers configuration options for customizing LocalStack container beh
 | `Port` | `int?` | `null` | Static port mapping for LocalStack container |
 | `ContainerRegistry` | `string?` | `null` (`docker.io`) | Custom container registry |
 | `ContainerImage` | `string?` | `null` (`localstack/localstack`) | Custom container image name |
-| `ContainerImageTag` | `string?` | `null` (`4.12.0`) | Custom container image tag/version |
+| `ContainerImageTag` | `string?` | `null` (current LocalStack tag) | Custom container image tag/version |
 | `EnableDockerSocket` | `bool` | `false` | Mount Docker socket for Lambda support |
 | `DebugLevel` | `int` | `0` | LocalStack DEBUG flag (0 or 1) |
 | `LogLevel` | `LocalStackLogLevel` | `Error` | LocalStack LS_LOG level |
@@ -185,7 +185,7 @@ builder.AddLocalStack(configureContainer: container =>
 {
     container.ContainerRegistry = "artifactory.company.com";  // Where to pull from
     container.ContainerImage = "docker-mirrors/localstack/localstack";  // Image path
-    container.ContainerImageTag = "4.12.0";  // Specific version
+    container.ContainerImageTag = "4.x.x";  // Pin to a specific LocalStack version
 });
 ```
 
@@ -193,7 +193,7 @@ builder.AddLocalStack(configureContainer: container =>
 
 - `ContainerRegistry`: `docker.io` (Docker Hub)
 - `ContainerImage`: `localstack/localstack`
-- `ContainerImageTag`: `4.12.0`
+- `ContainerImageTag`: the LocalStack tag this package currently pins (check `Directory.Packages.props` or the runtime default)
 
 ### Common Scenarios
 
@@ -202,8 +202,8 @@ builder.AddLocalStack(configureContainer: container =>
 ```csharp
 container.ContainerRegistry = "artifactory.company.com";
 container.ContainerImage = "docker-local/localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: artifactory.company.com/docker-local/localstack/localstack:4.12.0
+container.ContainerImageTag = "4.x.x";
+// Pulls: artifactory.company.com/docker-local/localstack/localstack:4.x.x
 ```
 
 #### Azure Container Registry (ACR)
@@ -211,8 +211,8 @@ container.ContainerImageTag = "4.12.0";
 ```csharp
 container.ContainerRegistry = "mycompany.azurecr.io";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: mycompany.azurecr.io/localstack/localstack:4.12.0
+container.ContainerImageTag = "4.x.x";
+// Pulls: mycompany.azurecr.io/localstack/localstack:4.x.x
 ```
 
 #### AWS Elastic Container Registry (ECR)
@@ -220,8 +220,8 @@ container.ContainerImageTag = "4.12.0";
 ```csharp
 container.ContainerRegistry = "123456789012.dkr.ecr.us-west-2.amazonaws.com";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:4.12.0
+container.ContainerImageTag = "4.x.x";
+// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:4.x.x
 ```
 
 #### GitHub Container Registry (GHCR)
@@ -271,7 +271,7 @@ builder.AddLocalStack(configureContainer: container =>
 {
     container.ContainerRegistry = "docker.io";
     container.ContainerImage = "localstack/localstack";
-    container.ContainerImageTag = "4.12.0"; // Current default tag
+    container.ContainerImageTag = "4.x.x"; // Pin to a specific LocalStack version
 });
 ```
 
@@ -399,7 +399,7 @@ builder.AddLocalStack(configureContainer: container =>
     // Pull from private Artifactory
     container.ContainerRegistry = "artifactory.company.com";
     container.ContainerImage = "docker-local/localstack/localstack";
-    container.ContainerImageTag = "4.12.0";
+    container.ContainerImageTag = "4.x.x";
 
     container.Lifetime = ContainerLifetime.Persistent;
     container.LogLevel = LocalStackLogLevel.Warn;

@@ -1,6 +1,9 @@
+using System.Runtime.CompilerServices;
 using Amazon.S3;
 using LocalStack.Client.Options;
 using Microsoft.Extensions.Options;
+
+[assembly: InternalsVisibleTo("Aspire.Hosting.LocalStack.Unit.Tests")]
 
 namespace LocalStack.Lambda.Redirector;
 
@@ -13,26 +16,26 @@ internal sealed class S3UrlService : IS3UrlService
         _localStackOptions = localStackOptions.Value;
     }
 
-    string IS3UrlService.GetS3Url(IAmazonS3 amazonS3, string bucket, string key)
+    public async Task<Uri> GetS3Url(IAmazonS3 amazonS3, string bucket, string key)
     {
         if (_localStackOptions.UseLocalStack)
         {
-            return $"http://{_localStackOptions.Config.LocalStackHost}:{_localStackOptions.Config.EdgePort}/{bucket}/{key}";
+            return new Uri($"http://{_localStackOptions.Config.LocalStackHost}:{_localStackOptions.Config.EdgePort}/{bucket}/{key}");
         }
 
-        var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION") ?? Environment.GetEnvironmentVariable("AWS_DEFAULT_REGION");
-
-        if (string.IsNullOrWhiteSpace(awsRegion))
+        var request = new Amazon.S3.Model.GetPreSignedUrlRequest
         {
-            var amazonS3Config = (AmazonS3Config)amazonS3.Config;
-            awsRegion = amazonS3Config.RegionEndpoint.SystemName ?? "us-east-1";
-        }
+            BucketName = bucket,
+            Key = key,
+            Expires = DateTime.UtcNow.AddHours(1)
+        };
 
-        return $"https://{bucket}.s3.{awsRegion}.amazonaws.com/{key}";
+        var url = await amazonS3.GetPreSignedURLAsync(request).ConfigureAwait(false);
+        return new Uri(url);
     }
 }
 
 internal interface IS3UrlService
 {
-    public string GetS3Url(IAmazonS3 amazonS3, string bucket, string key);
+    public Task<Uri> GetS3Url(IAmazonS3 amazonS3, string bucket, string key);
 }

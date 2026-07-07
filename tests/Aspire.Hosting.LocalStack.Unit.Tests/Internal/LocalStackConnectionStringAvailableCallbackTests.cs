@@ -105,7 +105,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
         var builder = DistributedApplication.CreateBuilder([]);
         var localStackAnnotations = new ResourceAnnotationCollection();
         var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true, regionName: "eu-central-1");
-        var helperResource = CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper");
+        var helperResource = TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper");
 
         helperResource.Annotations.Add(new LocalStackEnabledAnnotation(Substitute.For<ILocalStackResource>()));
 
@@ -131,19 +131,5 @@ public class LocalStackConnectionStringAvailableCallbackTests
         await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB"]).IsEqualTo("http://localhost:4566/");
         await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://localhost:4566/");
         await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
-    }
-
-    private static ExecutableResource CreateExecutableResourceByTypeName(string typeName, string name)
-    {
-        // Assembly.Load fallback mirrors ConstantsTests: type discovery must not depend on whether
-        // another test already forced Aspire.Hosting.AWS into the AppDomain.
-        var type = AppDomain.CurrentDomain.GetAssemblies()
-                       .Select(assembly => assembly.GetType(typeName, throwOnError: false))
-                       .FirstOrDefault(type => type is not null)
-                   ?? System.Reflection.Assembly.Load("Aspire.Hosting.AWS").GetType(typeName, throwOnError: false)
-                   ?? throw new InvalidOperationException($"Type '{typeName}' was not found in the current assembly context.");
-
-        return (ExecutableResource)(Activator.CreateInstance(type, name)
-                                    ?? throw new InvalidOperationException($"Type '{typeName}' could not be created."));
     }
 }

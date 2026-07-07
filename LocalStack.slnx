@@ -1,0 +1,28 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+  </Configurations>
+  <Folder Name="/playground/">
+    <Project Path="playground/LocalStack.Playground.ServiceDefaults/LocalStack.Playground.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/playground/lambda/">
+    <Project Path="playground/lambda/LocalStack.Lambda.Analyzer/LocalStack.Lambda.Analyzer.csproj" />
+    <Project Path="playground/lambda/LocalStack.Lambda.AppHost/LocalStack.Lambda.AppHost.csproj" />
+    <Project Path="playground/lambda/LocalStack.Lambda.Frontend/LocalStack.Lambda.Frontend.csproj" />
+    <Project Path="playground/lambda/LocalStack.Lambda.QrCodeGenerator/LocalStack.Lambda.QrCodeGenerator.csproj" />
+    <Project Path="playground/lambda/LocalStack.Lambda.Redirector/LocalStack.Lambda.Redirector.csproj" />
+    <Project Path="playground/lambda/LocalStack.Lambda.UrlShortener/LocalStack.Lambda.UrlShortener.csproj" />
+  </Folder>
+  <Folder Name="/playground/provisioning/">
+    <Project Path="playground/provisioning/LocalStack.Provisioning.CDK.AppHost/LocalStack.Provisioning.CDK.AppHost.csproj" />
+    <Project Path="playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/LocalStack.Provisioning.CloudFormation.AppHost.csproj" />
+    <Project Path="playground/provisioning/LocalStack.Provisioning.Frontend/LocalStack.Provisioning.Frontend.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj" />
+    <Project Path="tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj" />
+  </Folder>
+</Solution>
