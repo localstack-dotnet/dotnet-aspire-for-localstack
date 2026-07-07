@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Aspire_QrCodeGeneratorLambda": {
+      "commandName": "Executable",
+      "executablePath": "dotnet",
+      "commandLineArgs": "exec --depsfile ./LocalStack.Lambda.QrCodeGenerator.deps.json --runtimeconfig ./LocalStack.Lambda.QrCodeGenerator.runtimeconfig.json $(HOME)/.dotnet/tools/.store/amazon.lambda.testtool/0.14.1/amazon.lambda.testtool/0.14.1/content/Amazon.Lambda.RuntimeSupport/net10.0/Amazon.Lambda.RuntimeSupport.TestTool.dll LocalStack.Lambda.QrCodeGenerator::LocalStack.Lambda.QrCodeGenerator.Function::FunctionHandler",
+      "workingDirectory": "bin/Debug/net10.0/"
+    }
+  }
+}

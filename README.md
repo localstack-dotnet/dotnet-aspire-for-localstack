@@ -120,7 +120,7 @@ builder.AddLocalStack(configureContainer: container =>
 - **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
 - **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
 - **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
-- **`ContainerImageTag`** - Custom image tag/version (default: `4.12.0`). Use to pin to a specific LocalStack version
+- **`ContainerImageTag`** - Custom image tag/version (default: the current LocalStack tag). Use to pin to a specific LocalStack version
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).

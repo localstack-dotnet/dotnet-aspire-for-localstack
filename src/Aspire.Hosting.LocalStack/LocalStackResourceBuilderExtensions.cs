@@ -334,8 +334,6 @@ public static class LocalStackResourceBuilderExtensions
         }
     }
 
-    private sealed class DynamoDbLocalGuardAnnotation : IResourceAnnotation;
-
     private static void ConfigureHealthCheck(
         this IResourceBuilder<LocalStackResource> resourceBuilder,
         IDistributedApplicationBuilder builder,

@@ -434,7 +434,6 @@ tmp/
 .mcp.copilot-cli.json
 .mcp.json
 opencode.jsonc
-playground/lambda/LocalStack.Lambda.AppHost/aspire.config.json
 
 .opencode/.gitignore
 .opencode/agents/

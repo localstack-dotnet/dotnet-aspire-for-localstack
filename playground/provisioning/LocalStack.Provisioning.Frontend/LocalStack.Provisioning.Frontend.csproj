@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj"/>
   </ItemGroup>
 
 </Project>

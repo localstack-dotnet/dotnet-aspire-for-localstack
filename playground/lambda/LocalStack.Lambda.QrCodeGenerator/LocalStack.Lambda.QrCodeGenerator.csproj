@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
@@ -27,16 +27,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Amazon.Lambda.Core" />
-    <PackageReference Include="Amazon.Lambda.DynamoDBEvents" />
-    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" />
-    <PackageReference Include="AWSSDK.Core" />
-    <PackageReference Include="AWSSDK.DynamoDBv2" />
-    <PackageReference Include="AWSSDK.S3" />
-    <PackageReference Include="LocalStack.Client" />
-    <PackageReference Include="LocalStack.Client.Extensions" />
-    <PackageReference Include="Net.Codecrete.QrCodeGenerator" />
-    <PackageReference Include="SkiaSharp" />
-    <PackageReference Include="SkiaSharp.NativeAssets.Linux" />
+    <PackageReference Include="Amazon.Lambda.Core"/>
+    <PackageReference Include="Amazon.Lambda.DynamoDBEvents"/>
+    <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson"/>
+    <PackageReference Include="AWSSDK.Core"/>
+    <PackageReference Include="AWSSDK.DynamoDBv2"/>
+    <PackageReference Include="AWSSDK.S3"/>
+    <PackageReference Include="LocalStack.Client"/>
+    <PackageReference Include="LocalStack.Client.Extensions"/>
+    <PackageReference Include="Net.Codecrete.QrCodeGenerator"/>
+    <PackageReference Include="SkiaSharp"/>
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux"/>
   </ItemGroup>
 </Project>

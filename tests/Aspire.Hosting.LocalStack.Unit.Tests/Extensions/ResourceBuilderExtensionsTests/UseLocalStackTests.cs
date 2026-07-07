@@ -193,7 +193,7 @@ public class UseLocalStackTests
         {
             var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
             var localStack = builder.AddLocalStack(localStackOptions: options);
-            builder.AddResource(CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper"));
+            builder.AddResource(TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper"));
 
             builder.UseLocalStack(localStack);
         });
@@ -235,19 +235,5 @@ public class UseLocalStackTests
         var model = app.Services.GetRequiredService<DistributedApplicationModel>();
 
         await Assert.That(async () => await eventing.PublishAsync(new BeforeStartEvent(app.Services, model))).ThrowsExactly<DistributedApplicationException>();
-    }
-
-    private static ExecutableResource CreateExecutableResourceByTypeName(string typeName, string name)
-    {
-        // Assembly.Load fallback mirrors ConstantsTests: type discovery must not depend on whether
-        // another test already forced Aspire.Hosting.AWS into the AppDomain.
-        var type = AppDomain.CurrentDomain.GetAssemblies()
-                       .Select(assembly => assembly.GetType(typeName, throwOnError: false))
-                       .FirstOrDefault(type => type is not null)
-                   ?? System.Reflection.Assembly.Load("Aspire.Hosting.AWS").GetType(typeName, throwOnError: false)
-                   ?? throw new InvalidOperationException($"Type '{typeName}' was not found in the current assembly context.");
-
-        return (ExecutableResource)(Activator.CreateInstance(type, name)
-                                    ?? throw new InvalidOperationException($"Type '{typeName}' could not be created."));
     }
 }

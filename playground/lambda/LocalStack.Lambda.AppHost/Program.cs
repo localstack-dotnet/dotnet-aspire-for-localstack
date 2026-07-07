@@ -44,9 +44,6 @@ var redirectorLambda = builder
         lambdaHandler: "LocalStack.Lambda.Redirector::LocalStack.Lambda.Redirector.Function::FunctionHandler")
     .WithReference(urlShortenerStack);
 
-// The API Gateway emulator stores one route per Lambda resource (its route-config environment variable is
-// keyed by resource name, so a second WithReference overwrites the first). The QR status route therefore
-// needs its own Lambda resource, backed by the same Redirector project which dispatches on the route.
 var qrStatusLambda = builder
     .AddAWSLambdaFunction<Projects.LocalStack_Lambda_Redirector>(
         name: "QrStatusLambda",

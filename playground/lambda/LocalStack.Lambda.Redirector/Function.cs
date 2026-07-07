@@ -150,7 +150,8 @@ public class Function
             };
         }
 
-        var qrUrl = _s3UrlService.GetS3Url(_amazonS3, _qrBucketName, item["QrObjectKey"].S);
+        var qrUri = await _s3UrlService.GetS3UrlAsync(_amazonS3, _qrBucketName, item["QrObjectKey"].S).ConfigureAwait(false);
+        var qrUrl = qrUri.AbsoluteUri;
 
         context.Logger.LogInformation($"Redirecting to QR code for slug: {sanitizedSlug}");
 

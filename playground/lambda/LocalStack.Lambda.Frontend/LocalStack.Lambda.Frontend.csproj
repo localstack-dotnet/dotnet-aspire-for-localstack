@@ -5,12 +5,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\LocalStack.Playground.ServiceDefaults\LocalStack.Playground.ServiceDefaults.csproj"/>
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AWSSDK.DynamoDBv2" />
-    <PackageReference Include="LocalStack.Client" />
-    <PackageReference Include="LocalStack.Client.Extensions" />
+    <PackageReference Include="AWSSDK.DynamoDBv2"/>
+    <PackageReference Include="LocalStack.Client"/>
+    <PackageReference Include="LocalStack.Client.Extensions"/>
   </ItemGroup>
 </Project>
