@@ -27,5 +27,5 @@
         <ProjectReference Include="..\..\playground\provisioning\LocalStack.Provisioning.Frontend\LocalStack.Provisioning.Frontend.csproj"/>
         <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
     </ItemGroup>
-  
+
 </Project>
