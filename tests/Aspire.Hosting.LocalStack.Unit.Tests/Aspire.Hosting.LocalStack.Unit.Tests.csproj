@@ -13,8 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
-    <ProjectReference Include="..\..\playground\lambda\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj"
-                      Condition="'$(TargetFramework)' == 'net10.0'"/>
   </ItemGroup>
 
 </Project>
