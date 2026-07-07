@@ -422,8 +422,13 @@ tmp/
 
 .fake
 
-# Local AI harness configuration and generated tooling
-.agents/
+# Local AI harness configuration and generated tooling.
+# Everything under .agents/ is ignored EXCEPT the tracked repo skill aspire-source-navigation.
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/aspire-source-navigation/
+!.agents/skills/aspire-source-navigation/**
 .mcp.active
 .mcp.claude.json
 .mcp.copilot-cli.json
@@ -439,5 +444,10 @@ playground/lambda/LocalStack.Lambda.AppHost/aspire.config.json
 .opencode/package.json
 .opencode/skill/
 .opencode/skills/subagent-model-routing/
+
+.claude
+!.claude/skills/aspire-source-navigation
+
+.skills-lock.json
 
 .playwright-mcp

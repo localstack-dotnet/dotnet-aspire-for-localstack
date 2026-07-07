@@ -83,12 +83,12 @@ End with: "Talk to Deniz before committing to which one." Default to working on 
 
 A numbered read order. Adjust per scope, but the canonical core stays:
 
-1. `AGENTS.md` — canonical repository contract: communication style, approval gate, skills index, Aspire routing (`CLAUDE.md` and `.github/copilot-instructions.md` are relay-only).
+1. `AGENTS.md` — canonical repository contract: communication style, approval gate, skills index, Aspire routing (`CLAUDE.md` is relay-only).
 2. `README.md` + `docs/CONFIGURATION.md` — product behavior and configuration surface.
 3. `docs/ROADMAP.md` — phased backlog, **Status & Plan Mapping table** (the progress tracker), todo triage, and the **Inbox / Untriaged** capture spot.
 4. `docs/plans/{{active-workstream-plan}}` — the live plan for the workstream in flight.
 5. `docs/agents/README.md` (agent harness guide) + `docs/agents/KNOWN_ISSUES.md` (triage hints).
-6. `docs/agents/skills/aspire-source-navigation.md` — canonical skill body; **invoke the `aspire-source-navigation` skill** before any Aspire/AWS/LocalStack compatibility-sensitive work.
+6. `.agents/skills/aspire-source-navigation/SKILL.md` — canonical skill body; **invoke the `aspire-source-navigation` skill** before any Aspire/AWS/LocalStack compatibility-sensitive work.
 7. The relevant `src/` / `tests/` files for the scope.
 8. `external/{aspire,aws-integrations,localstack-dotnet-client}/{ref}/` — local upstream checkouts for source-level compatibility (gitignored; see local-only state).
 
@@ -103,7 +103,7 @@ Curated invariants list. Most carry over verbatim from session to session. This 
 - Package versions live in `Directory.Packages.props` (Central Package Management) — **never hand-edit versions into individual `.csproj` files**.
 - Strict analyzers + warnings-as-errors are on. Run `slopwatch analyze --fail-on warning ...` after LLM-authored code/test changes when available.
 - Compatibility work: resolve versions from `Directory.Packages.props`, then cross-check against the `external/` checkouts — **do not use upstream default branches**. `external/` is local-only/gitignored; never commit upstream clones.
-- `AGENTS.md` is canonical; `CLAUDE.md` and `.github/copilot-instructions.md` stay relay-only; the skill's canonical body lives in `docs/agents/skills/`, native `SKILL.md` files are thin relays.
+- `AGENTS.md` is canonical; `CLAUDE.md` stays relay-only; the skill's canonical body lives in `.agents/skills/aspire-source-navigation/SKILL.md`, with a thin Claude relay under `.claude/skills/`.
 - **Roadmap release philosophy:** everything ships in **one release**, maximally backward-compatible; prefer `[Obsolete]` (remove next release) over breaking changes. The AppHost-decoupling workstream is AppHost-internal only — consumers keep receiving `LocalStack__*` env vars (LocalStack.Client.Extensions support is non-negotiable) **and** gain native `AWS_ENDPOINT_URL_<SERVICE>`.
 - Skill instructions are kept general-purpose; concrete version→ref values live in agent memory / `docs/ROADMAP.md`, not hardcoded into skills.
 

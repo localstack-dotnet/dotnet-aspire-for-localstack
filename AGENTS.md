@@ -106,7 +106,7 @@ Repository layout:
 
 ## Aspire Source Compatibility
 
-Source compatibility with upstream Aspire, `Aspire.Hosting.AWS`, and LocalStack.Client is core project behavior. For compatibility-sensitive work, use `aspire-source-navigation` before acting; do not over-invoke it for ordinary C#, docs, or playground work. The skill (`docs/agents/skills/aspire-source-navigation.md`) carries the full procedure — version resolution from `Directory.Packages.props`, `external/` upstream checkouts, and ref verification (never default branches).
+Source compatibility with upstream Aspire, `Aspire.Hosting.AWS`, and LocalStack.Client is core project behavior. For compatibility-sensitive work, use `aspire-source-navigation` before acting; do not over-invoke it for ordinary C#, docs, or playground work. The skill (`.agents/skills/aspire-source-navigation/SKILL.md`) carries the full procedure — version resolution from `Directory.Packages.props`, `external/` upstream checkouts, and ref verification (never default branches).
 
 ## Capability Routing
 
