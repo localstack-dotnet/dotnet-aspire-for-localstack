@@ -106,57 +106,23 @@ Repository layout:
 
 ## Aspire Source Compatibility
 
-Use `aspire-source-navigation` before changing or reviewing work that depends on Aspire hosting internals, `Aspire.Hosting.AWS`, LocalStack.Client behavior, package version alignment, source-level API shape, `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint/configuration flow, manifest behavior, CloudFormation/CDK, Lambda, or AWS SDK wiring.
-
-For read-only explanation questions, inspect this repository's docs/code first. Invoke `aspire-source-navigation` only when the answer depends on upstream internals, version-specific API shape, or a compatibility conclusion.
-
-Do not invoke it for ordinary Markdown edits, general C# cleanup, or playground-only work that does not depend on Aspire/AWS/LocalStack internals.
-
-The skill must resolve package versions from `Directory.Packages.props`, then cross-check those versions against local upstream checkouts under `external/`. Do not silently use upstream default branches for compatibility-sensitive checks.
-
-Preferred local checkout layout:
-
-```text
-external/aspire/{ref}/
-external/aws-integrations/{ref}/
-external/localstack-dotnet-client/{ref}/
-```
-
-The `external/` tree is local-only and ignored by git. GitHub MCP is allowed for tag/ref discovery, release verification, or fallback reads when local source is unavailable; it is not the default source-reading path.
+Source compatibility with upstream Aspire, `Aspire.Hosting.AWS`, and LocalStack.Client is core project behavior. For compatibility-sensitive work, use `aspire-source-navigation` before acting; do not over-invoke it for ordinary C#, docs, or playground work. The skill (`docs/agents/skills/aspire-source-navigation.md`) carries the full procedure — version resolution from `Directory.Packages.props`, `external/` upstream checkouts, and ref verification (never default branches).
 
 ## Capability Routing
 
 Use capabilities, not memorized harness names. Resolve the harness-native invocation from `docs/agents/README.md` before invoking a skill or specialist agent.
 
-If a bootstrap or process skill is already injected by the harness, follow it immediately; use `docs/agents/README.md` to map additional capabilities, not to delay the active process workflow.
+If a bootstrap or process skill is injected by the harness, treat it as available tooling, not repository policy. This file, the approval gate, the First Decision Flow, and Deniz's current request take precedence. Do not auto-start heavyweight process workflows — full brainstorming, multi-step planning, TDD branch loops, or subagent orchestration — unless Deniz explicitly requests them (slash command, direct skill request, or phrases such as "full workflow" / "big work mode"). Lightweight process discipline — diagnosis, review, verification — applies as the First Decision Flow directs. Use `docs/agents/README.md` to map capabilities.
 
 Capability tiers:
 
-- **Tier 0**: process discipline; follow when injected by the harness.
+- **Tier 0**: process discipline — lightweight discipline (diagnosis, review, verification) applies broadly per the First Decision Flow; heavyweight orchestration (brainstorming, planning, TDD branch loops, subagent execution) runs only on explicit request.
 - **Tier 1**: required when triggered for this repo's Aspire/LocalStack package work and available in the harness.
 - **Tier 2**: optional by judgment; use when it materially improves correctness, safety, test quality, or diagnostics.
 - **Tier 3**: local-only convenience; use when present, never assume fresh checkouts have it.
 - **Out of scope**: do not use unless this repo adds that technology or Deniz explicitly asks.
 
-The full capability-to-harness mapping and curated skill roster live in `docs/agents/README.md`. Availability is not activation: except for a harness-injected process bootstrap, skills do not run automatically. Invoke the mapped capability when its trigger applies, and do not invent an ID.
-
-### Critical Aspire Routing
-
-| Trigger | Preferred capability |
-| --- | --- |
-| Compatibility-sensitive package work under `src/` or `tests/` that depends on Aspire, AWS integration, or LocalStack.Client upstream internals | `aspire-source-navigation` plus relevant .NET skill |
-| Ordinary C# changes under `src/` or `tests/` that do not depend on upstream Aspire/AWS/LocalStack internals | Relevant .NET skill only |
-| Integration tests under `tests/` | Aspire integration-testing capability; add `aspire-source-navigation` only for source compatibility or upstream API-shape questions |
-| Package version compatibility in `Directory.Packages.props` | `aspire-source-navigation` plus package-management capability |
-| App-only explicit configuration, `WithEnvironment`, or service environment variable wiring | Aspire configuration capability |
-| Package/runtime fallback binding, `AddLocalStack`, `UseLocalStack`, `.WithReference(localstack)`, endpoint flow, or LocalStack.Client behavior | Aspire configuration capability plus `aspire-source-navigation` |
-| Playground ServiceDefaults or observability defaults | Aspire ServiceDefaults capability |
-| AppHost start/stop/wait/logs/dashboard/deployment workflows | Official Aspire orchestration/monitoring/deployment capability when available, plus the Aspire MCP server for runtime resource state/logs/traces of CLI-launched AppHosts; deployment remains approval-gated |
-| Running or filtering tests | .NET test-running capability; this repo uses TUnit on Microsoft.Testing.Platform, so avoid false-green filters and confirm total tests run is greater than zero |
-| Public API shape, namespace/package identity, or compatibility-sensitive extension methods | Public API design capability plus relevant .NET skill |
-| Performance-sensitive code or benchmarks | Benchmark/performance capability; require measured data before optimization claims |
-
-Out of scope unless explicitly needed: Akka.NET, email/MJML/Mailpit, EF Core/database performance, Playwright, marketplace publishing, MSTest-specific skills, and mobile-crash symbolication. Concrete harness-native IDs and local-only exceptions live in `docs/agents/README.md`.
+The full capability-to-harness mapping, task-to-capability routing, out-of-scope list, and curated skill roster live in `docs/agents/README.md`. Availability is not activation: skills and process bootstraps do not grant automatic process authority. Invoke a mapped capability when its trigger applies; invoke heavyweight process workflows only when Deniz explicitly requests them. Do not invent an ID.
 
 ## Semantic Code Navigation
 

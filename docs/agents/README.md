@@ -40,7 +40,7 @@ Do not create `.vscode` skill folders. That is not a canonical Agent Skills loca
 
 Tier meanings:
 
-- **Tier 0** — bootstrap/process discipline; follow when injected by the harness.
+- **Tier 0** — process discipline. Lightweight discipline (diagnosis, review, verification) applies broadly per the First Decision Flow; heavyweight orchestration (brainstorming, multi-step planning, TDD branch loops, subagent execution) runs only when Deniz explicitly requests it. Process skills are tooling, not policy.
 - **Tier 1** — required when triggered for this repo's Aspire/LocalStack package work; invoke before acting when installed or shipped.
 - **Tier 2** — optional by judgment; use when it materially improves correctness, safety, test quality, or diagnostics.
 - **Tier 3** — local-only convenience; use when present, never assume fresh checkouts have it.
@@ -52,13 +52,41 @@ Claude Code uses plugin-qualified names. Copilot CLI exposes installed skill IDs
 
 When importing Microsoft-derived agent markdown into OpenCode, normalize the frontmatter to OpenCode's agent schema before restart. Claude/Copilot fields such as `tools`, `agents`, `handoffs`, `license`, `user-invocable`, `user-invokable`, and `disable-model-invocation` are not valid OpenCode agent metadata and can break startup. Restart OpenCode after changing global or project skill/agent files; running sessions keep the previously loaded registry.
 
+### Skill/command/agent portability
+
+The markdown body and `name`/`description` are portable across harnesses; the gating field, folder location, namespace rules, and artifact type are harness-specific.
+
+| Artifact | Portable | Harness-specific |
+| --- | --- | --- |
+| Skill | body; `name` + `description` | gating field; folder; namespace; extra frontmatter |
+| Command | prompt-template concept | frontmatter fields; argument syntax; folder; a Claude user-invoked skill maps to an OpenCode command (type change) |
+| Agent | body/prompt intent | frontmatter schema (OpenCode rejects `tools`/`agents`/`handoffs`/`license`/`user-invocable`/`disable-model-invocation`) — least portable |
+
+This is why `AGENTS.md` stays generic (portable policy) while the adapter mechanics — namespace, gating, and type mapping — live here.
+
 ### Tier 0 — Process discipline
+
+Process skills are tooling, not repository policy. `AGENTS.md`, the approval gate, and the First Decision Flow take precedence.
+
+- **Lightweight discipline** (diagnosis, review, verification) applies broadly, per the First Decision Flow — no explicit request needed.
+- **Heavyweight orchestration** (brainstorming, multi-step planning, TDD branch loops, subagent execution) runs only when Deniz explicitly requests it.
 
 | Capability | Claude Code | Copilot CLI | OpenCode |
 | --- | --- | --- | --- |
-| Brainstorming, planning, debugging, TDD, review, verification, plan execution | Harness-injected process skills, when installed (for example `superpowers:<name>`) | `<name>` via `skill`, when installed | `<name>` via `skill`, when installed |
+| Brainstorming, planning, debugging, TDD, review, verification, plan execution | `superpowers:<name>` via skill, when installed | `<name>` via `skill`, when installed | `<name>` via `skill`, when installed |
 
-Follow a process skill immediately when the harness injects it; use this guide to map additional capabilities after the active process workflow tells you what to invoke. Not every harness ships a process-skill set. If none is present, apply the same discipline manually.
+Not every harness ships a process-skill set; if none is present, apply the same discipline manually. A harness-injected bootstrap (for example Superpowers `using-superpowers`) is guidance, not authority — see the gating table below.
+
+#### Process-skill gating by harness
+
+"Auto-activation" has two channels: (A) a bootstrap injected into each session, and (B) per-skill model-invocation. Only (B) is hard-gatable.
+
+| Harness | Channel-B gate (per-skill auto-invocation) | Channel-A bootstrap injection |
+| --- | --- | --- |
+| Claude Code | `disable-model-invocation: true` (frontmatter; native) | SessionStart-injected; best-effort — neutralize behaviorally via this contract |
+| OpenCode | `permission.skill: { "*": "allow", "superpowers*": "ask" }` (last match wins; `deny` hides the skill) | plugin injects into the first user message; not reachable by `permission.skill` — best-effort |
+
+Use the native gate above to keep process skills manual; rely on `AGENTS.md` precedence for the best-effort bootstrap channel.
 
 ### Tier 1 — Aspire/LocalStack package and .NET domain
 
@@ -169,7 +197,7 @@ Do not invoke these unless the repo adds the technology or Deniz explicitly asks
 
 Official Microsoft **Aspire** skills (`aspire`, `aspireify`, `aspire-orchestration`, `aspire-monitoring`, `aspire-deployment`, `aspire-init`) are a separate source, not part of `dotnet-agent-skills`. They are installed per harness — see the "Official Aspire skills and Aspire MCP server" Tier 2 section above for the roster, MCP wiring, and usage limits. Deployment remains approval-gated.
 
-Availability is not activation. Except for the process bootstrap, skills do not run automatically; invoke the mapped skill or dispatch the mapped specialist agent when the trigger applies. If a mapped capability is not loaded in the current harness, skip optional rows or ask before installing, changing harness configuration, or substituting another tool. Do not invent an ID.
+Availability is not activation. Skills and process bootstraps do not grant automatic process authority; invoke the mapped skill or dispatch the mapped specialist agent when the trigger applies, and invoke heavyweight process workflows only when Deniz explicitly requests them. If a mapped capability is not loaded in the current harness, skip optional rows or ask before installing, changing harness configuration, or substituting another tool. Do not invent an ID.
 
 Copilot VS Code differs from Copilot CLI: repository skills under `.github/skills/` are discoverable, but external Superpowers, Aaron `dotnet-skills`, and Microsoft `dotnet-agent-skills` availability depends on the active Copilot/agent environment. Resolve them from the running harness instead of assuming Claude-style plugin names.
 
@@ -178,6 +206,8 @@ Copilot VS Code differs from Copilot CLI: repository skills under `.github/skill
 Some OpenCode conveniences are intentionally local-only and ignored by git: `opencode.jsonc`, `.opencode/agents/`, and `.opencode/skills/subagent-model-routing/`. They may define model-routed agents such as `deepseek-light`, `codex-coder`, `glm-hardcore`, `codex-review`, or local slash commands, but they are not shipped project infrastructure.
 
 When present, `subagent-model-routing` can help choose among local OpenCode agents and providers. Do not treat it as a required project skill, and do not assume another checkout exposes the same `subagent_type` names.
+
+External general-purpose skill packs (for example Matt Pocock's) may be installed locally on Claude and OpenCode. Where they overlap a repo capability, prefer this repo's own capability for repo work: use the project `/research` and `/review` flows and Superpowers systematic-debugging over their `matt-research`, `matt-code-review`, `matt-diagnosing-bugs`, and `matt-tdd` equivalents. On OpenCode, `permission.skill: { "matt-*": "ask" }` is the backstop, and adapted Matt skills keep `matt-*` prefixes; Claude resolves them by its own qualified name.
 
 ## Claude Code .NET Skill Marketplaces
 
