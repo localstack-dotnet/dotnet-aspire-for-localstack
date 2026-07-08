@@ -98,4 +98,38 @@ public class LocalStackConnectionStringAvailableCallbackTests
             AWSConfigs.AWSCredentialsGenerators = previousCredentialGenerators;
         }
     }
+
+    [Test]
+    public async Task Callback_Should_Configure_DynamoDb_Streams_Event_Source_Resource()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var localStackAnnotations = new ResourceAnnotationCollection();
+        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true, regionName: "eu-central-1");
+        var helperResource = TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper");
+
+        helperResource.Annotations.Add(new LocalStackEnabledAnnotation(Substitute.For<ILocalStackResource>()));
+
+        var connectionString = "http://localhost:4566";
+        var localStackResource = Substitute.For<ILocalStackResource>();
+        localStackResource.Name.Returns("localstack");
+        localStackResource.Options.Returns(options);
+        localStackResource.Annotations.Returns(localStackAnnotations);
+        // ReferenceExpression.Create takes an interpolated-string handler; a bare string literal does not compile.
+        localStackResource.ConnectionStringExpression.Returns(ReferenceExpression.Create($"{connectionString}"));
+
+        localStackAnnotations.Add(new LocalStackReferenceAnnotation(helperResource));
+
+        var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
+
+        await callback(localStackResource, null!, CancellationToken.None);
+
+        var envAnnotation = helperResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
+        var env = new Dictionary<string, object>(StringComparer.Ordinal);
+        var context = new EnvironmentCallbackContext(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), helperResource, env);
+        await envAnnotation.Callback(context);
+
+        await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB"]).IsEqualTo("http://localhost:4566/");
+        await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://localhost:4566/");
+        await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
+    }
 }

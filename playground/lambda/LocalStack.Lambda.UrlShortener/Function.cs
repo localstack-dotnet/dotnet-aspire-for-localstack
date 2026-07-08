@@ -6,15 +6,12 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
-using Amazon.S3;
-using Amazon.S3.Model;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using LocalStack.Client.Extensions;
 using LocalStack.Playground.ServiceDefaults.ActivitySources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Net.Codecrete.QrCodeGenerator;
 using OpenTelemetry.Instrumentation.AWSLambda;
 using OpenTelemetry.Trace;
 
@@ -28,12 +25,8 @@ public class Function
     private readonly TracerProvider _traceProvider;
 
     private readonly IAmazonDynamoDB _amazonDynamoDb;
-    private readonly IAmazonS3 _amazonS3;
     private readonly IAmazonSQS _amazonSqs;
 
-    private readonly IS3UrlService _s3UrlService;
-
-    private readonly string _qrBucketName;
     private readonly string _urlsTable;
     private readonly string _analyticsQueueUrl;
 
@@ -45,20 +38,14 @@ public class Function
 
         builder.Services.AddLocalStack(builder.Configuration);
         builder.Services.AddAwsService<IAmazonDynamoDB>();
-        builder.Services.AddAwsService<IAmazonS3>();
         builder.Services.AddAwsService<IAmazonSQS>();
-
-        builder.Services.AddTransient<IS3UrlService, S3UrlService>();
 
         var host = builder.Build();
 
         _traceProvider = host.Services.GetRequiredService<TracerProvider>();
         _amazonDynamoDb = host.Services.GetRequiredService<IAmazonDynamoDB>();
-        _amazonS3 = host.Services.GetRequiredService<IAmazonS3>();
         _amazonSqs = host.Services.GetRequiredService<IAmazonSQS>();
-        _s3UrlService = host.Services.GetRequiredService<IS3UrlService>();
 
-        _qrBucketName = builder.Configuration["AWS:Resources:QrBucketName"] ?? throw new InvalidOperationException("Missing AWS:Resources:QrBucketName");
         _urlsTable = builder.Configuration["AWS:Resources:UrlsTableName"] ?? throw new InvalidOperationException("Missing AWS:Resources:UrlsTableName");
         _analyticsQueueUrl = builder.Configuration["AWS:Resources:AnalyticsQueueUrl"] ?? throw new InvalidOperationException("Missing AWS:Resources:AnalyticsQueueUrl");
     }
@@ -98,16 +85,7 @@ public class Function
                 lambdaContext.Logger.LogWarning($"Failed to send analytics event: {ex.Message}");
             }
 
-            string? qrUrl = null;
-
-            // Optional QR‑code branch
-            if (string.Equals(payload.Format, "qr", StringComparison.OrdinalIgnoreCase))
-            {
-                qrUrl = await GenerateAndUploadQrAsync(slug, payload.Url).ConfigureAwait(false);
-                await UpdateRecordWithQrUrlAsync(slug, qrUrl).ConfigureAwait(false);
-            }
-
-            var responseBody = JsonSerializer.Serialize(new ShortenResponse(slug, qrUrl));
+            var responseBody = JsonSerializer.Serialize(new ShortenResponse(slug, "Pending", $"/{slug}/qr"));
 
             return Created(responseBody);
         }, request, context);
@@ -127,54 +105,10 @@ public class Function
                 ["Slug"] = new() { S = slug },
                 ["Url"] = new() { S = url },
                 ["CreatedAt"] = new() { S = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture) },
+                ["QrStatus"] = new() { S = "Pending" },
             },
             ConditionExpression = "attribute_not_exists(Slug)",
         }).ConfigureAwait(false);
-    }
-
-    private async Task UpdateRecordWithQrUrlAsync(string slug, string qrUrl)
-    {
-        using var activity = UrlShortenerActivitySource.ActivitySource.StartActivity(nameof(UpdateRecordWithQrUrlAsync));
-        activity?.AddTag("slug", slug);
-        activity?.AddTag("qrUrl", qrUrl);
-
-        await _amazonDynamoDb.UpdateItemAsync(new UpdateItemRequest
-        {
-            TableName = _urlsTable,
-            Key = new Dictionary<string, AttributeValue>(StringComparer.Ordinal)
-            {
-                ["Slug"] = new() { S = slug },
-            },
-            UpdateExpression = "SET QrUrl = :qrUrl",
-            ExpressionAttributeValues = new Dictionary<string, AttributeValue>(StringComparer.Ordinal)
-            {
-                [":qrUrl"] = new() { S = qrUrl },
-            },
-        }).ConfigureAwait(false);
-    }
-
-    private async Task<string> GenerateAndUploadQrAsync(string slug, string originalUrl)
-    {
-        using var activity = UrlShortenerActivitySource.ActivitySource.StartActivity(nameof(GenerateAndUploadQrAsync));
-        activity?.AddTag("originalUrl", originalUrl);
-        activity?.AddTag("slug", slug);
-        activity?.AddTag("qrBucketName", _qrBucketName);
-
-        var qrCode = QrCode.EncodeText(originalUrl, QrCode.Ecc.Quartile);
-        var pngData = qrCode.ToPng(scale: 10, border: 4);
-
-        var key = $"qr/{slug}.png";
-        await _amazonS3.PutObjectAsync(new PutObjectRequest
-        {
-            BucketName = _qrBucketName,
-            Key = key,
-            InputStream = new MemoryStream(pngData),
-            ContentType = "image/png",
-        }).ConfigureAwait(false);
-
-        var s3Url = _s3UrlService.GetS3Url(_amazonS3, _qrBucketName, key);
-
-        return s3Url;
     }
 
     private async Task SendAnalyticsEventAsync(string slug, string originalUrl, APIGatewayHttpApiV2ProxyRequest request, ILambdaContext context)
@@ -214,9 +148,9 @@ public class Function
         Headers = new Dictionary<string, string>(StringComparer.Ordinal) { ["Content-Type"] = "application/json" },
     };
 
-    private sealed record ShortenRequest(string Url, string? Format);
+    private sealed record ShortenRequest(string Url);
 
-    private sealed record ShortenResponse(string Id, string? QrUrl);
+    private sealed record ShortenResponse(string Id, string QrStatus, string QrPath);
 }
 
 internal sealed record AnalyticsEvent(

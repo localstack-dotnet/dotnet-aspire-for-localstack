@@ -422,11 +422,34 @@ tmp/
 
 .fake
 
+# Local AI harness configuration and generated tooling.
+# Everything under .agents/ is ignored EXCEPT the tracked repo skill aspire-source-navigation.
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/aspire-source-navigation/
+!.agents/skills/aspire-source-navigation/**
 .mcp.active
 .mcp.claude.json
 .mcp.copilot-cli.json
 .mcp.json
 opencode.jsonc
 
+# Aspire CLI per-developer AppHost selection (regenerated locally; never commit)
+aspire.config.json
+
+.opencode/.gitignore
 .opencode/agents/
+.opencode/bun.lock
+.opencode/node_modules/
+.opencode/package-lock.json
+.opencode/package.json
+.opencode/skill/
 .opencode/skills/subagent-model-routing/
+
+.claude
+!.claude/skills/aspire-source-navigation
+
+.skills-lock.json
+
+.playwright-mcp

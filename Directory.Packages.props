@@ -26,6 +26,7 @@
     <PackageVersion Include="Amazon.Lambda.APIGatewayEvents" Version="3.0.0"/>
     <PackageVersion Include="Amazon.Lambda.SQSEvents" Version="3.0.0"/>
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.0"/>
+    <PackageVersion Include="Amazon.Lambda.DynamoDBEvents" Version="4.0.0"/>
     <!-- localstack packages -->
     <PackageVersion Include="LocalStack.Client" Version="2.0.0"/>
     <PackageVersion Include="LocalStack.Client.Extensions" Version="2.0.0"/>

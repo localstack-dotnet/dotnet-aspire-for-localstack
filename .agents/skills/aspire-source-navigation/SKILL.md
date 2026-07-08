@@ -32,7 +32,7 @@ Do not use this skill for ordinary Markdown edits, general C# cleanup, or playgr
 
 1. Read `Directory.Packages.props` and identify the exact package versions involved.
 2. Map the packages to their upstream repositories: Aspire packages to `dotnet/aspire`, `Aspire.Hosting.AWS` to `aws/integrations-on-dotnet-aspire-for-aws`, and LocalStack packages to `localstack-dotnet/localstack-dotnet-client`.
-3. Check whether a matching local checkout exists under `external/`.
+3. Check whether a matching local checkout exists under `external/`. Because `external/` is gitignored, use an ignored-file-aware check such as `Test-Path external`, `git ls-files --others --ignored --exclude-standard external/`, or a direct directory listing. Do not rely on workspace glob/search tools that skip ignored paths.
 4. Verify the local checkout's branch/tag/commit against the package version and upstream tags/releases before trusting it.
 5. If local source is missing or stale, report that explicitly. Use GitHub MCP only for tag/ref discovery, release verification, or targeted fallback reads.
 6. Search upstream source for the exact symbols, annotations, extension methods, and behavior involved in the task. Do not rely on pre-baked search terms.
@@ -85,7 +85,7 @@ A package's major version may be realigned to track another dependency, so a low
 
 ## Missing Or Stale Source
 
-If the matching local checkout does not exist, do not silently continue with default-branch source. Report the gap before making compatibility-sensitive conclusions.
+If the matching local checkout does not exist after an ignored-file-aware check, do not silently continue with default-branch source. Report the gap before making compatibility-sensitive conclusions.
 
 Use this wording pattern:
 

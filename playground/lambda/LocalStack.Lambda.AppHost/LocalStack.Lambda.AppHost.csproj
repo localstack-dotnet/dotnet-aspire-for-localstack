@@ -18,8 +18,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj" IsAspireProjectResource="false"/>
-    <ProjectReference Include="..\LocalStack.Lambda.Analyzer\LocalStack.Lambda.Analyzer.csproj" />
+    <ProjectReference Include="..\LocalStack.Lambda.Analyzer\LocalStack.Lambda.Analyzer.csproj"/>
     <ProjectReference Include="..\LocalStack.Lambda.Redirector\LocalStack.Lambda.Redirector.csproj"/>
     <ProjectReference Include="..\LocalStack.Lambda.UrlShortener\LocalStack.Lambda.UrlShortener.csproj"/>
+    <ProjectReference Include="..\LocalStack.Lambda.QrCodeGenerator\LocalStack.Lambda.QrCodeGenerator.csproj"/>
+    <ProjectReference Include="..\LocalStack.Lambda.Frontend\LocalStack.Lambda.Frontend.csproj"/>
   </ItemGroup>
 </Project>

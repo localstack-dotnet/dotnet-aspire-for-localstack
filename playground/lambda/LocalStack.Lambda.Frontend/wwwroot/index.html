@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LocalStack Command Center</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230a1120'/%3E%3Cpath d='M18 4 7 19h7l-2 9L23 13h-7z' fill='%235eead4'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1 class="app-title">URL Shortener <span class="app-title-badge">Command Center</span></h1>
+
+    <div class="header-status" role="status" aria-live="polite">
+      <span id="live-dot" class="live-dot" aria-hidden="true"></span>
+      <span id="live-status">connecting…</span>
+    </div>
+
+    <div class="header-tools">
+      <button type="button" id="settings-toggle" class="icon-button" aria-haspopup="true"
+              aria-expanded="false" aria-controls="settings-popover" title="Settings">
+        ⚙<span class="visually-hidden">Settings</span>
+      </button>
+      <div id="settings-popover" class="popover" hidden>
+        <label class="switch">
+          <input type="checkbox" id="trace-refresh-toggle" />
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>
+            <strong>Trace refresh requests</strong>
+            <small>Off keeps table polling out of Aspire traces.</small>
+          </span>
+        </label>
+        <button type="button" id="refresh-now" class="secondary-button">Refresh now</button>
+      </div>
+    </div>
+  </header>
+
+  <section class="shorten-bar" aria-label="Create a short URL">
+    <form id="shorten-form" class="shorten-form">
+      <input type="url" id="url-input" name="url" placeholder="https://example.com" aria-label="URL to shorten" required />
+      <button type="submit" class="primary-button">Shorten</button>
+    </form>
+    <p id="shorten-error" class="form-error" role="alert" hidden></p>
+  </section>
+
+  <main class="layout">
+    <section class="panel pipeline-panel" aria-label="Live pipeline">
+      <div id="pipeline-root" class="pipeline-root"></div>
+      <p id="pipeline-empty" class="pipeline-empty" hidden>Shorten your first URL to watch it flow through the pipeline.</p>
+      <p id="pipeline-offline" class="pipeline-offline" hidden>Connection lost — retrying…</p>
+    </section>
+
+    <div class="data-grid">
+      <section class="panel" aria-labelledby="links-heading">
+        <div class="panel-heading">
+          <h2 id="links-heading">Links</h2>
+          <span id="links-count" class="count-pill">0</span>
+        </div>
+        <div class="table-scroll">
+          <table class="links-table">
+            <thead>
+              <tr>
+                <th>Short</th>
+                <th>Original URL</th>
+                <th>Created</th>
+                <th>QR</th>
+                <th class="num">Hits</th>
+              </tr>
+            </thead>
+            <tbody id="links-body"></tbody>
+          </table>
+        </div>
+        <p id="links-empty" class="empty-note">No links yet. Shorten one above.</p>
+      </section>
+
+      <section class="panel" aria-labelledby="events-heading">
+        <div class="panel-heading">
+          <h2 id="events-heading">Analytics events</h2>
+          <span id="events-count" class="count-pill">0</span>
+        </div>
+        <ol id="events-feed" class="events-feed"></ol>
+        <p id="events-empty" class="empty-note">No analytics events yet.</p>
+      </section>
+    </div>
+  </main>
+
+  <div id="drawer-backdrop" class="backdrop" hidden></div>
+  <aside id="drawer" class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title" hidden>
+    <header class="drawer-header">
+      <h2 id="drawer-title"></h2>
+      <button type="button" id="drawer-close" class="icon-button" aria-label="Close details">×</button>
+    </header>
+    <div id="drawer-content" class="drawer-content"></div>
+  </aside>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
