@@ -39,8 +39,8 @@ public static class LocalStackResourceBuilderExtensions
     /// <param name="localStack">The LocalStack resource to connect all AWS resources to. If null or UseLocalStack is false, no configuration is applied.</param>
     /// <returns>The distributed application builder for fluent chaining.</returns>
     /// <exception cref="DistributedApplicationException">
-    /// Thrown when an <c>AddAWSDynamoDBLocal</c> resource is present: DynamoDB Local and LocalStack's DynamoDB are competing backends,
-    /// so combining them would split DynamoDB state across two stores.
+    /// Thrown when LocalStack wiring is enabled and an <c>AddAWSDynamoDBLocal</c> resource is present: DynamoDB Local and
+    /// LocalStack's DynamoDB are competing backends, so combining them would split DynamoDB state across two stores.
     /// </exception>
     /// <remarks>
     /// This method performs the following operations:

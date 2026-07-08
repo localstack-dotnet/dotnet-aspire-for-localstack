@@ -77,7 +77,7 @@ The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` p
 |-------|---------|---------------|-----------------|
 | **Compute & Edge** | 5 × Lambda resources: `UrlShortenerLambda`, `RedirectorLambda`, `QrStatusLambda` (same Redirector project), `AnalyzerLambda`, `QrCodeGeneratorLambda` | **AWS Lambda Emulator** | `AddAWSLambdaFunction()` |
 | | HTTP API Gateway | **API Gateway Emulator** | `AddAWSAPIGatewayEmulator()` |
-| **Frontend** | Control-room web UI (`LocalStack.Lambda.Frontend`) | ASP.NET Core project | `AddProject()` |
+| **Frontend** | Command Center web UI (`LocalStack.Lambda.Frontend`) | ASP.NET Core project | `AddProject()` |
 | **Data** | DynamoDB table `Urls` (Streams enabled, `NEW_IMAGE`) | **LocalStack** | CDK Stack |
 | | DynamoDB table `UrlAnalytics` | **LocalStack** | CDK Stack |
 | **Messaging** | SQS Queue `url-analytics-events` | **LocalStack** | CDK Stack |
@@ -90,7 +90,7 @@ The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` p
 - **`LocalStack.Lambda.Redirector`** - Lambda function backing two routes: `GET /{slug}` (redirect to the original URL) and `GET /{slug}/qr` (QR status/redirect, registered as the separate `QrStatusLambda` resource)
 - **`LocalStack.Lambda.Analyzer`** - Lambda function for processing analytics events from SQS (demonstrates SQS Event Source with LocalStack)
 - **`LocalStack.Lambda.QrCodeGenerator`** - Lambda function triggered by DynamoDB Streams `INSERT` events; renders a QR PNG, uploads it to S3, and updates the URL item with `QrStatus = Ready`
-- **`LocalStack.Lambda.Frontend`** - ASP.NET Core control-room page that shortens URLs, lists links with live QR status, and shows the analytics feed
+- **`LocalStack.Lambda.Frontend`** - ASP.NET Core Command Center page that shortens URLs, lists links with live QR status, shows analytics records, displays a derived flow timeline, and exposes raw DynamoDB items for inspection
 
 ## Quick Demo
 
@@ -103,7 +103,18 @@ dotnet run --project LocalStack.Lambda.AppHost
 
 - **APIGatewayEmulator**: For making HTTP requests to your Lambda functions
 - **Lambda Test Tool**: For testing individual Lambda functions with sample payloads
-- **Frontend**: The control-room page — the easiest way to watch the shorten → QR flow and the analytics feed update live, without hand-rolling curl commands
+- **Frontend**: The Command Center page — the easiest way to watch the shorten → QR flow and the analytics feed update live, without hand-rolling curl commands
+
+### Using the Command Center
+
+Open the Frontend endpoint from the Aspire Dashboard to use the single-screen Command Center:
+
+- **Create a Short URL** posts through the API Gateway emulator and starts both background paths.
+- **Urls Table** shows the scenario view of the `Urls` DynamoDB records, including QR status, QR generation time, and a clickable QR thumbnail when generation is complete.
+- **UrlAnalytics Table** shows the `AnalyzerLambda` output written from SQS events, including event type, slug, timestamp, and client metadata.
+- **Derived Flow Timeline** is computed from the `Urls` and `UrlAnalytics` table snapshots. There is no separate timeline event store.
+- **Raw DynamoDB Item** actions open a drawer with the exact DynamoDB attribute JSON behind each scenario row.
+- **Trace refresh requests** is off by default so the polling reads for `/api/config`, `/api/snapshot`, `/api/links`, and `/api/analytics` do not dominate Aspire traces. Turn it on when you specifically want to debug the Command Center refresh path.
 
 ### Using the API Gateway Emulator
 

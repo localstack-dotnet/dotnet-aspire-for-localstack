@@ -3,26 +3,53 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LocalStack Control Room</title>
+  <title>LocalStack Command Center</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header class="app-header">
-    <h1>Control Room</h1>
-    <p class="subtitle">
-      Watch the CDC path (DynamoDB Streams &rarr; QR code) and the SQS path (analytics) side by side.
-    </p>
+    <div>
+      <h1>Command Center</h1>
+      <p class="subtitle">
+        Operate the URL shortener and watch the DynamoDB Streams QR path and SQS analytics path side by side.
+      </p>
+    </div>
+
+    <div class="header-actions" aria-label="Command center controls">
+      <label class="switch">
+        <input type="checkbox" id="trace-refresh-toggle" />
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>
+          <strong>Trace refresh requests</strong>
+          <small>Off keeps table polling out of Aspire traces.</small>
+        </span>
+      </label>
+      <button type="button" id="refresh-now" class="secondary-button">Refresh now</button>
+      <span id="snapshot-status" class="status-pill" aria-live="polite" aria-atomic="true">Loading</span>
+    </div>
   </header>
 
   <main class="layout">
-    <section class="panel" aria-labelledby="links-heading">
-      <h2 id="links-heading">Shortened Links</h2>
-
+    <section class="panel command-panel" aria-labelledby="command-heading">
+      <div>
+        <h2 id="command-heading">Create a Short URL</h2>
+        <p>Creating a link writes to DynamoDB, emits an SQS analytics event, and starts async QR generation through DynamoDB Streams.</p>
+      </div>
       <form id="shorten-form" class="shorten-form">
-        <input type="url" id="url-input" name="url" placeholder="https://example.com" required />
+        <input type="url" id="url-input" name="url" placeholder="https://example.com" aria-label="URL to shorten" required />
         <button type="submit">Shorten</button>
       </form>
       <p id="shorten-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section class="panel links-panel" aria-labelledby="links-heading">
+      <div class="panel-heading">
+        <div>
+          <h2 id="links-heading">Shortened Links</h2>
+          <p>Link records from DynamoDB with QR thumbnails. Click a row to inspect the raw item.</p>
+        </div>
+        <span id="links-count" class="count-pill">0 links</span>
+      </div>
 
       <table class="links-table">
         <thead>
@@ -30,24 +57,77 @@
             <th>Short URL</th>
             <th>Original URL</th>
             <th>Created</th>
+            <th>QR Status</th>
+            <th>Generated</th>
             <th>QR</th>
+            <th>Raw</th>
           </tr>
         </thead>
         <tbody id="links-body">
           <tr class="empty-row">
-            <td colspan="4">No links yet. Shorten one above.</td>
+            <td colspan="7">No links yet. Shorten one above.</td>
           </tr>
         </tbody>
       </table>
     </section>
 
-    <section class="panel" aria-labelledby="analytics-heading">
-      <h2 id="analytics-heading">Analytics Feed</h2>
-      <ul id="analytics-feed" class="analytics-feed">
-        <li class="empty-row">No events yet.</li>
-      </ul>
+    <section class="panel analytics-panel" aria-labelledby="analytics-heading">
+      <div class="panel-heading">
+        <div>
+          <h2 id="analytics-heading">UrlAnalytics Table</h2>
+          <p>SQS event-source output from URL creation and redirect activity. Click a row to inspect the raw item.</p>
+        </div>
+        <span id="analytics-count" class="count-pill">0 events</span>
+      </div>
+
+      <table class="analytics-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Slug</th>
+            <th>Original URL</th>
+            <th>Timestamp</th>
+            <th>Client</th>
+            <th>Raw</th>
+          </tr>
+        </thead>
+        <tbody id="analytics-body">
+          <tr class="empty-row">
+            <td colspan="6">No analytics events yet.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel timeline-panel" aria-labelledby="timeline-heading">
+      <div class="panel-heading">
+        <div>
+          <h2 id="timeline-heading">Derived Flow Timeline</h2>
+          <p>Built from the two DynamoDB tables; no separate event store is used.</p>
+        </div>
+      </div>
+      <ol id="timeline-feed" class="timeline-feed">
+        <li class="empty-row">No timeline events yet.</li>
+      </ol>
     </section>
   </main>
+
+  <section id="qr-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="qr-modal-title" aria-hidden="true" hidden inert>
+    <div class="modal-card">
+      <button type="button" id="close-qr-modal" class="icon-button modal-close" aria-label="Close QR preview">×</button>
+      <img id="qr-modal-image" class="qr-modal-image" alt="Expanded QR code" />
+      <div class="qr-modal-copy">
+        <h2 id="qr-modal-title">QR Preview</h2>
+        <p id="qr-modal-meta"></p>
+        <div class="modal-actions">
+          <a id="qr-open-endpoint" class="secondary-button" target="_blank" rel="noopener noreferrer">Open QR endpoint</a>
+          <a id="qr-open-short" class="secondary-button" target="_blank" rel="noopener noreferrer">Open short URL</a>
+          <button type="button" id="qr-copy-url" class="secondary-button">Copy QR URL</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div id="qr-backdrop" class="backdrop" hidden></div>
 
   <script src="app.js"></script>
 </body>

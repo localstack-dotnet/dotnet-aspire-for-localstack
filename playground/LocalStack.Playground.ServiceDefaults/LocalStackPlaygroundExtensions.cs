@@ -24,9 +24,36 @@ namespace Microsoft.Extensions.Hosting;
 /// </remarks>
 public static class LocalStackPlaygroundExtensions
 {
+    /// <summary>
+    /// Adds common .NET Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
+    /// </summary>
+    /// <typeparam name="TBuilder">The host application builder type.</typeparam>
+    /// <param name="builder">The host application builder.</param>
+    /// <returns>The host application builder.</returns>
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
-        builder.ConfigureOpenTelemetry();
+        return builder.AddServiceDefaults(static _ => { });
+    }
+
+    /// <summary>
+    /// Adds common .NET Aspire services and lets the host add OpenTelemetry configuration without replacing the shared defaults.
+    /// </summary>
+    /// <typeparam name="TBuilder">The host application builder type.</typeparam>
+    /// <param name="builder">The host application builder.</param>
+    /// <param name="configure">Configures optional service-default behavior for this host.</param>
+    /// <returns>The host application builder.</returns>
+    public static TBuilder AddServiceDefaults<TBuilder>(
+        this TBuilder builder,
+        Action<LocalStackPlaygroundServiceDefaultsOptions> configure)
+        where TBuilder : IHostApplicationBuilder
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new LocalStackPlaygroundServiceDefaultsOptions();
+        configure(options);
+
+        ConfigureOpenTelemetry(builder, options);
         builder.AddDefaultHealthChecks();
         builder.Services.AddServiceDiscovery();
         builder.Services.ConfigureHttpClientDefaults(http =>
@@ -41,7 +68,21 @@ public static class LocalStackPlaygroundExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Configures OpenTelemetry using the shared playground defaults.
+    /// </summary>
+    /// <typeparam name="TBuilder">The host application builder type.</typeparam>
+    /// <param name="builder">The host application builder.</param>
+    /// <returns>The host application builder.</returns>
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
+    {
+        return ConfigureOpenTelemetry(builder, new LocalStackPlaygroundServiceDefaultsOptions());
+    }
+
+    private static TBuilder ConfigureOpenTelemetry<TBuilder>(
+        TBuilder builder,
+        LocalStackPlaygroundServiceDefaultsOptions options)
+        where TBuilder : IHostApplicationBuilder
     {
         builder.Logging.AddOpenTelemetry(logging =>
         {
@@ -58,6 +99,11 @@ public static class LocalStackPlaygroundExtensions
             })
             .WithTracing(tracing =>
             {
+                foreach (var configureTracing in options.TracingBeforeDefaults)
+                {
+                    configureTracing(tracing);
+                }
+
                 // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package).
                 // tracing.AddGrpcClientInstrumentation();
 
@@ -69,6 +115,11 @@ public static class LocalStackPlaygroundExtensions
                     .AddSource(UrlShortenerActivitySource.ActivitySourceName)
                     .AddSource(QrCodeGeneratorActivitySource.ActivitySourceName)
                     .AddSource(RedirectorActivitySource.ActivitySourceName);
+
+                foreach (var configureTracing in options.TracingAfterDefaults)
+                {
+                    configureTracing(tracing);
+                }
             });
 
         builder.AddOpenTelemetryExporters();
@@ -113,5 +164,40 @@ public static class LocalStackPlaygroundExtensions
         });
 
         return app;
+    }
+}
+
+/// <summary>
+/// Optional host-specific configuration for the Lambda playground service defaults.
+/// </summary>
+public sealed class LocalStackPlaygroundServiceDefaultsOptions
+{
+    private readonly List<Action<TracerProviderBuilder>> _tracingBeforeDefaults = [];
+    private readonly List<Action<TracerProviderBuilder>> _tracingAfterDefaults = [];
+
+    internal IReadOnlyList<Action<TracerProviderBuilder>> TracingBeforeDefaults => _tracingBeforeDefaults;
+
+    internal IReadOnlyList<Action<TracerProviderBuilder>> TracingAfterDefaults => _tracingAfterDefaults;
+
+    /// <summary>
+    /// Adds tracing configuration that runs before the shared instrumentation defaults are registered.
+    /// </summary>
+    /// <param name="configure">The tracing configuration callback.</param>
+    public void ConfigureTracingBeforeDefaults(Action<TracerProviderBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        _tracingBeforeDefaults.Add(configure);
+    }
+
+    /// <summary>
+    /// Adds tracing configuration that runs after the shared instrumentation defaults are registered, but before exporters are added.
+    /// </summary>
+    /// <param name="configure">The tracing configuration callback.</param>
+    public void ConfigureTracingAfterDefaults(Action<TracerProviderBuilder> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        _tracingAfterDefaults.Add(configure);
     }
 }

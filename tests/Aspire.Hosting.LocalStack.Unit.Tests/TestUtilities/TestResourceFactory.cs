@@ -15,7 +15,12 @@ internal static class TestResourceFactory
                    ?? System.Reflection.Assembly.Load("Aspire.Hosting.AWS").GetType(typeName, throwOnError: false)
                    ?? throw new InvalidOperationException($"Type '{typeName}' was not found in the current assembly context.");
 
-        return (ExecutableResource)(Activator.CreateInstance(type, name)
+        return (ExecutableResource)(Activator.CreateInstance(
+                                        type,
+                                        BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                                        binder: null,
+                                        args: [name],
+                                        culture: null)
                                     ?? throw new InvalidOperationException($"Type '{typeName}' could not be created."));
     }
 }
