@@ -67,6 +67,12 @@
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
       "computedHash": "67343881f5def98487d56243155716110afbcbf22ec92421c882d532b941cb17"
     },
+    "dotnet-inspect": {
+      "source": "aspire-cli",
+      "sourceType": "aspire-cli",
+      "skillPath": ".agents/skills/dotnet-inspect/SKILL.md",
+      "computedHash": "944d0d4130c9286cbffcf7347e5127c8828c48525f6b0489c52c0e369ac0faab"
+    },
     "grill-me": {
       "source": "mattpocock/skills",
       "sourceType": "github",
