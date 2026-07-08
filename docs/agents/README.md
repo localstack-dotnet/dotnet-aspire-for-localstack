@@ -255,7 +255,7 @@ Sanity checks after moving, renaming, or relaying any project skill:
 - Canonical `.agents/skills/aspire-source-navigation/SKILL.md` exists and is tracked — `git check-ignore -q` returns non-zero (not ignored) for it, while every other `.agents/skills/*` stays ignored (exit 0).
 - Claude relay `.claude/skills/aspire-source-navigation/SKILL.md` exists and its body points at the canonical file — a pointer, never a copy of the body.
 - No living doc references a deleted skill path — grep the old path after any move and fix or delete stragglers. Frozen history (dated `docs/agents/handover-prompts/*.prompt.md` and gitignored `.superpowers/`) is exempt.
-- `skills-lock.json` accounts for the skills installed via `npx skills` (currently the `mattpocock/skills` set). Skills from other channels — the official Aspire plugin marketplace (`microsoft/aspire-skills`) and the vendored repo skill `aspire-source-navigation` — are intentionally not in it; each install channel owns its own manifest.
+- `skills-lock.json` accounts for the third-party skills installed under `.agents/skills/` (currently the Matt Pocock set, official Aspire skills, `playwright-cli`, and `dotnet-inspect`). The vendored repo skill `aspire-source-navigation` is intentionally not in it.
 
 ## Local Upstream Sources
 
