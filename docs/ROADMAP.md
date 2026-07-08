@@ -1,6 +1,6 @@
 # Roadmap
 
-Date: 2026-06-19
+Date: 2026-07-08
 
 ## How To Use This Document
 
@@ -25,7 +25,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS7 | LocalStack platform tracking | P2 | 🔜 | — |
 | WS8 | Observability / UX features | P3 | 🔜 | — |
 | WS9 | Docs & internal-docs consolidation | P0 | ✅ | — |
-| WS10 | Aspire ecosystem integration (CLI/catalog/polyglot) | P1 | 🔬 | [research](plans/ws10-aspire-ecosystem-integration-research.md) |
+| WS10 | Aspire ecosystem integration (CLI/catalog/polyglot) | P1 | 📐 | [research](plans/ws10-aspire-ecosystem-integration-research.md) |
 
 ## Release Philosophy
 
@@ -144,7 +144,9 @@ Mission: the full "what changed in the Aspire world, what new support can this p
 
 Research is complete as of 2026-07-04 (two adversarially cross-checked passes: ecosystem/community process + Aspire 9.0→13.4 feature-evolution sweep; ranked top-10 adoption candidates in the research doc). Adoption mechanisms are routed into WS3/WS4/WS5/WS6/WS7/WS8 bullets; WS10 retains the ATS/polyglot export work, the TS validation AppHost, and the catalog strategy decision (CommunityToolkit re-homing vs upstream filter-widening issue vs documented manual flows — Deniz's call).
 
-Sequencing: land WS2 first; coordinate the ATS-export surface with WS3's API shape; helper-hiding/dashboard UX stays in WS6/WS8.
+Implementation status rechecked 2026-07-08: WS10 is not implemented and is not obsolete. The package still lacks ATS export/analyzer setup and the `polyglot` tag, `LocalStackResource` still lacks `IResourceWithCustomWithReference<LocalStackResource>`, no TypeScript validation AppHost exists, and the catalog strategy decision is still open.
+
+Sequencing: WS2 has landed; coordinate the ATS-export surface with WS3's API shape; helper-hiding/dashboard UX stays in WS6/WS8.
 
 ### WS9 — Docs & internal-docs consolidation · P0 (light, do early)
 

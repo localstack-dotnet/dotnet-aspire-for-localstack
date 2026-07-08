@@ -1,10 +1,25 @@
 # WS10 Aspire Ecosystem Integration Research
 
-Date: 2026-07-04 (initial pass; web-source findings pending final verification are marked)
+Date: 2026-07-04 (initial pass); implementation status rechecked 2026-07-08
 
 ## Question
 
 Since this project started, Aspire has grown enormously: a CLI-first workflow, TypeScript/polyglot AppHosts, an integration catalog (`aspire add` / `aspire integration list` / MCP `list_integrations`), an agent-tooling story, and a much richer hosting toolbox (dashboard commands/URLs/icons, container files/volumes, parameters + interaction service, eventing, MCP hooks). The question is the full opportunity sweep: **what has changed in the Aspire world, and what new support can this package add?** TypeScript AppHost compatibility and CLI friendliness are two instances of that question, not its boundary.
+
+## Implementation Status Update (2026-07-08)
+
+Conclusion: this research is still active backlog. It has not been implemented, and none of the core concerns have become obsolete.
+
+Evidence checked:
+
+- Package pins remain `Aspire.Hosting`/`Aspire.Hosting.AppHost`/`Aspire.Hosting.Testing` `13.4.6`, `Aspire.Hosting.AWS` `13.3.1`, and `LocalStack.Client` `2.0.0` in `Directory.Packages.props`; the local upstream checkout `external/aspire/v13.4.6` is verified at tag `v13.4.6` (`87fe259e4fc244c599019a7b1304c85a1488f248`), so the Aspire-source claims below still match the pinned core package.
+- `src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj` has no `<EnableAspireIntegrationAnalyzers>` property, no analyzer package reference, and no `polyglot` package tag.
+- `src/Aspire.Hosting.LocalStack/LocalStackResource.cs` still implements `ContainerResource, ILocalStackResource`; it does not implement `IResourceWithCustomWithReference<LocalStackResource>`.
+- `src/Aspire.Hosting.LocalStack/LocalStackProjectExtensions.cs` still exposes the custom C# `WithReference` extension with `IResourceWithEnvironment` and `IResourceWithWaitSupport` constraints, so TS/polyglot `withReference(localstack)` still needs the custom-resource hook described below.
+- No TypeScript validation AppHost or `aspire.config.json` package-reference-mode sample exists under `playground/`.
+- Dashboard/catalog polish remains routed to WS6/WS8; the package source still does not use `WithHidden`, `WithCommand`, `WithUrls`, `WithIconName`, or `ExcludeFromMcp`.
+
+Status call: keep this document as active research/backlog. In the roadmap, WS10 should be `Planned`, not `Researching`: the research phase is complete, while implementation waits on WS3 API-shape decisions plus Deniz's catalog strategy decision.
 
 ## Source Evidence (verified against `external/aspire/v13.4.6`, tag == HEAD `87fe259`)
 
