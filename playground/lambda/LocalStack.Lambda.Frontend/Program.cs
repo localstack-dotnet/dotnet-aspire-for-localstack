@@ -52,8 +52,7 @@ app.MapGet("/api/snapshot", async (HttpRequest request, IAmazonDynamoDB dynamoDb
 {
     using var telemetryScope = CommandCenterRefreshTelemetry.SuppressIfRefreshTracingDisabled(request);
 
-    var links = await LoadLinksAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
-    var analyticsEvents = await LoadAnalyticsEventsAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
+    var (links, analyticsEvents) = await LoadSnapshotDataAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
     var timelineEvents = BuildTimelineEvents(links, analyticsEvents);
 
     return Results.Ok(new CommandCenterSnapshot(links, analyticsEvents, timelineEvents));
@@ -63,7 +62,7 @@ app.MapGet("/api/links", async (HttpRequest request, IAmazonDynamoDB dynamoDb, C
 {
     using var telemetryScope = CommandCenterRefreshTelemetry.SuppressIfRefreshTracingDisabled(request);
 
-    var links = await LoadLinksAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
+    var (links, _) = await LoadSnapshotDataAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
 
     return Results.Ok(links);
 });
@@ -72,9 +71,9 @@ app.MapGet("/api/analytics", async (HttpRequest request, IAmazonDynamoDB dynamoD
 {
     using var telemetryScope = CommandCenterRefreshTelemetry.SuppressIfRefreshTracingDisabled(request);
 
-    var events = await LoadAnalyticsEventsAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
+    var (_, analyticsEvents) = await LoadSnapshotDataAsync(dynamoDb, cancellationToken).ConfigureAwait(false);
 
-    return Results.Ok(events);
+    return Results.Ok(analyticsEvents);
 });
 
 app.MapPost("/api/shorten", async (HttpRequest request, IHttpClientFactory httpClientFactory, CancellationToken cancellationToken) =>
@@ -100,24 +99,31 @@ app.MapPost("/api/shorten", async (HttpRequest request, IHttpClientFactory httpC
 
 await app.RunAsync().ConfigureAwait(false);
 
-async Task<List<LinkSummary>> LoadLinksAsync(IAmazonDynamoDB dynamoDb, CancellationToken cancellationToken)
+async Task<(List<LinkSummary> Links, List<AnalyticsEventSummary> AnalyticsEvents)> LoadSnapshotDataAsync(
+    IAmazonDynamoDB dynamoDb,
+    CancellationToken cancellationToken)
 {
-    var scanResponse = await dynamoDb.ScanAsync(new ScanRequest { TableName = urlsTableName }, cancellationToken).ConfigureAwait(false);
+    var urlsScan = await dynamoDb.ScanAsync(new ScanRequest { TableName = urlsTableName }, cancellationToken).ConfigureAwait(false);
+    var analyticsScan = await dynamoDb.ScanAsync(new ScanRequest { TableName = analyticsTableName }, cancellationToken).ConfigureAwait(false);
 
-    return [.. scanResponse.Items
-        .Select(DynamoDbItemMapper.ToLinkSummary)
+    List<AnalyticsEventSummary> allAnalyticsEvents = [.. analyticsScan.Items.Select(DynamoDbItemMapper.ToAnalyticsEventSummary)];
+
+    // Counted over the full scan, before the feed cap, so counts stay correct once the feed saturates.
+    var accessCounts = allAnalyticsEvents
+        .Where(analyticsEvent => string.Equals(analyticsEvent.EventType, "url_accessed", StringComparison.Ordinal))
+        .GroupBy(analyticsEvent => analyticsEvent.Slug, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+
+    List<LinkSummary> links = [.. urlsScan.Items
+        .Select(item => DynamoDbItemMapper.ToLinkSummary(item, accessCounts.GetValueOrDefault(item["Slug"].S)))
         .OrderByDescending(link => link.CreatedAt, StringComparer.Ordinal)
         .Take(maxFeedItems)];
-}
 
-async Task<List<AnalyticsEventSummary>> LoadAnalyticsEventsAsync(IAmazonDynamoDB dynamoDb, CancellationToken cancellationToken)
-{
-    var scanResponse = await dynamoDb.ScanAsync(new ScanRequest { TableName = analyticsTableName }, cancellationToken).ConfigureAwait(false);
-
-    return [.. scanResponse.Items
-        .Select(DynamoDbItemMapper.ToAnalyticsEventSummary)
+    List<AnalyticsEventSummary> analyticsEvents = [.. allAnalyticsEvents
         .OrderByDescending(analyticsEvent => analyticsEvent.Timestamp, StringComparer.Ordinal)
         .Take(maxFeedItems)];
+
+    return (links, analyticsEvents);
 }
 
 static List<TimelineEventSummary> BuildTimelineEvents(

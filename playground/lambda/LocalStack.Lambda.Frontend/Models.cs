@@ -14,6 +14,7 @@ internal sealed record LinkSummary(
     string QrStatus,
     string? QrObjectKey,
     string? QrGeneratedAt,
+    int AccessCount,
     IReadOnlyDictionary<string, object?> RawItem);
 
 internal sealed record AnalyticsEventSummary(

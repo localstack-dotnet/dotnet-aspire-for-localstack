@@ -4,13 +4,14 @@ namespace LocalStack.Lambda.Frontend;
 
 internal static class DynamoDbItemMapper
 {
-    public static LinkSummary ToLinkSummary(Dictionary<string, AttributeValue> item) => new(
+    public static LinkSummary ToLinkSummary(Dictionary<string, AttributeValue> item, int accessCount) => new(
         item["Slug"].S,
         item["Url"].S,
         item["CreatedAt"].S,
         item.TryGetValue("QrStatus", out var status) ? status.S : "Pending",
         item.TryGetValue("QrObjectKey", out var key) ? key.S : null,
         item.TryGetValue("QrGeneratedAt", out var generatedAt) ? generatedAt.S : null,
+        accessCount,
         ToRawItem(item));
 
     public static AnalyticsEventSummary ToAnalyticsEventSummary(Dictionary<string, AttributeValue> item) => new(

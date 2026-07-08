@@ -90,7 +90,7 @@ The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` p
 - **`LocalStack.Lambda.Redirector`** - Lambda function backing two routes: `GET /{slug}` (redirect to the original URL) and `GET /{slug}/qr` (QR status/redirect, registered as the separate `QrStatusLambda` resource)
 - **`LocalStack.Lambda.Analyzer`** - Lambda function for processing analytics events from SQS (demonstrates SQS Event Source with LocalStack)
 - **`LocalStack.Lambda.QrCodeGenerator`** - Lambda function triggered by DynamoDB Streams `INSERT` events; renders a QR PNG, uploads it to S3, and updates the URL item with `QrStatus = Ready`
-- **`LocalStack.Lambda.Frontend`** - ASP.NET Core Command Center page that shortens URLs, lists links with live QR status, shows analytics records, displays a derived flow timeline, and exposes raw DynamoDB items for inspection
+- **`LocalStack.Lambda.Frontend`** - ASP.NET Core Command Center page with a live pipeline visualization, link/analytics feeds with per-link hit counts, and a detail drawer exposing raw DynamoDB items
 
 ## Quick Demo
 
@@ -109,12 +109,12 @@ dotnet run --project LocalStack.Lambda.AppHost
 
 Open the Frontend endpoint from the Aspire Dashboard to use the single-screen Command Center:
 
-- **Create a Short URL** posts through the API Gateway emulator and starts both background paths.
-- **Urls Table** shows the scenario view of the `Urls` DynamoDB records, including QR status, QR generation time, and a clickable QR thumbnail when generation is complete.
-- **UrlAnalytics Table** shows the `AnalyzerLambda` output written from SQS events, including event type, slug, timestamp, and client metadata.
-- **Derived Flow Timeline** is computed from the `Urls` and `UrlAnalytics` table snapshots. There is no separate timeline event store.
-- **Raw DynamoDB Item** actions open a drawer with the exact DynamoDB attribute JSON behind each scenario row.
-- **Trace refresh requests** is off by default so the polling reads for `/api/config`, `/api/snapshot`, `/api/links`, and `/api/analytics` do not dominate Aspire traces. Turn it on when you specifically want to debug the Command Center refresh path.
+- **Shorten bar** posts through the API Gateway emulator and starts both background paths.
+- **Live pipeline** mirrors the architecture (API Gateway → lambdas → DynamoDB/S3/SQS). Segments pulse as events flow: creating a link lights the write path, the DynamoDB Streams branch animates when a QR becomes ready, and redirect traffic lights the SQS analytics branch. Node badges show live counts.
+- **Links table** shows the `Urls` records with QR status, a thumbnail once generation completes, and a hit counter per link.
+- **Analytics events** lists the `AnalyzerLambda` output written from SQS events.
+- **Detail drawer** opens when you click any link or event row: QR preview and actions, the link's lifecycle, and the exact raw DynamoDB attribute JSON behind the row.
+- **Trace refresh requests** (in the ⚙ settings popover) is off by default so polling reads of `/api/snapshot` do not dominate Aspire traces. Turn it on when you specifically want to debug the Command Center refresh path. Polling also pauses automatically while the tab is hidden.
 
 ### Using the API Gateway Emulator
 
