@@ -25,7 +25,7 @@ Both projects create **identical AWS resources** but use different provisioning 
 
 ### Application Projects
 
-- **`LocalStack.Provisioning.Frontend`** - Blazor application with real-time messaging and DynamoDB monitoring
+- **`LocalStack.Provisioning.Frontend`** - Blazor Server Command Center with a live pipeline visualization, instant message feed, DynamoDB browser, and configuration drawer
 - **`LocalStack.Provisioning.ServiceDefaults`** - Shared service defaults and configurations
 
 **Note**: The Frontend application behaves identically regardless of which AppHost you use.
@@ -153,21 +153,17 @@ Both `Program.cs` files are currently configured for **auto-configure mode**. To
 
 ## Frontend Application
 
-The Frontend application (`LocalStack.Provisioning.Frontend`) is a Blazor Server application that demonstrates:
+The Frontend application (`LocalStack.Provisioning.Frontend`) is a Blazor Server single-screen Command Center:
 
-### Message Publishing
+### Using the Command Center
 
-- Interactive message composer with recipient and message fields
-- Real-time form validation and submit state management
-- AWS.Messaging integration for publishing to SNS topics
-- Visual feedback with success/error status tracking
+Open the Frontend endpoint from the Aspire Dashboard:
 
-### Real-time Monitoring
-
-- **DynamoDB Table Viewer**: Reusable component for real-time table monitoring
-- **Auto-refresh**: Configurable polling interval (default: 2 seconds)
-- **Message Count**: Live updates of total messages in the system
-- **Error Handling**: Robust error handling with consecutive error tracking
+- **Publish bar** publishes a `ChatMessage` to the SNS topic via AWS.Messaging.
+- **Live pipeline** mirrors the flow (Frontend → SNS → SQS → in-process handler → DynamoDB). Segments pulse the moment a message is published and again when the handler stores it; the header shows the measured publish-to-store latency. The S3 bucket from the CDK stack is shown as a passive node.
+- **Chat messages** is a live feed: new messages appear instantly via an in-process notifier (the SQS handler runs in the same process as the UI), with a 10-second reconciliation scan picking up external writes (paused while the tab is hidden).
+- **DynamoDB browser** lists all tables with their raw attributes.
+- **⚙ AppHost configuration** opens a drawer with the stack outputs, LocalStack options, and the actual client endpoints (routed to the LocalStack edge).
 
 ## Message Flow Architecture
 
@@ -182,7 +178,7 @@ Message Handler (ChatMessageHandler)
     ↓
 DynamoDB Table (ChatMessages)
     ↓
-Real-time UI Updates (DynamoDBTableViewer)
+Instant UI update (in-process MessageFlowNotifier)
 ```
 
 ## AWS Resources Provisioned
@@ -202,9 +198,8 @@ Both provisioning approaches create these resources:
 
 1. Run either AppHost project
 2. Navigate to the Frontend application in Aspire Dashboard
-3. Enter a recipient and message
-4. Click "Publish Message"
-5. Watch real-time updates in the DynamoDB table viewer
+3. Enter a recipient and message and click "Publish"
+4. Watch the pipeline segments pulse and the message land in the chat feed instantly
 
 ### Using AWS CLI
 

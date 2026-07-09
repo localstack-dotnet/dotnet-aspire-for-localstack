@@ -1,0 +1,120 @@
+@using AWS.Messaging
+
+@inject IMessagePublisher Publisher
+@inject MessageFlowNotifier Notifier
+@inject DemoOptions Demo
+@implements IDisposable
+
+<section class="publish-bar" aria-label="Publish a chat message">
+    <form class="publish-form" @onsubmit="PublishAsync" @onsubmit:preventDefault="true">
+        <input class="publish-recipient" @bind="_recipient" placeholder="Recipient" aria-label="Recipient" disabled="@_simulating" />
+        <input class="publish-message" @bind="_message" @bind:event="oninput" placeholder="Type a message — it flows through SNS, SQS, and the in-process handler into DynamoDB" aria-label="Message" disabled="@_simulating" />
+        <button type="submit" class="primary-button" disabled="@(_submitting || _simulating || string.IsNullOrWhiteSpace(_message))">
+            @(_submitting ? "Publishing…" : "Publish")
+        </button>
+        <button type="button" class="secondary-button" @onclick="SimulateAsync" disabled="@_simulating"
+                title="Publishes a scripted 10-message conversation through the real SNS → SQS → handler pipeline">
+            @(_simulating ? $"Simulating… {_simProgress}/{Script.Length}" : "Simulate chat")
+        </button>
+        <label class="auto-toggle" title="Handler takes ~2s per message so the SQS backlog becomes visible during bursts">
+            <input type="checkbox" @bind="Demo.SlowHandler" /> slow handler
+        </label>
+    </form>
+    @if (_error is not null)
+    {
+        <p class="form-error" role="alert">@_error</p>
+    }
+</section>
+
+@code {
+    private static readonly (string Sender, string Message)[] Script =
+    [
+        ("Ayşe", "Morning! Did the new pipeline deploy go out?"),
+        ("Mehmet", "Yep, shipped it 10 minutes ago. Watching the queue now."),
+        ("Ayşe", "Nice — latency looks great on my end."),
+        ("Deniz", "Which region is this running in?"),
+        ("Mehmet", "us-west-2, but it's all LocalStack under the hood 🙂"),
+        ("Deniz", "So zero AWS bill. Perfect."),
+        ("Ayşe", "Handler picked everything up, table count is climbing."),
+        ("Mehmet", "SNS → SQS → handler → DynamoDB, all green."),
+        ("Deniz", "Ship it to the README screenshot then."),
+        ("Ayşe", "Done. Coffee's on me ☕"),
+    ];
+
+    private string _recipient = string.Empty;
+    private string _message = string.Empty;
+    private bool _submitting;
+    private bool _simulating;
+    private int _simProgress;
+    private bool _disposed;
+    private string? _error;
+
+    private async Task PublishAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_message))
+        {
+            return;
+        }
+
+        _submitting = true;
+        _error = null;
+
+        try
+        {
+            var recipient = string.IsNullOrWhiteSpace(_recipient) ? "Anonymous" : _recipient.Trim();
+            await Publisher.PublishAsync(new ChatMessage { Message = _message.Trim(), Recipient = recipient });
+            Notifier.NotifyPublished(recipient);
+            _message = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Publish failed: {ex.Message}";
+        }
+        finally
+        {
+            _submitting = false;
+        }
+    }
+
+    private async Task SimulateAsync()
+    {
+        if (_simulating)
+        {
+            return;
+        }
+
+        _simulating = true;
+        _simProgress = 0;
+        _error = null;
+
+        try
+        {
+            foreach (var (sender, message) in Script)
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                await Publisher.PublishAsync(new ChatMessage { Message = message, Recipient = sender });
+                Notifier.NotifyPublished(sender);
+                _simProgress++;
+                StateHasChanged();
+
+                // Natural conversation pacing normally; a rapid burst in slow-handler mode so the
+                // queue backlog visibly builds up while the handler works through it.
+                await Task.Delay(Demo.SlowHandler ? 250 : 600 + (_simProgress % 3) * 250);
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Simulation failed at message {_simProgress + 1}: {ex.Message}";
+        }
+        finally
+        {
+            _simulating = false;
+        }
+    }
+
+    public void Dispose() => _disposed = true;
+}

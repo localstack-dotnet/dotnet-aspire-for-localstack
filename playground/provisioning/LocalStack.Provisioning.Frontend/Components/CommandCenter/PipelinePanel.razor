@@ -1,0 +1,199 @@
+@using Amazon.SQS
+@using Amazon.SQS.Model
+
+@inject MessageFlowNotifier Notifier
+@inject IConfiguration Configuration
+@inject IAmazonSQS Sqs
+@implements IDisposable
+
+<section class="panel pipeline-panel" aria-label="Live message pipeline">
+    <svg viewBox="0 0 1136 172" class="pipeline-svg" role="img"
+         aria-label="Message pipeline: the frontend publishes to the SNS ChatTopic, SNS fans out to the SQS queue, the in-process handler polls the queue and stores messages in the DynamoDB ChatMessages table.">
+        <defs>
+            <marker id="pl-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0 8 4 0 8z"></path>
+            </marker>
+        </defs>
+
+        <path class="pl-edge @PulseClass("e-publish")" d="M174 45 H 248" marker-end="url(#pl-arrow)"></path>
+        <text x="186" y="84" class="pl-edge-label">publish</text>
+        <path class="pl-edge @PulseClass("e-sub")" d="M408 45 H 482" marker-end="url(#pl-arrow)"></path>
+        <text x="414" y="84" class="pl-edge-label">subscription</text>
+        <path class="pl-edge @PulseClass("e-poll")" d="M642 45 H 716" marker-end="url(#pl-arrow)"></path>
+        <text x="644" y="84" class="pl-edge-label">in-process poll</text>
+        <path class="pl-edge @PulseClass("e-put")" d="M876 45 H 950" marker-end="url(#pl-arrow)"></path>
+        <text x="892" y="84" class="pl-edge-label">PutItem</text>
+
+        <g class="pl-node">
+            <rect x="16" y="24" width="158" height="42" rx="9"></rect>
+            <text x="95" y="42" class="pl-label">Frontend</text>
+            <text x="95" y="57" class="pl-sub">Blazor Server</text>
+        </g>
+        <g class="pl-node">
+            <rect x="250" y="24" width="158" height="42" rx="9"></rect>
+            <text x="329" y="42" class="pl-label">SNS</text>
+            <text x="329" y="57" class="pl-sub">ChatTopic</text>
+        </g>
+        <g class="pl-node">
+            <rect x="484" y="24" width="158" height="42" rx="9"></rect>
+            <text x="563" y="42" class="pl-label">SQS</text>
+            <text x="563" y="57" class="pl-sub">chat messages queue</text>
+            @if (_queueDepth is not null)
+            {
+                <g class="pl-badge">
+                    <title>Messages waiting in the queue right now</title>
+                    <rect x="624" y="14" width="36" height="18" rx="9"></rect>
+                    <text x="642" y="27">@Cap(_queueDepth.Value)</text>
+                </g>
+            }
+        </g>
+        <g class="pl-node">
+            <rect x="718" y="24" width="158" height="42" rx="9"></rect>
+            <text x="797" y="42" class="pl-label">ChatMessageHandler</text>
+            <text x="797" y="57" class="pl-sub">AWS.Messaging, in-process</text>
+            @if (_inFlight > 0)
+            {
+                <g class="pl-badge">
+                    <title>Messages currently being processed (in flight)</title>
+                    <rect x="858" y="14" width="36" height="18" rx="9"></rect>
+                    <text x="876" y="27">@Cap(_inFlight)</text>
+                </g>
+            }
+        </g>
+        <g class="pl-node">
+            <rect x="952" y="24" width="158" height="42" rx="9"></rect>
+            <text x="1031" y="42" class="pl-label">DynamoDB</text>
+            <text x="1031" y="57" class="pl-sub">ChatMessages</text>
+            @if (ItemCount > 0)
+            {
+                <g class="pl-badge">
+                    <title>Items in the ChatMessages table</title>
+                    <rect x="1092" y="14" width="36" height="18" rx="9"></rect>
+                    <text x="1110" y="27">@Cap(ItemCount)</text>
+                </g>
+            }
+        </g>
+        @if (_hasBucket)
+        {
+            <g class="pl-node pl-node-passive">
+                <rect x="952" y="116" width="158" height="42" rx="9"></rect>
+                <text x="1031" y="134" class="pl-label">S3</text>
+                <text x="1031" y="149" class="pl-sub">bucket · provisioned, idle</text>
+            </g>
+        }
+    </svg>
+</section>
+
+@code {
+    private const int QueueDepthSeconds = 2;
+
+    [Parameter] public int ItemCount { get; set; }
+
+    private readonly HashSet<string> _pulsing = new(StringComparer.Ordinal);
+    private bool _hasBucket;
+    private string? _queueUrl;
+    private int? _queueDepth;
+    private int _inFlight;
+    private PeriodicTimer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _hasBucket = Configuration["AWS:Resources:BucketName"] is not null;
+        _queueUrl = Configuration["AWS:Resources:ChatMessagesQueueUrl"];
+        Notifier.FlowEvent += OnFlowEvent;
+
+        await RefreshQueueDepthAsync();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(QueueDepthSeconds));
+        _ = QueueDepthLoopAsync(_timer);
+    }
+
+    private string? PulseClass(string edgeId) => _pulsing.Contains(edgeId) ? "pl-edge-pulse" : null;
+
+    private static string Cap(int count) => count >= 25 ? "25+" : count.ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+    private void OnFlowEvent(object? sender, MessageFlowEventArgs flowEvent)
+    {
+        _ = flowEvent.Stage == MessageFlowStage.Published
+            ? PulseSequentiallyAsync("e-publish", "e-sub")
+            : PulseSequentiallyAsync("e-poll", "e-put");
+
+        _ = RefreshQueueDepthAsync();
+    }
+
+    private async Task PulseSequentiallyAsync(params string[] edgeIds)
+    {
+        foreach (var edgeId in edgeIds)
+        {
+            await InvokeAsync(() =>
+            {
+                _pulsing.Add(edgeId);
+                StateHasChanged();
+            });
+
+            await Task.Delay(350);
+        }
+
+        await Task.Delay(1200);
+
+        await InvokeAsync(() =>
+        {
+            foreach (var edgeId in edgeIds)
+            {
+                _pulsing.Remove(edgeId);
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private async Task QueueDepthLoopAsync(PeriodicTimer timer)
+    {
+        // Disposing the timer completes the pending tick with false, ending the loop without cancellation.
+        while (await timer.WaitForNextTickAsync())
+        {
+            await RefreshQueueDepthAsync();
+        }
+    }
+
+    private async Task RefreshQueueDepthAsync()
+    {
+        if (_queueUrl is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await Sqs.GetQueueAttributesAsync(new GetQueueAttributesRequest
+            {
+                QueueUrl = _queueUrl,
+                AttributeNames = ["ApproximateNumberOfMessages", "ApproximateNumberOfMessagesNotVisible"],
+            });
+
+            if (response.ApproximateNumberOfMessages != _queueDepth || response.ApproximateNumberOfMessagesNotVisible != _inFlight)
+            {
+                _queueDepth = response.ApproximateNumberOfMessages;
+                _inFlight = response.ApproximateNumberOfMessagesNotVisible;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (AmazonSQSException)
+        {
+            // Queue unreachable; hide the badges rather than show stale numbers.
+            _queueDepth = null;
+            _inFlight = 0;
+        }
+        catch (HttpRequestException)
+        {
+            // Connection lost; hide the badges rather than show stale numbers.
+            _queueDepth = null;
+            _inFlight = 0;
+        }
+    }
+
+    public void Dispose()
+    {
+        Notifier.FlowEvent -= OnFlowEvent;
+        _timer?.Dispose();
+    }
+}
