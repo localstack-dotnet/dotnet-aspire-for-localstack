@@ -7,13 +7,19 @@ using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using AWS.Messaging;
 using LocalStack.Provisioning.Frontend.Models;
+using LocalStack.Provisioning.Frontend.Services;
 
 namespace LocalStack.Provisioning.Frontend.Handlers;
 
 /// <summary>
 /// Handles ChatMessage messages from SQS queue and persists them to DynamoDB.
 /// </summary>
-internal sealed partial class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient, IConfiguration configuration, ILogger<ChatMessageHandler> logger)
+internal sealed partial class ChatMessageHandler(
+    IAmazonDynamoDB dynamoDbClient,
+    IConfiguration configuration,
+    MessageFlowNotifier notifier,
+    DemoOptions demoOptions,
+    ILogger<ChatMessageHandler> logger)
     : IMessageHandler<ChatMessage>
 {
     public async Task<MessageProcessStatus> HandleAsync(MessageEnvelope<ChatMessage> messageEnvelope, CancellationToken token = default)
@@ -24,6 +30,12 @@ internal sealed partial class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient,
 
         try
         {
+            if (demoOptions.SlowHandler)
+            {
+                // Demo mode: keep each message in flight long enough for the queue backlog to be visible in the UI.
+                await Task.Delay(TimeSpan.FromSeconds(2), token).ConfigureAwait(false);
+            }
+
             var tableName = configuration["AWS:Resources:ChatMessagesTableName"] ?? "ChatMessages";
             var chatMessage = messageEnvelope.Message;
 
@@ -49,6 +61,8 @@ internal sealed partial class ChatMessageHandler(IAmazonDynamoDB dynamoDbClient,
             await dynamoDbClient.PutItemAsync(putItemRequest, token).ConfigureAwait(false);
 
             LogStoredChatMessage(logger, messageId, tableName);
+
+            notifier.NotifyStored(messageId, chatMessage.Recipient ?? "Unknown", chatMessage.Message ?? string.Empty);
 
             return MessageProcessStatus.Success();
         }

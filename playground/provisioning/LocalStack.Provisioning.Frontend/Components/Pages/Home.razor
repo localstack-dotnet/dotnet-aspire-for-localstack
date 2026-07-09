@@ -1,8 +1,88 @@
-﻿@page "/"
+@page "/"
 
+@inject MessageFlowNotifier Notifier
+@implements IDisposable
 
-<PageTitle>AWS Aspire</PageTitle>
+<PageTitle>LocalStack Provisioning Command Center</PageTitle>
 
-<h1>AWS and Aspire</h1>
+<header class="app-header">
+    <h1 class="app-title">Provisioning <span class="app-title-badge">Command Center</span></h1>
 
-This application demonstrates the usages of AWS with Aspire.
+    <div class="header-status" role="status" aria-live="polite">
+        @if (_lastFlowMs is not null)
+        {
+            <span class="flow-chip" title="Time from SNS publish to DynamoDB write">last flow ~@_lastFlowMs ms</span>
+        }
+        <span class="live-dot @(_healthy ? null : "is-error")" aria-hidden="true"></span>
+        <span>@(_healthy ? "live" : "degraded")</span>
+    </div>
+
+    <button type="button" class="icon-button" @onclick="() => _drawerOpen = true"
+            aria-haspopup="dialog" aria-expanded="@_drawerOpen" title="AppHost configuration">
+        ⚙<span class="visually-hidden">AppHost configuration</span>
+    </button>
+</header>
+
+<PublishBar />
+
+<main class="layout">
+    <PipelinePanel ItemCount="_itemCount" />
+
+    <div class="data-grid">
+        <MessagesPanel OnHealthChanged="SetHealth" OnCountChanged="SetItemCount" />
+        <DynamoDBTableViewer />
+    </div>
+</main>
+
+@if (_drawerOpen)
+{
+    <ConfigDrawer OnClose="() => _drawerOpen = false" />
+}
+
+@code {
+    private bool _healthy = true;
+    private int _itemCount;
+    private bool _drawerOpen;
+    private long? _lastFlowMs;
+    private DateTimeOffset? _lastPublishedAt;
+
+    protected override void OnInitialized() => Notifier.FlowEvent += OnFlowEvent;
+
+    private void OnFlowEvent(object? sender, MessageFlowEventArgs flowEvent)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (flowEvent.Stage == MessageFlowStage.Published)
+            {
+                _lastPublishedAt = flowEvent.Timestamp;
+            }
+            else if (_lastPublishedAt is not null)
+            {
+                _lastFlowMs = (long)(flowEvent.Timestamp - _lastPublishedAt.Value).TotalMilliseconds;
+                _lastPublishedAt = null;
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private void SetHealth(bool healthy)
+    {
+        if (_healthy != healthy)
+        {
+            _healthy = healthy;
+            StateHasChanged();
+        }
+    }
+
+    private void SetItemCount(int count)
+    {
+        if (_itemCount != count)
+        {
+            _itemCount = count;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => Notifier.FlowEvent -= OnFlowEvent;
+}

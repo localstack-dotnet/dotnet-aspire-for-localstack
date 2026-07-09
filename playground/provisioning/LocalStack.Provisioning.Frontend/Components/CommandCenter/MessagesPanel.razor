@@ -1,0 +1,183 @@
+@using System.Globalization
+@using Amazon.DynamoDBv2
+@using Amazon.DynamoDBv2.Model
+
+@inject IAmazonDynamoDB DynamoDb
+@inject IConfiguration Configuration
+@inject MessageFlowNotifier Notifier
+@inject IJSRuntime Js
+@implements IAsyncDisposable
+
+<section class="panel" aria-labelledby="messages-heading">
+    <div class="panel-heading">
+        <h2 id="messages-heading">Chat messages</h2>
+        <span class="count-pill">@_messages.Count</span>
+    </div>
+
+    @if (_error is not null)
+    {
+        <p class="panel-error" role="alert">@_error</p>
+    }
+    else if (_messages.Count == 0)
+    {
+        <p class="empty-note">No messages yet. Publish one above and watch it arrive through the pipeline.</p>
+    }
+    else
+    {
+        <ol class="message-feed">
+            @foreach (var message in _messages)
+            {
+                <li class="message-card" @key="message.MessageId"
+                    title="@($"{message.MessageId} · stored {message.ProcessedAt ?? "n/a"}")">
+                    <span class="badge badge-created">@message.Recipient</span>
+                    <span class="message-text">@message.Message</span>
+                    <time>@TimeFormatting.Relative(message.Timestamp)</time>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    private const int MaxItems = 25;
+    private const int ReconcileSeconds = 10;
+
+    private sealed record ChatMessageRecord(string MessageId, string Recipient, string Message, DateTimeOffset Timestamp, string? ProcessedAt);
+
+    [Parameter] public EventCallback<bool> OnHealthChanged { get; set; }
+    [Parameter] public EventCallback<int> OnCountChanged { get; set; }
+
+    private readonly List<ChatMessageRecord> _messages = [];
+    private string? _error;
+    private string _tableName = "ChatMessages";
+    private PeriodicTimer? _timer;
+    private IJSObjectReference? _visibilityModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tableName = Configuration["AWS:Resources:ChatMessagesTableName"] ?? "ChatMessages";
+        Notifier.FlowEvent += OnFlowEvent;
+        await ScanAsync();
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(ReconcileSeconds));
+        _ = ReconcileLoopAsync(_timer);
+    }
+
+    private async Task ReconcileLoopAsync(PeriodicTimer timer)
+    {
+        // Disposing the timer completes the pending tick with false, ending the loop without cancellation.
+        while (await timer.WaitForNextTickAsync())
+        {
+            if (await IsTabHiddenAsync())
+            {
+                continue;
+            }
+
+            await ScanAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task<bool> IsTabHiddenAsync()
+    {
+        try
+        {
+            _visibilityModule ??= await Js.InvokeAsync<IJSObjectReference>("import", "./js/visibility.js");
+            return await _visibilityModule.InvokeAsync<bool>("isHidden");
+        }
+        catch (JSException)
+        {
+            return false;
+        }
+    }
+
+    private void OnFlowEvent(object? sender, MessageFlowEventArgs flowEvent)
+    {
+        if (flowEvent.Stage != MessageFlowStage.Stored || flowEvent.MessageId is null)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(() =>
+        {
+            if (!_messages.Any(existing => string.Equals(existing.MessageId, flowEvent.MessageId, StringComparison.Ordinal)))
+            {
+                _messages.Insert(0, new ChatMessageRecord(
+                    flowEvent.MessageId,
+                    flowEvent.Recipient,
+                    flowEvent.Message ?? string.Empty,
+                    flowEvent.Timestamp,
+                    ProcessedAt: null));
+
+                if (_messages.Count > MaxItems)
+                {
+                    _messages.RemoveAt(_messages.Count - 1);
+                }
+            }
+
+            _ = OnCountChanged.InvokeAsync(_messages.Count);
+            StateHasChanged();
+        });
+    }
+
+    private async Task ScanAsync()
+    {
+        try
+        {
+            var response = await DynamoDb.ScanAsync(new ScanRequest { TableName = _tableName });
+
+            var records = response.Items
+                .Select(ToRecord)
+                .OrderByDescending(record => record.Timestamp)
+                .Take(MaxItems)
+                .ToList();
+
+            _messages.Clear();
+            _messages.AddRange(records);
+            _error = null;
+            await OnHealthChanged.InvokeAsync(true);
+            await OnCountChanged.InvokeAsync(_messages.Count);
+        }
+        catch (AmazonDynamoDBException ex)
+        {
+            _error = $"DynamoDB error: {ex.Message}";
+            await OnHealthChanged.InvokeAsync(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            _error = $"Connection error: {ex.Message}";
+            await OnHealthChanged.InvokeAsync(false);
+        }
+    }
+
+    private static ChatMessageRecord ToRecord(Dictionary<string, AttributeValue> item)
+    {
+        var timestampMs = item.TryGetValue("Timestamp", out var ts) && long.TryParse(ts.N, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : 0L;
+
+        return new ChatMessageRecord(
+            item.TryGetValue("MessageId", out var id) ? id.S : Guid.NewGuid().ToString(),
+            item.TryGetValue("Recipient", out var recipient) ? recipient.S : "Unknown",
+            item.TryGetValue("Message", out var message) ? message.S : string.Empty,
+            DateTimeOffset.FromUnixTimeMilliseconds(timestampMs),
+            item.TryGetValue("ProcessedAt", out var processedAt) ? processedAt.S : null);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Notifier.FlowEvent -= OnFlowEvent;
+        _timer?.Dispose();
+        if (_visibilityModule is not null)
+        {
+            try
+            {
+                await _visibilityModule.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+                // Circuit already gone; nothing to release on the JS side.
+                _visibilityModule = null;
+            }
+        }
+    }
+}

@@ -1,0 +1,48 @@
+@using LocalStack.Client.Options
+@using Microsoft.Extensions.Options
+
+@inject IConfiguration Configuration
+@inject IOptions<LocalStackOptions> LocalStackOptions
+
+<div class="backdrop" @onclick="() => OnClose.InvokeAsync()"></div>
+<aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    <header class="drawer-header">
+        <h2 id="drawer-title">AppHost configuration</h2>
+        <button type="button" class="icon-button" aria-label="Close configuration" @onclick="() => OnClose.InvokeAsync()">×</button>
+    </header>
+    <div class="drawer-content">
+        @if (LocalStackOptions.Value.UseLocalStack)
+        {
+            <p class="drawer-note">All AWS SDK clients in this app are routed to LocalStack.</p>
+        }
+
+        <h3>Stack outputs (AWS:Resources)</h3>
+        <dl class="drawer-meta">
+            @foreach (var item in Configuration.GetSection("AWS:Resources").AsEnumerable(makePathsRelative: true).Where(entry => entry.Value is not null).OrderBy(entry => entry.Key, StringComparer.Ordinal))
+            {
+                <dt>@item.Key</dt>
+                <dd>@item.Value</dd>
+            }
+        </dl>
+
+        <h3>LocalStack options</h3>
+        <dl class="drawer-meta">
+            <dt>UseLocalStack</dt><dd>@LocalStackOptions.Value.UseLocalStack</dd>
+            <dt>Host</dt><dd>@LocalStackOptions.Value.Config.LocalStackHost</dd>
+            <dt>Edge port</dt><dd>@LocalStackOptions.Value.Config.EdgePort</dd>
+            <dt>UseSsl</dt><dd>@LocalStackOptions.Value.Config.UseSsl</dd>
+            <dt>Region</dt><dd>@LocalStackOptions.Value.Session.RegionName</dd>
+        </dl>
+
+        <h3>Client endpoints</h3>
+        <dl class="drawer-meta">
+            <dt>SQS</dt><dd>@EndpointDisplay.Resolve(LocalStackOptions.Value, LocalStackOptions.Value.Session.RegionName, "sqs")</dd>
+            <dt>DynamoDB</dt><dd>@EndpointDisplay.Resolve(LocalStackOptions.Value, LocalStackOptions.Value.Session.RegionName, "dynamodb")</dd>
+            <dt>SNS</dt><dd>@EndpointDisplay.Resolve(LocalStackOptions.Value, LocalStackOptions.Value.Session.RegionName, "sns")</dd>
+        </dl>
+    </div>
+</aside>
+
+@code {
+    [Parameter] public EventCallback OnClose { get; set; }
+}

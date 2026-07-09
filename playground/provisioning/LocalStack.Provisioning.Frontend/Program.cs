@@ -10,6 +10,7 @@ using LocalStack.Client.Options;
 using LocalStack.Provisioning.Frontend.Components;
 using LocalStack.Provisioning.Frontend.Handlers;
 using LocalStack.Provisioning.Frontend.Models;
+using LocalStack.Provisioning.Frontend.Services;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -35,7 +36,8 @@ builder.Services.AddAWSMessageBus(messageBuilder =>
 
     if (chatQueueUrl != null)
     {
-        messageBuilder.AddSQSPoller(chatQueueUrl)
+        // Low concurrency keeps the queue backlog observable when the slow-handler demo toggle is on.
+        messageBuilder.AddSQSPoller(chatQueueUrl, options => options.MaxNumberOfConcurrentMessages = 2)
             .AddMessageHandler<ChatMessageHandler, ChatMessage>();
     }
 });
@@ -46,6 +48,8 @@ builder.Services.AddRazorComponents()
 
 // Register the message handler
 builder.Services.AddSingleton<ChatMessageHandler>();
+builder.Services.AddSingleton<MessageFlowNotifier>();
+builder.Services.AddSingleton<DemoOptions>();
 
 var app = builder.Build();
 
@@ -56,8 +60,8 @@ if (!app.Environment.IsDevelopment())
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
-app.UseStaticFiles();
 app.UseAntiforgery();
+app.MapStaticAssets();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
