@@ -24,6 +24,9 @@ jobs:
   build-and-test:
     name: "Build & Test (${{ matrix.name }})"
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      checks: write
     env:
       NUGET_PACKAGES: ${{ contains(matrix.os, 'windows') && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
       BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\test-results', github.workspace) || format('{0}/test-results', github.workspace) }}
@@ -34,13 +37,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-2025
             name: "Windows"
 
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             name: "Linux"
 
-          - os: macos-latest
+          - os: macos-15
             name: "macOS"
 
     steps:
@@ -61,11 +64,11 @@ jobs:
         if: runner.os == 'Linux'
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: "Install AWS CDK CLI"
         if: runner.os == 'Linux'
-        run: npm install -g aws-cdk@2.x
+        run: npm install -g aws-cdk@2
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v6
@@ -79,7 +82,7 @@ jobs:
         run: dotnet build --configuration Release
 
       - name: "Enable TUnit HTML report artifact upload"
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN']);
@@ -213,13 +216,13 @@ jobs:
 
           # Generate build metadata
           RUN_NUMBER="${{ github.run_number }}"     # monotonic
-          COMMIT_SHA=$(echo "${{ github.sha }}" | cut -c1-8)
+          COMMIT_SHA=$(printf '%s' "${{ github.sha }}" | cut -c1-8)
 
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             # Feature branches: 9.5.0-feature-name.buildnumber (NuGet SemVer 2.0.0)
-            BRANCH_NAME="${{ github.head_ref }}"
+            BRANCH_NAME="$GITHUB_HEAD_REF"
             # Sanitize branch name for use in version and artifact names
-            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
+            SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
             VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${RUN_NUMBER}"
             ARTIFACT_SUFFIX="${SAFE_BRANCH}-${RUN_NUMBER}"
           else
@@ -263,10 +266,16 @@ jobs:
       - name: "Generate Build Summary"
         run: |
           echo "📦 Generating build summary..."
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            BRANCH_OR_REF="$GITHUB_HEAD_REF"
+          else
+            BRANCH_OR_REF="$GITHUB_REF_NAME"
+          fi
+
           echo "## 📦 Package Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Package**: LocalStack.Aspire.Hosting" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.version.outputs.version }} (NuGet SemVer 2.0.0)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch/Ref**: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch/Ref**: $BRANCH_OR_REF" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Published to**: GitHub Packages" >> $GITHUB_STEP_SUMMARY
           echo "- **Artifact**: packages-${{ steps.version.outputs.artifact_suffix }}" >> $GITHUB_STEP_SUMMARY
