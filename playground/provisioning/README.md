@@ -84,7 +84,7 @@ var project = builder.AddProject<Projects.Frontend>("Frontend")
 
 ### Prerequisites
 
-- .NET 8.0 or later
+- .NET 10.0 or later
 - Docker Desktop
 - AWS CLI (optional, for manual testing)
 

@@ -5,20 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [13.4.0] - 2026-07-09
 
 ### Added
 
 - **DynamoDB Streams Lambda event sources now work under LocalStack.** `WithDynamoDBStreamsEventSource(...)` helper resources are detected by `UseLocalStack()`, attached to the LocalStack container, and receive the AWS SDK endpoint/credential environment (`AWS_ENDPOINT_URL`, `AWS_ENDPOINT_URL_DYNAMODB`, `AWS_ENDPOINT_URL_DYNAMODB_STREAMS`, credentials, and region) — mirroring the existing SQS event-source support.
-- **`UseLocalStack()` now fails fast when `AddAWSDynamoDBLocal` is present.** DynamoDB Local and LocalStack's DynamoDB are competing backends; combining them would silently split DynamoDB state across two stores, so the combination is rejected with an actionable error.
 - **Lambda playground: DynamoDB Streams change-data-capture example.** URL creation returns immediately (`QrStatus: Pending`) while a DynamoDB Streams-driven Lambda generates the QR code asynchronously; a new `GET /{slug}/qr` route flips from `202` to a `302` PNG redirect when ready.
 - **Lambda playground: control-room frontend application.** A new web frontend shows URL creation, QR readiness, redirect activity, and the DynamoDB Streams (CDC) path next to the SQS analytics path live.
-
-### Known Issues
-
-- **DynamoDB Streams event sources require `us-east-1` for now.** The Lambda Test Tool's bundled AWS SDK for .NET signs requests for `us-east-1` whenever a custom endpoint is configured (an upstream SDK regression: fixed in AWSSDK.Core 4.0.9.4, reverted in 4.0.9.7, still present in current releases). LocalStack namespaces resources per signing region, so stream pollers only find tables in `us-east-1`; the Lambda playground pins that region. Full investigation and version timeline: `docs/plans/aws-sdk-signing-region-investigation.md`. No change is required in this package once upstream ships a fix.
-
-## [13.4.0] - 2026-06-25
+- **Provisioning playground: command-center frontend application.** The CDK/SNS/SQS/DynamoDB sample now shows message publishing, pipeline activity, endpoint/configuration details, and DynamoDB table visibility in one live UI.
 
 ### Fixed
 
@@ -26,7 +20,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated .NET Aspire to `13.4.6` and `Aspire.Hosting.AWS` to `13.3.1`, with aligned AWSSDK, TUnit, SkiaSharp, and related dependency updates.
+- **Dependencies**: Updated `Aspire.Hosting` to `13.4.6` and `Aspire.Hosting.AWS` to `13.3.1`
+  - Aligned AWSSDK, TUnit, SkiaSharp, and related dependency updates
+- **CDK Bootstrap Template**: Refreshed the embedded CDK bootstrap template to the current AWS CDK CLI bootstrap resources (`BootstrapVersion` `32`)
+
+### Testing & Quality
+
+- **Analyzer Configuration**: Modernized `.editorconfig` and analyzer configuration with stricter warnings-as-errors coverage across source, tests, and playground projects
+- **Agent Guidance**: Added `AGENTS.md`, `CLAUDE.md`, and `docs/agents/` guidance so coding agents can navigate Aspire/AWS/LocalStack compatibility work with source-version checks and repository-specific guardrails
+
+### Breaking Changes
+
+- **DynamoDB Local Combination Rejected**: `UseLocalStack()` now fails fast when `AddAWSDynamoDBLocal` is present
+  - **Impact**:
+    - AppHosts that previously combined `UseLocalStack()` with `AddAWSDynamoDBLocal` now fail during AppHost startup
+    - Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain supported
+  - **Rationale**:
+    - DynamoDB Local and LocalStack's DynamoDB are competing backends
+    - Allowing both silently splits DynamoDB state across two stores, making event sources and service clients observe different data
+  - **Migration Path**:
+    - Model DynamoDB through CDK/CloudFormation so LocalStack serves it
+    - Or drop `UseLocalStack()` to keep DynamoDB Local as the only DynamoDB backend
+
+### Known Issues
+
+- **DynamoDB Streams event sources require `us-east-1` for now.** The Lambda Test Tool's bundled AWS SDK for .NET signs requests for `us-east-1` whenever a custom endpoint is configured. LocalStack namespaces resources per signing region, so stream pollers only find tables in `us-east-1`; the Lambda playground pins that region. No change is required in this package once upstream ships a fix.
 
 ## [13.1.0] - 2025-12-18
 
@@ -262,6 +280,8 @@ This RC release is feature-complete and ready for production use. Community feed
 
 ---
 
+[13.4.0]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/13.4.0
+[13.1.0]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/13.1.0
 [9.5.3]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.3
 [9.5.2]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.5.2
 [9.4.0-rc.1]: https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/releases/tag/9.4.0-rc.1

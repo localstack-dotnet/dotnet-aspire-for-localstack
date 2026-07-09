@@ -162,7 +162,7 @@ aws s3api list-objects --bucket "qr-bucket" --endpoint-url {LOCALSTACK_ENDPOINT}
 aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names All --endpoint-url {LOCALSTACK_ENDPOINT} --region us-east-1
 ```
 
-> **💡 Why `us-east-1`**: The AppHost pins the region to `us-east-1` because Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region whenever `AWS_ENDPOINT_URL*` environment variables are set, so its DynamoDB Streams poller always signs for `us-east-1` regardless of the configured region. See `docs/plans/aws-sdk-signing-region-investigation.md` for the full investigation.
+> **💡 Why `us-east-1`**: The AppHost pins the region to `us-east-1` because Amazon.Lambda.TestTool's bundled AWS SDK loses its signing region whenever `AWS_ENDPOINT_URL*` environment variables are set, so its DynamoDB Streams poller always signs for `us-east-1` regardless of the configured region.
 
 ## Request Flow
 

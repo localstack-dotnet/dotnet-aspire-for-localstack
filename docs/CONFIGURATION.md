@@ -193,7 +193,7 @@ builder.AddLocalStack(configureContainer: container =>
 
 - `ContainerRegistry`: `docker.io` (Docker Hub)
 - `ContainerImage`: `localstack/localstack`
-- `ContainerImageTag`: the LocalStack tag this package currently pins (check `Directory.Packages.props` or the runtime default)
+- `ContainerImageTag`: the LocalStack tag pinned by the installed package version (visible from the Aspire dashboard or container logs)
 
 ### Common Scenarios
 
@@ -240,6 +240,8 @@ container.ContainerImageTag = "custom-build-123";
 container.ContainerImageTag = "3.8.1";
 // Pulls: docker.io/localstack/localstack:3.8.1
 ```
+
+Newer LocalStack images may require `LOCALSTACK_AUTH_TOKEN`. If you override the pinned default image tag, check the LocalStack image's requirements and pass the token through `AdditionalEnvironmentVariables` when needed.
 
 ### Authentication
 
@@ -343,6 +345,7 @@ For advanced scenarios, you can pass custom environment variables to the LocalSt
 
 ```csharp
 container.AdditionalEnvironmentVariables["LOCALSTACK_API_KEY"] = "your-pro-key";
+container.AdditionalEnvironmentVariables["LOCALSTACK_AUTH_TOKEN"] = "your-auth-token";
 container.AdditionalEnvironmentVariables["PERSISTENCE"] = "1";
 ```
 
@@ -351,6 +354,7 @@ container.AdditionalEnvironmentVariables["PERSISTENCE"] = "1";
 **Common Use Cases:**
 
 - LocalStack Pro features ([`LOCALSTACK_API_KEY`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#localstack-pro))
+- Newer LocalStack images that require `LOCALSTACK_AUTH_TOKEN`
 - [Persistence configuration](https://docs.localstack.cloud/aws/capabilities/state-management/persistence/) (`PERSISTENCE`)
 - Custom [configuration options](https://docs.localstack.cloud/aws/capabilities/config/configuration/)
 

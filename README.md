@@ -38,6 +38,7 @@ This package follows Aspire's **major.minor** versioning but releases **patch ve
 - `9.5.x` works with Aspire 9.5.x
 - `9.6.x` works with Aspire 9.6.x
 - `13.1.x` works with Aspire 13.1.x
+- `13.4.x` works with Aspire 13.4.x
 
 We may ship features and fixes between Aspire releases. When upgrading Aspire's minor version, upgrade this package to match.
 
@@ -159,7 +160,7 @@ var app = builder.Build();
 
 This configuration automatically detects if LocalStack is enabled and configures the AWS SDK clients accordingly. If LocalStack is not enabled, it falls back to the official AWS SDK configuration without requiring code changes.
 
-> (Alternatively, `AddAWSServiceLocalStack` method can be used to prevent mix-up with [AddAWSService](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/net-dg-config-netcore.html).
+> Alternatively, `AddAWSServiceLocalStack` can be used to prevent mix-up between LocalStack.Client's `AddAwsService` and the AWS SDK's [`AddAWSService`](https://docs.aws.amazon.com/sdk-for-net/v3/developer-guide/net-dg-config-netcore.html).
 
 For more details on client configuration options, see the [LocalStack.NET Client documentation](https://github.com/localstack-dotnet/localstack-dotnet-client).
 
@@ -183,7 +184,7 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 ## Known Limitations
 
 - **`AddAWSDynamoDBLocal` cannot be combined with `UseLocalStack()`.** DynamoDB Local and LocalStack's DynamoDB are competing backends — data written to one is invisible to the other — so `UseLocalStack()` fails fast with a clear error instead of silently splitting DynamoDB state. Model DynamoDB through the CDK/CloudFormation path so LocalStack serves it, or drop `UseLocalStack()` to keep DynamoDB Local. Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain fully supported.
-- **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region — and LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect, verified with a full version timeline in [docs/plans/aws-sdk-signing-region-investigation.md](docs/plans/aws-sdk-signing-region-investigation.md); this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources and regular AWS service clients are not affected.
+- **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region. LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect; this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources and regular AWS service clients are not affected.
 
 ## Examples
 

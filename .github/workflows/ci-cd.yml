@@ -78,6 +78,14 @@ jobs:
       - name: "Build"
         run: dotnet build --configuration Release
 
+      - name: "Enable TUnit HTML report artifact upload"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env['ACTIONS_RUNTIME_TOKEN']);
+            core.exportVariable('ACTIONS_RESULTS_URL', process.env['ACTIONS_RESULTS_URL']);
+            core.exportVariable('TUNIT_ARTIFACT_RETENTION_DAYS', '7');
+
       - name: "Run Unit Tests"
         uses: ./.github/actions/run-dotnet-tests
         with:

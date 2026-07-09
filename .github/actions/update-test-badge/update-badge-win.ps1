@@ -23,6 +23,8 @@ if ($env:GITHUB_EVENT_NAME -eq "pull_request") {
 
 # Calculate totals
 $total = [int]$env:INPUT_TEST_PASSED + [int]$env:INPUT_TEST_FAILED + [int]$env:INPUT_TEST_SKIPPED
+$workflowRunUrl = "$($env:INPUT_SERVER_URL)/$($env:INPUT_REPOSITORY)/actions/runs/$($env:INPUT_RUN_ID)"
+$testUrlHtml = if ([string]::IsNullOrWhiteSpace($env:INPUT_TEST_URL_HTML)) { $workflowRunUrl } else { $env:INPUT_TEST_URL_HTML }
 
 # Generate timestamp - ISO 8601 with milliseconds
 $timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
@@ -37,11 +39,11 @@ $payload = @{
     failed = [int]$env:INPUT_TEST_FAILED
     skipped = [int]$env:INPUT_TEST_SKIPPED
     total = $total
-    url_html = $env:INPUT_TEST_URL_HTML
+    url_html = $testUrlHtml
     timestamp = $timestamp
     commit = $env:INPUT_COMMIT_SHA
     run_id = $env:INPUT_RUN_ID
-    workflow_run_url = "$($env:INPUT_SERVER_URL)/$($env:INPUT_REPOSITORY)/actions/runs/$($env:INPUT_RUN_ID)"
+    workflow_run_url = $workflowRunUrl
 } | ConvertTo-Json -Compress
 
 Write-Host "📊 Generated test results JSON for $($env:INPUT_PLATFORM):" -ForegroundColor Yellow

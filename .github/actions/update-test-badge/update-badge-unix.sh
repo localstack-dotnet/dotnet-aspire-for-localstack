@@ -23,6 +23,8 @@ fi
 
 # Calculate totals
 TOTAL=$((INPUT_TEST_PASSED + INPUT_TEST_FAILED + INPUT_TEST_SKIPPED))
+WORKFLOW_RUN_URL="${INPUT_SERVER_URL}/${INPUT_REPOSITORY}/actions/runs/${INPUT_RUN_ID}"
+TEST_URL_HTML="${INPUT_TEST_URL_HTML:-$WORKFLOW_RUN_URL}"
 
 # Generate timestamp - macOS compatible (no milliseconds)
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -53,11 +55,11 @@ cat > test-results.json << EOF
   "failed": ${INPUT_TEST_FAILED},
   "skipped": ${INPUT_TEST_SKIPPED},
   "total": ${TOTAL},
-  "url_html": "${INPUT_TEST_URL_HTML}",
+  "url_html": "${TEST_URL_HTML}",
   "timestamp": "${TIMESTAMP}",
   "commit": "${INPUT_COMMIT_SHA}",
   "run_id": "${INPUT_RUN_ID}",
-  "workflow_run_url": "${INPUT_SERVER_URL}/${INPUT_REPOSITORY}/actions/runs/${INPUT_RUN_ID}"
+  "workflow_run_url": "${WORKFLOW_RUN_URL}"
 }
 EOF
 

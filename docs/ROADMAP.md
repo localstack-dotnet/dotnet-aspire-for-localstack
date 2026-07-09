@@ -17,7 +17,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
-| WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | [research](plans/ws2-aspire-aws-modernization-research.md), [design](plans/ws2-dynamodb-streams-adapter-design.md), [implementation plan](plans/ws2-dynamodb-streams-adapter-implementation-plan.md) — implemented + runtime-verified 2026-07-04 with integration coverage on the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision |
+| WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | — implemented + runtime-verified 2026-07-04 with integration coverage on the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision |
 | WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
 | WS5 | Test integrity | P2 | 🔜 | — |
@@ -67,9 +67,9 @@ Bring all dependencies to current. Gate for WS2.
 
 Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
-**Research:** see [`docs/plans/ws2-aspire-aws-modernization-research.md`](plans/ws2-aspire-aws-modernization-research.md) — re-validated 2026-07-02 against `external/` source and web sources. Current conclusion: Aspire core is compatible; the main actionable AWS feature gap is LocalStack support for Lambda DynamoDB Streams event sources (viable on LocalStack, with evidence-backed design constraints in the research doc). AgentCore and AWS publish/deploy are deferred.
+**Research:** re-validated 2026-07-02 against `external/` source and web sources. Current conclusion: Aspire core is compatible; the main actionable AWS feature gap is LocalStack support for Lambda DynamoDB Streams event sources (viable on LocalStack, with evidence-backed design constraints folded into this roadmap). AgentCore and AWS publish/deploy are deferred.
 
-**Design/plan:** see [`docs/plans/ws2-dynamodb-streams-adapter-design.md`](plans/ws2-dynamodb-streams-adapter-design.md) and [`docs/plans/ws2-dynamodb-streams-adapter-implementation-plan.md`](plans/ws2-dynamodb-streams-adapter-implementation-plan.md). Chosen path: minimal adapter that mirrors the existing SQS helper-resource wiring, plus a stronger `playground/lambda` scenario: async QR generation driven by DynamoDB Streams, a `GET /{slug}/qr` status route, and a control-room web frontend showing the CDC and SQS event paths side by side. Integration coverage now runs against the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision.
+**Design/plan:** chosen path: minimal adapter that mirrors the existing SQS helper-resource wiring, plus a stronger `playground/lambda` scenario: async QR generation driven by DynamoDB Streams, a `GET /{slug}/qr` status route, and a control-room web frontend showing the CDC and SQS event paths side by side. Integration coverage now runs against the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision.
 
 - **Validate string-typename matching** against the new AWS-integration source. The host matches AWS internals by full type-name string (`Constants.SQSEventSourceResource`, `Constants.CloudFormationReferenceAnnotation`) — version-sensitive and most at risk in the 9.3→13.x jump.
 - **Catalog new AWS-integration features** since 9.3.0 and decide which to support on LocalStack: HTTPS Lambda/API Gateway emulators, publish/deploy support, SQS event-source dedupe fix, `AddAWSDynamoDBLocal` return-type change, AgentCore (experimental).
@@ -185,7 +185,7 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 | Version-sensitive type-name string matching | WS2 |
 | Fixed-delay waits in Lambda integration tests | WS5 |
 | Temporary direct `AWSSDK.Core` / `MessagePack` pins | WS3 (decoupling should remove) |
-| DynamoDB Streams event sources require `us-east-1` (upstream SDK signing regression; see `docs/plans/aws-sdk-signing-region-investigation.md`) | Upstream watch — lift playground pin + README/CHANGELOG known-issue when fixed |
+| DynamoDB Streams event sources require `us-east-1` (upstream SDK signing regression in the Lambda Test Tool custom-endpoint path) | Upstream watch — lift playground pin + README/CHANGELOG known-issue when fixed |
 
 ## Open GitHub Issues Mapping
 
