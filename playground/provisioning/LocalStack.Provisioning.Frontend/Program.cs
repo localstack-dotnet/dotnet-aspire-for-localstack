@@ -7,15 +7,17 @@ using Amazon.SimpleNotificationService;
 using Amazon.SQS;
 using LocalStack.Client.Extensions;
 using LocalStack.Client.Options;
+using LocalStack.Provisioning.Frontend;
 using LocalStack.Provisioning.Frontend.Components;
 using LocalStack.Provisioning.Frontend.Handlers;
 using LocalStack.Provisioning.Frontend.Models;
 using LocalStack.Provisioning.Frontend.Services;
 using Microsoft.Extensions.Options;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.AddServiceDefaults();
+builder.AddServiceDefaults(options => options.ConfigureTracingBeforeDefaults(static tracing => tracing.SetSampler(new BlazorNoiseSampler())));
 
 builder.Services.AddLocalStack(builder.Configuration);
 builder.Services.AddAWSServiceLocalStack<IAmazonDynamoDB>();
