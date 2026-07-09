@@ -1,6 +1,6 @@
 # Agent Known Notes
 
-Date: 2026-07-04
+Date: 2026-07-09
 
 These notes are hints for agents during triage and review. They are not permission to refactor unrelated code.
 
@@ -9,6 +9,7 @@ These notes are hints for agents during triage and review. They are not permissi
 - Some AWS integration logic may depend on version-sensitive type-name string matching.
 - Lambda integration tests contain fixed-delay waits for async SQS/event-source behavior.
 - DynamoDB Streams event sources only work in `us-east-1`: the Lambda Test Tool's bundled AWS SDK signs custom-endpoint requests for `us-east-1`. Symptom: the stream poller loops on `ResourceNotFoundException` for a table that exists. Do not "fix" this in package code — the env emission is correct; lift the playground's `us-east-1` pin and the README/CHANGELOG known-issue entries when upstream ships a fix.
+- Linux-CI-only integration-test flake: many tests fail at once, each at `0ms`, with `InvalidOperationException: Collection was modified` thrown from `LocalStackLambdaFixture.InitializeAsync`. Known Aspire 13.4.6 startup race — `ResourceAnnotationCollection` is not thread-safe in that release; fixed upstream in microsoft/aspire#18259 (merged to main 2026-06-19, in no shipped release yet). Re-run the job; do not hot-fix package code for this. Evidence and revisit triggers: `docs/plans/aspire-annotation-race-investigation.md`.
 
 ## Playwright MCP on Linux (Headless)
 
