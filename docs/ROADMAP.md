@@ -1,6 +1,6 @@
 # Roadmap
 
-Date: 2026-07-08
+Date: 2026-07-09
 
 ## How To Use This Document
 
@@ -216,3 +216,4 @@ Drop raw, unsorted ideas here as they come up, then triage them into a workstrea
 - Optional deliberate opt-in: `PublishAsDockerComposeService()` passthrough for teams that want LocalStack in generated compose for CI (docker.sock + privileged); default stays `ExcludeFromManifest`.
 - Upstream issue candidates from WS2 runtime verification (2026-07-04, evidence in the WS2 design doc): (a) aws-lambda-dotnet — Lambda Test Tool's bundled AWSSDK.Core 4.0.7.x loses the signing region when `AWS_ENDPOINT_URL*` is set (empirical matrix captured; breaks non-us-east-1 LocalStack); (b) aws integrations — API Gateway emulator route config is one-per-Lambda-resource, second `WithReference` silently overwrites the first.
 - Consumer guidance to document (WS3/WS9): LocalStack.Client's default proxy-mode registration leaks the AWS regional host into generated URL strings (e.g. presigned URLs). Either build browser-facing URLs with an S3UrlService-style LocalStack-aware helper (the playground's approach) or register the client with `AddAwsService<T>(useServiceUrl: true)` when genuine presigning is required.
+- CodeQL C# analysis quality (2026-07-09): GitHub default setup currently scans C# with `build-mode: none`, producing a low analysis-quality warning (`call target` coverage 81%, threshold 85%). Evaluate advanced CodeQL setup with manual .NET restore/build so generated code, dependencies, and call targets are represented more accurately; do not block the current CI hardening work on this.
