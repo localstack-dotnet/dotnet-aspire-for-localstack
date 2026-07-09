@@ -9,7 +9,7 @@
     <Authors>LocalStack.NET, Deniz İrgin</Authors>
     <Company>LocalStack.NET</Company>
     <Owners>LocalStack.NET</Owners>
-    <Copyright>Copyright © LocalStack.NET 2025</Copyright>
+    <Copyright>Copyright © LocalStack.NET 2025-2026</Copyright>
     <RepositoryUrl>https://github.com/localstack-dotnet/dotnet-aspire-for-localstack</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
