@@ -19,7 +19,7 @@ Evidence checked:
 - No TypeScript validation AppHost or `aspire.config.json` package-reference-mode sample exists under `playground/`.
 - Dashboard/catalog polish remains routed to WS6/WS8; the package source still does not use `WithHidden`, `WithCommand`, `WithUrls`, `WithIconName`, or `ExcludeFromMcp`.
 
-Status call: keep this document as active research/backlog. In the roadmap, WS10 should be `Planned`, not `Researching`: the research phase is complete, while implementation waits on WS3 API-shape decisions plus Deniz's catalog strategy decision.
+Status call: keep this document as active research/backlog. In the roadmap, WS10 should be `Planned`, not `Researching`: the research phase is complete, while implementation waits on WS3A API-shape decisions plus Deniz's catalog strategy decision.
 
 ## Source Evidence (verified against `external/aspire/v13.4.6`, tag == HEAD `87fe259`)
 
@@ -84,7 +84,7 @@ Verified via aspire.dev docs, microsoft/aspire and CommunityToolkit/Aspire sourc
 - **The `polyglot` NuGet tag is auto-added at pack time** when the analyzers property is enabled (via `Aspire.Hosting`'s buildTransitive targets; opt-out `<IsAspirePolyglotCompatible>false</IsAspirePolyglotCompatible>`). Non-C# `aspire add` filters on that tag — so shipping it is correct hygiene even while the prefix filter keeps us out of the list.
 - Local dev loop: `aspire.config.json` `packages` can point at a **`.csproj` path** (project-reference mode) — the CLI builds it and regenerates the SDK. This is how we would test a TS AppHost against the package in-repo.
 - **One ATS annotation investment covers future languages**: Python/Go/Java/Rust AppHosts exist in main-branch tests and on the public roadmap; the same metadata drives all generated SDKs. (Python-as-workload is already GA and unrelated.)
-- API-shape warning: callback-taking or SDK-type-taking surfaces (`Action<LocalStackContainerOptions>`, `IAWSSDKConfig`, `ILocalStackOptions`) need ATS-first adaptation — DTO options bags, `[AspireExportIgnore]` on C#-only overloads. This couples directly to WS3's API reshaping and WS6's options-immutability decision.
+- API-shape warning: callback-taking or SDK-type-taking surfaces (`Action<LocalStackContainerOptions>`, `IAWSSDKConfig`, `ILocalStackOptions`) need ATS-first adaptation — DTO options bags, `[AspireExportIgnore]` on C#-only overloads. This couples directly to WS3A's API reshaping and WS6's options-immutability decision.
 
 ### Not extensible today (accept and route around)
 
@@ -106,14 +106,14 @@ Method: what's-new pages 9.0–9.5 and 13.0–13.4 plus container-networking/pub
 
 | Capability | Since | Adoption idea | Route to |
 | --- | --- | --- | --- |
-| Container tunnel (default since 13.3) + `NetworkIdentifier`/`KnownNetworkIdentifiers` + network-context-aware `EndpointReference` | 13.0–13.3 | The correctness foundation for LocalStack's defining topology problem: host clients, Aspire-managed container clients, and docker.sock-spawned Lambda containers all need a *different* answer for "where is LocalStack". Resolve endpoints per network context (`LocalhostNetwork` vs `DefaultAspireContainerNetwork`) instead of a single host-facing string; docker.sock-spawned containers remain outside Aspire's model and still need explicit gateway addressing | WS4 (#24) / WS3 |
+| Container tunnel (default since 13.3) + `NetworkIdentifier`/`KnownNetworkIdentifiers` + network-context-aware `EndpointReference` | 13.0–13.3 | The correctness foundation for LocalStack's defining topology problem: host clients, Aspire-managed container clients, and docker.sock-spawned Lambda containers all need a *different* answer for "where is LocalStack". Resolve endpoints per network context (`LocalhostNetwork` vs `DefaultAspireContainerNetwork`) instead of a single host-facing string; docker.sock-spawned containers remain outside Aspire's model and still need explicit gateway addressing | WS4 (#24) / WS3B |
 | `WithHttpCommand()` | 9.2 | One-click `POST /_localstack/state/reset` (Pro) style commands | WS8 |
 | `WithParentRelationship()` nesting (+ 13.4 child/reference relationship APIs) | 9.1 | Nest auto-wired CloudFormation/CDK/Lambda resources under the LocalStack resource in the dashboard — turns `UseLocalStack()` output into a visible "AWS-on-LocalStack" control panel | WS8 |
 | `WithImagePullPolicy()` (`Never` since 13.2) | 9.2 | Expose on container options for air-gapped CI and `latest`-tag users | WS7 |
-| `ExcludeReferenceEndpoint` on `EndpointAnnotation` | 13.3 | If a second endpoint (HTTPS/metrics) is ever added, keep consumer env injection 4566-only | WS3 |
+| `ExcludeReferenceEndpoint` on `EndpointAnnotation` | 13.3 | If a second endpoint (HTTPS/metrics) is ever added, keep consumer env injection 4566-only | WS3A |
 | `WithHttpsDeveloperCertificate()` / `WithCertificateTrustConfiguration()` | 13.1/13.2 | Optional HTTPS LocalStack endpoint + trusting it from client containers (some AWS SDK flows insist on https) | WS7/WS8 backlog |
-| Connection properties: `WithConnectionProperty()`, standardized names | 13.0/13.1 | Expose `EndpointUrl`/`Region`/`AccessKey`/`SecretKey` as structured, language-agnostic properties — the polyglot consumer story beyond .NET | WS3 (natural fit with endpoint-emission work) |
-| Named references `WithReference(resource, "name")` | 13.0 | Deterministic env-prefix control for consumers | WS3 |
+| Connection properties: `WithConnectionProperty()`, standardized names | 13.0/13.1 | Expose `EndpointUrl`/`Region`/`AccessKey`/`SecretKey` as structured, language-agnostic properties — the polyglot consumer story beyond .NET | Unassigned; WS3A does not add endpoint emission |
+| Named references `WithReference(resource, "name")` | 13.0 | Deterministic env-prefix control for consumers | WS3A |
 | Fluent eventing (`OnResourceReady`, `OnBeforeResourceStarted`, `OnResourceStopped`) + `IDistributedApplicationEventingSubscriber` + BeforeStart pipeline phase (`SubscribeBeforeStart`, 13.3) | 9.4–13.3 | `UseLocalStack()` rewiring in a BeforeStart phase for deterministic ordering (replaces the fragile Remove/Insert resource reordering — WS6 already tracks that smell); `OnResourceStopped` could clean up docker.sock-spawned Lambda containers | WS6 |
 | `WithHttpProbe()` (startup/readiness/liveness) | 9.5 | Consider modeling `/_localstack/health` as probes; keep the bespoke service-aware check for per-service status | WS6 (evaluate) |
 | `WaitBehavior` overloads | 9.4 | Expose fail-fast vs wait-on-unhealthy as an option | WS6 backlog |
@@ -121,7 +121,7 @@ Method: what's-new pages 9.0–9.5 and 13.0–13.4 plus container-networking/pub
 | Dynamic parameter inputs (dropdowns, custom choice) | 13.0 | "Which LocalStack services to eager-load" as a prompted choice list | WS7 backlog |
 | `aspire secret` CLI + `IUserSecretsManager` | 13.2 | Document `aspire secret set` for the auth token | WS7 (#25) |
 | `aspire exec --resource localstack -- awslocal ...` | 9.5 | Document: injected env means `awslocal`/AWS CLI get `AWS_ENDPOINT_URL` for free | WS9 docs |
-| `ConfigurationSchema.json` | convention | Ship for the consumer-side `LocalStack` settings section (IntelliSense in appsettings.json) | WS9/WS3 |
+| `ConfigurationSchema.json` | convention | Ship for the consumer-side `LocalStack` settings section (IntelliSense in appsettings.json) | WS9/WS3A |
 | Testing: `WaitForResourceHealthyAsync` pattern; `--isolated` mode (13.2) | 9.4/13.2 | Document canonical consumer-test pattern; verify persistent-lifetime containers under isolated parallel AppHosts (conflict risk — recommend session lifetime in tests) | WS5 |
 | `aspire update` third-party behavior | 13.x | Verify our package gets version-updated in CPM repos without breaking Aspire compat expectations | WS10 verify item |
 | `WithMcpServer(path)` | 13.2 | LocalStack ships its own MCP server product — annotate when/if the container exposes an MCP endpoint, so agents auto-discover it | Inbox (watch LocalStack platform) |
@@ -131,14 +131,14 @@ Method: what's-new pages 9.0–9.5 and 13.0–13.4 plus container-networking/pub
 
 ### Ranked adoption candidates (both passes merged, corrected)
 
-1. **Network-context-aware endpoints + container tunnel semantics** (13.0/13.3) — correctness foundation for host-vs-container-vs-docker.sock topology; subsumes and modernizes bug #24. → WS4/WS3
+1. **Network-context-aware endpoints + container tunnel semantics** (13.0/13.3) — correctness foundation for host-vs-container-vs-docker.sock topology; subsumes and modernizes bug #24. → WS4/WS3B
 2. **Secret `ParameterResource` + InteractionService prompting for `LOCALSTACK_AUTH_TOKEN`** (9.4+, experimental attr) — turns the WS7 unified-image migration into a zero-docs first-run prompt persisted to user secrets. → WS7
 3. **`WithContainerFiles` for `/etc/localstack/init/ready.d`** (9.2) — the clean answer to #26; kills bind-mount friction on Windows/CI. → WS8
 4. **Eventing modernization: fluent `On*`, subscribers, BeforeStart pipeline phase** (9.4–13.3) — deterministic `UseLocalStack()` ordering, replacing the Remove/Insert hack. → WS6
 5. **Command UX: `WithCommand`/`WithHttpCommand` + logger + visibility + typed args** (9.0→13.4) — "Reset LocalStack state", "Dump diagnostics" as dashboard/CLI/MCP actions; the most visible UX win. → WS8
-6. **Connection properties** (13.0/13.1) — structured `EndpointUrl`/`Region`/credentials for non-.NET consumers and agents; pairs with WS3's `AWS_ENDPOINT_URL_*` emission. → WS3
+6. **Connection properties** (13.0/13.1) — structured `EndpointUrl`/`Region`/credentials for non-.NET consumers and agents. WS3A does not emit `AWS_ENDPOINT_URL*`; revisit only if a future native-endpoint feature is approved. → Unassigned
 7. **Dashboard topology: parent/child nesting + `WithUrls` + `WithIconName`** (9.1–9.5) — near-zero-effort "AWS-emulation control panel" presentation. → WS8
-8. **ATS export + analyzers + `IResourceWithCustomWithReference`** (13.4) — the polyglot reach multiplier; sequence after WS3's API reshape. → WS10 core
+8. **ATS export + analyzers + `IResourceWithCustomWithReference`** (13.4) — the polyglot reach multiplier; sequence after WS3A's API reshape. → WS10 core
 9. **Standard health APIs (`WithHttpHealthCheck`/`WithHttpProbe`) where they don't lose per-service fidelity** (9.0/9.5) — platform-native readiness semantics. → WS6 evaluate
 10. **MCP/agent hygiene: `ExcludeFromMcp` on helpers, deliberate command visibility, descriptive URLs** (13.0–13.4) — cheap good-citizenship in the agent-era workflow. → WS8
 
@@ -148,7 +148,7 @@ Explicitly irrelevant (local-dev-only nature): Helm/ingress/registry/deployment-
 
 | Item | Effort | Value | Depends on |
 | --- | --- | --- | --- |
-| ATS export pass: `<EnableAspireIntegrationAnalyzers>true</...>` (auto-adds the `polyglot` NuGet tag at pack), `[AspireExport]` on `AddLocalStack`/`UseLocalStack`/resource types, DTO options bags for callback/SDK-typed surfaces, analyzer-clean baseline (`ASPIREEXPORT001–017`) | Medium | Polyglot-exportable package; same metadata covers future Python/Go/Java/Rust AppHosts; analyzers raise API hygiene | Do after WS3 reshapes the public surface (avoid annotating soon-to-change APIs) |
+| ATS export pass: `<EnableAspireIntegrationAnalyzers>true</...>` (auto-adds the `polyglot` NuGet tag at pack), `[AspireExport]` on `AddLocalStack`/`UseLocalStack`/resource types, DTO options bags for callback/SDK-typed surfaces, analyzer-clean baseline (`ASPIREEXPORT001–017`) | Medium | Polyglot-exportable package; same metadata covers future Python/Go/Java/Rust AppHosts; analyzers raise API hygiene | Do after WS3A reshapes the public surface (avoid annotating soon-to-change APIs) |
 | `IResourceWithCustomWithReference<LocalStackResource>` implementation (Qdrant/AzureFunctions pattern; runtime `IResourceWithWaitSupport` check) + tests | Small | Correct `withReference(localstack)` semantics from TS AppHosts | Nothing upstream |
 | TS validation AppHost: `aspire.config.json` project-reference mode pointing at the package `.csproj`, exercising `addLocalStack`/`useLocalStack` from TypeScript | Small-medium | Proves the export surface end-to-end; doubles as a playground | ATS export pass |
 | Catalog strategy decision: CommunityToolkit re-homing (`CommunityToolkit.Aspire.Hosting.LocalStack`, code donation into their repo/governance) vs upstream filter-widening issue vs status quo + documented manual flows (`dotnet add package`, `#:package`, `aspire.config.json`) | Decision + advocacy | Discoverability, `aspire add`, VS dialog, aspire.dev docs page | Deniz's ownership preference; upstream issue is low-cost and non-exclusive with the others |
@@ -158,5 +158,5 @@ Explicitly irrelevant (local-dev-only nature): Helm/ingress/registry/deployment-
 ## Relationship To Existing Workstreams
 
 - WS2 (DynamoDB Streams) is unaffected and proceeds first; ATS export is additive and touches the same public surface, so land WS2 before annotating.
-- WS3 (decoupling/native endpoints) interacts: ATS-exported API surface should be the post-WS3 shape where possible, or exports will need churn.
+- WS3A interacts: ATS-exported API surface should use the package-owned post-WS3A shape where possible, or exports will need churn.
 - WS6/WS8 own helper-resource hiding and dashboard UX; this workstream only flags them as ecosystem-visible.

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [13.4.1] - Unreleased
+
+### Known Issues
+
+- **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).
+
 ## [13.4.0] - 2026-07-09
 
 ### Added

@@ -52,7 +52,7 @@ Additional verified facts:
 ## Who Is Affected
 
 - **Amazon.Lambda.TestTool (0.14.1/0.15.0, and current main)**: bundles Core 4.0.7.3 via DynamoDBv2 4.0.18.5; main has no SDK bump pending, and no upstream issue mentions this. Its DynamoDB Streams poller cannot work against region-scoped emulators outside us-east-1.
-- **Any bare AWS-SDK .NET consumer** given `AWS_ENDPOINT_URL*` and a non-us-east-1 region on current SDK versions — directly relevant to WS3's planned native `AWS_ENDPOINT_URL_<SERVICE>` emission: consumers would read/write LocalStack's us-east-1 namespace while CDK-provisioned resources live in the configured region.
+- **Any bare AWS-SDK .NET consumer** given `AWS_ENDPOINT_URL*` and a non-us-east-1 region on current SDK versions: consumers can read/write LocalStack's us-east-1 namespace while CDK-provisioned resources live in the configured region. WS3A does not emit these variables, but documents the risk and warns when it can observe coexistence with LocalStack.Client proxy mode.
 - **NOT affected: LocalStack.Client's default proxy mode.** It routes via `ProxyHost`/`ProxyPort` while the request URI keeps the region-bearing `*.amazonaws.com` hostname, which `RegionFinder` parses correctly. The library's proxy design is accidentally immune to Bug 2 — worth stating in consumer docs.
 - This package's env emission itself is spec-correct; the defect is entirely in the SDK's signing path.
 
@@ -63,7 +63,7 @@ Decision (2026-07-04): upstream issue/PR filing (options 1-2) is **deferred** �
 1. **aws-sdk-net issue (report the live regression).** No open issue exists post-revert. We hold a minimal deterministic repro (oracle + version matrix) and can propose a regression-safe re-fix: prefer the client's already-resolved `RegionEndpoint`/`AuthenticationRegion` in the custom-endpoint signing path instead of walking `FallbackRegionFactory` (whose IMDS tail caused #4444). Optionally follow with a PR.
 2. **aws-lambda-dotnet issue + small PR (the pragmatic near-term fix).** In the test tool's event-source client construction, set `AuthenticationRegion` from the config string's `Region` or the environment (`AWS_REGION`/`AWS_DEFAULT_REGION`). One-line-per-client, no SDK bump, oracle-verified to work on both the bundled and the current Core. Once a tool release ships it, Aspire consumers get it automatically (the tool updater installs the minimum-or-newer version; `LambdaEmulatorOptions.OverrideMinimumInstallVersion` can force it earlier).
 3. **This repo, after (2) lands:** flip the playground back to a non-default region and drop the us-east-1 pin. Until then the pin stays, explicitly labeled as upstream-blocked state — it is not a solution.
-4. **WS3 documentation duty:** record that native endpoint emission meets Bug 2 on current SDKs for bare-SDK consumers, and that LocalStack.Client proxy mode does not.
+4. **WS3A documentation duty:** keep the version-sensitive signing limitation aligned in `README.md` Known Limitations, `docs/agents/KNOWN_ISSUES.md`, and the draft `13.4.1` changelog.
 
 ## Timeline Reference
 

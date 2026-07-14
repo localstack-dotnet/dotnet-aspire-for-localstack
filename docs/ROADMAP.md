@@ -1,6 +1,6 @@
 # Roadmap
 
-Date: 2026-07-09
+Date: 2026-07-14
 
 ## How To Use This Document
 
@@ -18,7 +18,8 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
 | WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | — implemented + runtime-verified 2026-07-04 with integration coverage on the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision |
-| WS3 | AppHost decoupling + native endpoint support | P1 | 🔜 | — |
+| WS3A | AppHost API boundary + endpoint-conflict warning | P1 | 📐 | [plan](plans/2026-07-14-ws3a-apphost-api-boundary.md) |
+| WS3B | Resource-wiring correctness | P1 | 🔜 | — research required before planning |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
 | WS5 | Test integrity | P2 | 🔜 | — |
 | WS6 | Refactoring / API quality | P2 | 🔜 | — |
@@ -75,24 +76,32 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 - **Catalog new AWS-integration features** since 9.3.0 and decide which to support on LocalStack: HTTPS Lambda/API Gateway emulators, publish/deploy support, SQS event-source dedupe fix, `AddAWSDynamoDBLocal` return-type change, AgentCore (experimental).
 - Audit new Aspire resource-model/interfaces worth adopting.
 
-### WS3 — AppHost decoupling from LocalStack.Client + native endpoint support · P1
+### WS3A — AppHost API boundary + endpoint-conflict warning · P1
 
-**Scope: the hosting package only. Consumer-side compatibility with LocalStack.Client.Extensions is preserved, not removed.**
+**Scope: the hosting package owns its recommended AppHost configuration contract. `LocalStack.Client` remains an internal runtime dependency, and workload compatibility with `LocalStack.Client.Extensions` is preserved.**
 
-- **AppHost-internal (core work):** remove the hosting package's dependency on the `LocalStack.Client` NuGet — replace internal use of `ILocalStackOptions`/`LocalStackOptions`/`ConfigOptions`/`SessionOptions` and the `SessionStandalone`-built CloudFormation client with our own minimal config model and a directly-constructed AWS SDK client (`AmazonCloudFormationConfig { ServiceURL = ... }`). Expected side effect: the temporary direct `MessagePack` / `AWSSDK.Core` pins can be dropped.
-- **Consumer-side (preserve + add):**
-  - **Keep** emitting `LocalStack__*` environment variables so projects using `LocalStack.Client.Extensions` keep working unchanged. Non-negotiable.
-  - **Add** AWS-official `AWS_ENDPOINT_URL_<SERVICE>` (and global `AWS_ENDPOINT_URL`) emission so projects using the bare AWS SDK work without the client library (issue #12). This matches AWS's own idiom (`AddAWSDynamoDBLocal` and our SQS-event-source path already use it).
-- Remove the `ILocalStackOptions?` parameter from `AddLocalStack` (mark `[Obsolete]`, keep working) — todo #10.
-- Evaluate `IResourceWithEndpoints` (issue #12).
+**Plan:** [WS3A AppHost API Boundary Implementation Plan](plans/2026-07-14-ws3a-apphost-api-boundary.md)
 
-**Validation sub-case (was todo #2):** with native per-service endpoints, "use the official `AddAWSDynamoDBLocal` for DynamoDB while LocalStack serves the rest" largely falls out for free. Not a standalone feature — a consequence of this workstream. Open to challenge. **Update 2026-07-04:** this combination is now rejected fail-fast in `UseLocalStack()` — DynamoDB Local and LocalStack's DynamoDB are competing backends and combining them splits DynamoDB state. If WS3 revisits this, it must be a deliberate design that answers the state-splitting problem, not a side effect of endpoint emission.
+- Add package-owned `LocalStackHostingOptions`, canonical `Aspire:Hosting:LocalStack` configuration, validation, and source/binary-compatible `AddLocalStack` overloads.
+- Keep the released Client-owned options surface in 13.x as non-error `[Obsolete]` compatibility adapters; remove it only in the next major version.
+- Keep emitting `LocalStack__*` environment variables unchanged for workloads using `LocalStack.Client.Extensions`.
+- Keep Client models behind an internal immutable hosting-state boundary and translate to `SessionStandalone` only at the runtime seam.
+- Emit a read-only best-effort warning when this package can observe Client proxy configuration and native `AWS_ENDPOINT_URL*` configuration on the same workload.
+- Record the proxy/native-endpoint signing limitation in `README.md` Known Limitations, `docs/agents/KNOWN_ISSUES.md`, and the draft `13.4.1` changelog. Do not add a native endpoint feature or mutate workload configuration.
 
-**Insights from WS2 (2026-07-04, DynamoDB Streams design review):**
+**Superseded original direction:** the deep-dive rejected complete removal of the `LocalStack.Client` package, direct construction of the CloudFormation client, and automatic native endpoint emission. `SessionStandalone` preserves proxy-mode behavior, LocalStack.Client owns the canonical service metadata, and the custom-`ServiceURL` spike exposed version-sensitive signing-region behavior. Automatic endpoint emission would also risk overriding explicit user or upstream emulator configuration.
 
-- **Endpoint precedence contract.** AWS SDK precedence (`AWS_ENDPOINT_URL_<SERVICE>` > global `AWS_ENDPOINT_URL`) is the mechanism that makes mixed backends viable, and env-callback ordering is last-writer-wins with this package's callbacks always running last (annotated at connection-string-available time, after upstream's build-time callbacks). Unconditional writes therefore silently clobber upstream's own local-emulator wiring: upstream sets `AWS_ENDPOINT_URL_DYNAMODB`/`AWS_ENDPOINT_URL_DYNAMODB_STREAMS` when a Lambda references AWS's DynamoDB Local container, and a blanket LocalStack overwrite redirects that helper to a backend where its table does not exist — an event source that dies silently. WS2 initially shipped a don't-clobber guard on the streams configurator; after the 2026-07-04 decision to reject DynamoDB Local coexistence outright (fail-fast in `UseLocalStack()`), the guard was removed as dead code. The contract itself stands for WS3's native `AWS_ENDPOINT_URL_*` emission to consumer projects: **LocalStack values are defaults, never overrides** — user-set `WithEnvironment` values win. When WS3 implements this and a skip happens, it must not be silent: surface the decision through Aspire's native logging — `EnvironmentCallbackContext.Logger` writes to the affected resource's log stream (present on the 13.4 surface); resource-event `Logger` overloads (13.2+) are the channel for non-env decisions. A silent skip is as confusing as a silent override.
-- **Attachment is type-name-blind.** `UseLocalStack()` attaches LocalStack to AWS helper executables purely by type name, with no knowledge of which backing store the helper actually targets. In mixed scenarios this still produces a spurious `WaitFor(localstack)` (plus dashboard reference noise) on helpers that never talk to LocalStack. Harmless today but wrong; WS3's design should make attachment target-aware (resolve the helper's backing resource) or at least opt-out-able, rather than scan-and-attach-everything.
-- **App-like resource coverage.** Aspire 13.4 has several app resource helpers beyond `AddProject`: `AddCSharpApp` returns `CSharpAppResource : ProjectResource`; Node/JavaScript/Vite/Python helpers return `ExecutableResource` subclasses. These are covered by today's conditional auto-wiring only when they reference an AWS CloudFormation/CDK resource, because `UseLocalStack()` looks for the AWS relationship annotation and then handles `ProjectResource`/`ExecutableResource`. `AddContainer`/`AddDockerfile` return `ContainerResource`, which also supports environment and waits but currently falls through the switch even when it references a CloudFormation/CDK resource. WS3 should decide whether the native endpoint/config emission target is all `IResourceWithEnvironment` + `IResourceWithWaitSupport` consumers, and should explicitly cover or reject container/Dockerfile consumers.
+**DynamoDB Local validation:** `AddAWSDynamoDBLocal` remains rejected fail-fast with `UseLocalStack()`. They are competing DynamoDB backends and combining them splits state; revisiting that rule requires a deliberate mixed-backend design rather than incidental endpoint emission.
+
+**Closed scope decisions:** issue #12's required bare-SDK scenario already works through `localStack.Resource.ConnectionStringExpression`, so WS3A does not add `IResourceWithEndpoints`. DynamoDB Local coexistence is already handled by the fail-fast rule above. Native endpoint precedence/signing remains a documented known issue, not a package-managed endpoint feature.
+
+### WS3B — Resource-wiring correctness · P1
+
+**Status: research required before design or implementation planning. No solution has been selected.**
+
+- **Target-aware helper attachment.** `UseLocalStack()` recognizes internal AWS SQS/DynamoDB Streams helper executables by full type-name and attaches LocalStack without knowing which backend the helper targets. Research whether backing-resource intent is recoverable from Aspire/AWS annotations and relationships, whether an explicit opt-out is needed, and whether preserving current behavior is safer.
+- **App-like resource coverage.** `ProjectResource` and `ExecutableResource` subclasses are conditionally auto-wired today. `ContainerResource` from `AddContainer`/`AddDockerfile` satisfies the environment/wait capabilities but falls through the concrete-type switch. Research the intended support boundary, capability-based wiring feasibility, callback ordering, and compatibility impact before choosing support or explicit non-support.
+- Research both items together because they share the `UseLocalStack()` auto-wiring seam. Return evidence, options, risks, and a recommendation for approval before creating an implementation plan.
 
 ### WS4 — Bugs & correctness · P2
 
@@ -107,15 +116,15 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 - WS10 research (2026-07-04): document the canonical consumer-test pattern (`WaitForResourceHealthyAsync("localstack")` + AWS SDK asserts, no hardcoded 4566 — testing builder randomizes proxied ports) and verify persistent-lifetime containers behave under 13.2 `--isolated` parallel AppHosts (conflict risk — recommend session lifetime in tests).
 - **CDK bootstrap & error-path coverage**; review unit tests (todo #11), enrich integration tests (todo #12).
 - **Guard tests for reflected AWS types** — todo #14; ties to WS2's string-typename fragility. (Note: a clean `typeof()` replacement may be impossible because those AWS types are `internal` — confirm in WS2.)
-- **App-like resource auto-wiring coverage** — add unit coverage for `AddCSharpApp`, JavaScript/Node/Vite, Python, and container/Dockerfile resources that reference CloudFormation/CDK resources. Expected behavior should be explicit: Project/Executable-derived app resources are conditionally auto-wired today; ContainerResource is currently a documented gap unless WS3 changes the contract.
+- **App-like resource auto-wiring coverage** — add unit coverage for `AddCSharpApp`, JavaScript/Node/Vite, Python, and container/Dockerfile resources that reference CloudFormation/CDK resources. Expected behavior should be explicit: Project/Executable-derived app resources are conditionally auto-wired today; `ContainerResource` is currently a documented gap unless WS3B changes the contract.
 - Decide on the failing SQS-event-source emulator tests: real LocalStack limitation → documented skip, or fixable.
 
 ### WS6 — Refactoring / API quality · P2
 
 - `LocalStackContainerOptions` immutability (todo #4) — tension with the `configureContainer` mutation pattern; design call needed.
 - `UseLocalStack` mutates `builder.Resources` via Remove/Insert to order CDK bootstrap — works but fragile. WS10 research (2026-07-04): the modern replacement is the eventing model — fluent `On*` callbacks, `IDistributedApplicationEventingSubscriber`, and the 13.3 BeforeStart pipeline phase (`SubscribeBeforeStart`) for deterministic rewiring order; `OnResourceStopped` could also clean up docker.sock-spawned Lambda containers. Evaluate `WithHttpHealthCheck`/`WithHttpProbe` vs the bespoke health check (keep per-service fidelity).
-- **Move env-annotation registration out of `ConnectionStringAvailableEvent` to model-construction time** — deferred `WithEnvironment(context => ...)` callbacks resolving LocalStack endpoint values lazily; the event callback keeps only non-annotation side effects (CloudFormation client setup, CDK credential override, asset-upload customizer). Motivated by the 2026-07-09 annotation-race flake ([investigation](plans/aspire-annotation-race-investigation.md)) but valid independently: event-time model mutation is fragile — annotations added after a target's env has been computed are silently ignored. **Design constraint:** today's "this package's env callbacks always run last" (last-writer-wins) property exists *because* registration happens at event time; moving to build time changes callback ordering and must be designed together with WS3's defaults-not-overrides precedence contract, not as a mechanical move.
-- Post-WS2 helper-resource cleanup — SQS and DynamoDB Streams support will share the same string-matched internal AWS helper-resource pattern across `UseLocalStack()`, `LocalStackConnectionStringAvailableCallback`, constants, and configurators. Consider a small internal abstraction instead of adding more hardcoded branches. WS2 insights (2026-07-04): (a) the two dispatch chains must be edited in lockstep for every new helper type — proven twice now (SQS, DynamoDB Streams); the abstraction should carry, per helper, the type-name constant, the env emission, and whether reference/wait attachment applies. (b) Env emission is now uniform: both configurators write unconditionally (the DynamoDB Streams don't-clobber guard was removed when DynamoDB Local coexistence was rejected fail-fast, 2026-07-04). If WS3 defines a defaults-not-overrides precedence contract for project-level emission, the abstraction should adopt that same contract.
+- **Move env-annotation registration out of `ConnectionStringAvailableEvent` to model-construction time** — deferred `WithEnvironment(context => ...)` callbacks resolving LocalStack endpoint values lazily; the event callback keeps only non-annotation side effects (CloudFormation client setup, CDK credential override, asset-upload customizer). Motivated by the 2026-07-09 annotation-race flake ([investigation](plans/aspire-annotation-race-investigation.md)) but valid independently: event-time model mutation is fragile — annotations added after a target's env has been computed are silently ignored. **Design constraint:** today's "this package's env callbacks always run last" property exists *because* registration happens at event time. Moving to build time changes callback precedence and requires an explicit policy; WS3A does not introduce automatic native endpoint emission or a general defaults-not-overrides rule.
+- Post-WS2 helper-resource cleanup — SQS and DynamoDB Streams support share the same string-matched internal AWS helper-resource pattern across `UseLocalStack()`, `LocalStackConnectionStringAvailableCallback`, constants, and configurators. Consider a small internal abstraction instead of adding more hardcoded branches. The two dispatch chains must be edited in lockstep for every new helper type; the abstraction should carry, per helper, the type-name constant, LocalStack.Client environment emission, and whether reference/wait attachment applies.
 - Helper-resource dashboard UX — evaluate `WithHidden()` / `WithHiddenOnCompletion()` for implementation-detail helpers such as SQS/DynamoDB Streams pollers and CDK bootstrap resources.
 - Suppress the noisy client-side `"Failed to connect to AWS using AWS SDK config..."` warning (todo #15).
 - Fix the misleading eager-service error message in `LocalStackResourceBuilderExtensions.cs` — it reports a service "is not supported by LocalStack" when the real cause is a missing CLI-name mapping in `LocalStack.Client` (from the PR #8 review).
@@ -144,11 +153,11 @@ Mission: the full "what changed in the Aspire world, what new support can this p
 - Third-party ATS/TypeScript export is officially supported and attribute-based (`[AspireExport]` family + `Aspire.Hosting.Integration.Analyzers`); custom `WithReference` semantics need `IResourceWithCustomWithReference<LocalStackResource>` (Qdrant is the reference implementation) or TS AppHosts silently get default connection-string wiring instead of this package's LocalStack wiring.
 - The integration catalog (`aspire add` / `aspire integration list` / MCP `list_integrations`) is gated by a **hardcoded package-ID prefix** (`Aspire.Hosting.*` — Microsoft-reserved on NuGet — or `CommunityToolkit.Aspire.Hosting.*`). `LocalStack.Aspire.Hosting` is invisible and cannot be force-added even by exact ID. TS AppHosts can still consume the package by hand-editing `aspire.config.json` (arbitrary IDs are officially supported there) — just not via `aspire add`. Strategy decision needed: CommunityToolkit re-homing vs upstream filter-widening issue vs status quo with documented manual flows.
 
-Research is complete as of 2026-07-04 (two adversarially cross-checked passes: ecosystem/community process + Aspire 9.0→13.4 feature-evolution sweep; ranked top-10 adoption candidates in the research doc). Adoption mechanisms are routed into WS3/WS4/WS5/WS6/WS7/WS8 bullets; WS10 retains the ATS/polyglot export work, the TS validation AppHost, and the catalog strategy decision (CommunityToolkit re-homing vs upstream filter-widening issue vs documented manual flows — Deniz's call).
+Research is complete as of 2026-07-04 (two adversarially cross-checked passes: ecosystem/community process + Aspire 9.0→13.4 feature-evolution sweep; ranked top-10 adoption candidates in the research doc). Adoption mechanisms are routed into WS3A/WS3B/WS4/WS5/WS6/WS7/WS8 bullets; WS10 retains the ATS/polyglot export work, the TS validation AppHost, and the catalog strategy decision (CommunityToolkit re-homing vs upstream filter-widening issue vs documented manual flows — Deniz's call).
 
 Implementation status rechecked 2026-07-08: WS10 is not implemented and is not obsolete. The package still lacks ATS export/analyzer setup and the `polyglot` tag, `LocalStackResource` still lacks `IResourceWithCustomWithReference<LocalStackResource>`, no TypeScript validation AppHost exists, and the catalog strategy decision is still open.
 
-Sequencing: WS2 has landed; coordinate the ATS-export surface with WS3's API shape; helper-hiding/dashboard UX stays in WS6/WS8.
+Sequencing: WS2 has landed; coordinate the ATS-export surface with WS3A's API shape; helper-hiding/dashboard UX stays in WS6/WS8.
 
 ### WS9 — Docs & internal-docs consolidation · P0 (light, do early)
 
@@ -162,15 +171,15 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 | # | Item | One-line meaning | Status | Workstream |
 |---|------|------------------|--------|------------|
 | 1 | AWS resources on Aspire dashboard | Surface CF stacks/lambdas/buckets/queues/tables as dashboard child-resources. | ✅ | WS8 |
-| 2 | Redirect `awsdynamodblocal` to LocalStack | Actually: optionally let users use AWS's official `AddAWSDynamoDBLocal` (native `AWS_ENDPOINT_URL_DYNAMODB`) for DynamoDB while LocalStack serves the rest. | ✅ | WS3 (sub-case) |
-| 3 | Make `CreateServiceConfig<T>()` public + reflection | LocalStack.Client `Session`/`SessionReflection` builds per-service `ClientConfig` via reflection; original intent lost and likely moot after WS3. **Parked.** | ❓ | WS3 (park) |
+| 2 | Redirect `awsdynamodblocal` to LocalStack | Rejected: DynamoDB Local and LocalStack's DynamoDB are competing backends; `UseLocalStack()` fails fast rather than splitting state. | ✅ | WS3A decision |
+| 3 | Make `CreateServiceConfig<T>()` public + reflection | LocalStack.Client `Session`/`SessionReflection` remains an internal runtime seam; no public hosting API requires this method. **Parked.** | ❓ | WS6 (park) |
 | 4 | `LocalStackContainerOptions` immutable? | Make it init-only/record — conflicts with `configureContainer` mutation; design call. | ✅ | WS6 |
 | 5 | LocalStack debugging support | Lambda debugging (attach debugger to Lambda in LocalStack). | ✅ | WS7 |
 | 6 | LocalStack Pro features | Research which Pro features we can support natively. | ⚠️ | WS7 |
-| 7 | Option host/port should not be used | Container endpoint comes from Aspire; `Config.LocalStackHost/EdgePort` must not be source of truth. Same root as #24. | ✅ | WS3/WS4 |
+| 7 | Option host/port should not be used | Container endpoint comes from Aspire; `Config.LocalStackHost/EdgePort` must not be source of truth. Same root as #24. | ✅ | WS3A/WS4 |
 | 8 | Complete `...CallbackTests` | Stub confirmed; test the real callback behavior. | ✅ | WS5 |
-| 9 | `.WithHttpEndpoint(port: options.Config.EdgePort...)` | Wire host port from client config EdgePort — **superseded by #7 / WS3 decoupling. Recommend drop.** | ⚠️ | (drop) |
-| 10 | Remove options from `AddLocalStack` | Drop `ILocalStackOptions?` param (mark `[Obsolete]`). | ✅ | WS3 |
+| 9 | `.WithHttpEndpoint(port: options.Config.EdgePort...)` | Wire host port from client config EdgePort — **superseded by #7 and WS3A endpoint ownership. Recommend drop.** | ⚠️ | (drop) |
+| 10 | Remove options from `AddLocalStack` | Drop `ILocalStackOptions?` param (mark `[Obsolete]`). | ✅ | WS3A |
 | 11 | Review unit tests | General review pass. | ✅ | WS5 |
 | 12 | Enrich integration tests | Broaden coverage. | ✅ | WS5 |
 | 13 | Slow integration tests in own collection | TUnit grouping for slow tests. | ✅ | WS5 |
@@ -186,7 +195,6 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 | `docs/CONFIGURATION.md` drifts from image-version default | WS4/WS9 |
 | Version-sensitive type-name string matching | WS2 |
 | Fixed-delay waits in Lambda integration tests | WS5 |
-| Temporary direct `AWSSDK.Core` / `MessagePack` pins | WS3 (decoupling should remove) |
 | DynamoDB Streams event sources require `us-east-1` (upstream SDK signing regression in the Lambda Test Tool custom-endpoint path) | Upstream watch — lift playground pin + README/CHANGELOG known-issue when fixed |
 | CI-only "Collection was modified" startup flake (Aspire 13.4.6 annotation race) | WS5 + upstream watch — bump Aspire when a release contains microsoft/aspire#18259; refactor option tracked in WS6 |
 
@@ -194,7 +202,7 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 
 | Issue | Summary | Disposition |
 |-------|---------|-------------|
-| #12 | `IResourceWithEndpoints` / native `AWS_ENDPOINT_URL_*` so no client dep needed | WS3 |
+| #12 | Bare AWS SDK endpoint composition works through `ConnectionStringExpression`; no endpoint-interface change is planned | WS3A decision |
 | #24 | `LOCALSTACK_HOST` port mismatch with custom port | WS4 |
 | #25 | Single-image `LOCALSTACK_AUTH_TOKEN` requirement | WS7 (urgency raised — transition live since 2026-03-23; workaround exists) |
 | #26 | SES v1 needs Pro; no public container exposure | WS8 (escape hatch) + WS7 (Pro) |
@@ -206,7 +214,7 @@ Status: ✅ understood · ⚠️ partial · ❓ unclear
 
 ## Open Questions
 
-- **#9** defaulted to "drop" (superseded by #7/WS3) — confirm.
+- **#9** defaulted to "drop" (superseded by #7/WS3A) — confirm.
 - **WS6 / `LocalStackContainerOptions` immutability** — resolve the design tension with the mutation-based `configureContainer` callback.
 
 ## Inbox / Untriaged
@@ -218,5 +226,5 @@ Drop raw, unsorted ideas here as they come up, then triage them into a workstrea
 - Watch LocalStack platform for an MCP endpoint in the container image; if it ships, annotate with `WithMcpServer(path)` (13.2) so agents auto-discover it.
 - Optional deliberate opt-in: `PublishAsDockerComposeService()` passthrough for teams that want LocalStack in generated compose for CI (docker.sock + privileged); default stays `ExcludeFromManifest`.
 - Upstream issue candidates from WS2 runtime verification (2026-07-04, evidence in the WS2 design doc): (a) aws-lambda-dotnet — Lambda Test Tool's bundled AWSSDK.Core 4.0.7.x loses the signing region when `AWS_ENDPOINT_URL*` is set (empirical matrix captured; breaks non-us-east-1 LocalStack); (b) aws integrations — API Gateway emulator route config is one-per-Lambda-resource, second `WithReference` silently overwrites the first.
-- Consumer guidance to document (WS3/WS9): LocalStack.Client's default proxy-mode registration leaks the AWS regional host into generated URL strings (e.g. presigned URLs). Either build browser-facing URLs with an S3UrlService-style LocalStack-aware helper (the playground's approach) or register the client with `AddAwsService<T>(useServiceUrl: true)` when genuine presigning is required.
+- Consumer guidance to document (WS3A/WS9): LocalStack.Client's default proxy-mode registration leaks the AWS regional host into generated URL strings (e.g. presigned URLs). Either build browser-facing URLs with an S3UrlService-style LocalStack-aware helper (the playground's approach) or register the client with `AddAwsService<T>(useServiceUrl: true)` when genuine presigning is required.
 - CodeQL C# analysis quality (2026-07-09): GitHub default setup currently scans C# with `build-mode: none`, producing a low analysis-quality warning (`call target` coverage 81%, threshold 85%). Evaluate advanced CodeQL setup with manual .NET restore/build so generated code, dependencies, and call targets are represented more accurately; do not block the current CI hardening work on this.
