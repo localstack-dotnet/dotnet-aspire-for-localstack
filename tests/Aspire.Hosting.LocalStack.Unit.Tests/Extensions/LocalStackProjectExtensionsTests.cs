@@ -9,8 +9,7 @@ public class LocalStackProjectExtensionsTests
 
         var (app, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>(testProjectResourceName, builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath())
                 .WithReference(localStack);
         });
@@ -51,8 +50,7 @@ public class LocalStackProjectExtensionsTests
         var (app, cfResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>(testProjectResourceName, builder =>
         {
             var projectBuilder = builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath());
-            var (disabledOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
-            var localStack = builder.AddLocalStack(localStackOptions: disabledOptions);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(false));
 
             projectBuilder.WithReference(localStackBuilder: localStack);
         });
@@ -77,8 +75,7 @@ public class LocalStackProjectExtensionsTests
 
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath())
                 .WithReference(localStack);
         });
@@ -97,8 +94,7 @@ public class LocalStackProjectExtensionsTests
 
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath())
                 .WithReference(localStack);
         });
@@ -116,12 +112,9 @@ public class LocalStackProjectExtensionsTests
 
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-                useLocalStack: true,
-                regionName: "us-west-1",
-                edgePort: 4567);
-
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options
+                .WithEnabled(true)
+                .WithRegion("us-west-1"));
             builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath())
                 .WithReference(localStack);
         });
@@ -139,8 +132,7 @@ public class LocalStackProjectExtensionsTests
 
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             var projectBuilder = builder.AddProject(testProjectResourceName, TestDataBuilders.GetTestProjectPath());
 
             // Call WithReference multiple times

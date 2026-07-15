@@ -10,8 +10,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         var (app, cfResource) = TestApplicationBuilder.CreateWithResource<ICloudFormationTemplateResource>(cfResourceName, builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig)
@@ -31,8 +30,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig)
@@ -54,8 +52,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig)
@@ -80,8 +77,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig)
@@ -119,8 +115,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         var (app, cfResource) = TestApplicationBuilder.CreateWithResource<ICloudFormationTemplateResource>(cfResourceName, builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (disabledOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
-            var localStack = builder.AddLocalStack(localStackOptions: disabledOptions);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(false));
 
             builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig)
@@ -148,8 +143,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             var cfBuilder = builder.AddAWSCloudFormationTemplate(cfResourceName, "template.yaml")
                 .WithReference(awsConfig);
@@ -174,8 +168,7 @@ public class LocalStackCloudFormationResourceExtensionsTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate("cf-1", "template1.yaml")
                 .WithReference(awsConfig)

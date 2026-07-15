@@ -9,12 +9,17 @@ namespace Aspire.Hosting.LocalStack.Configuration;
 /// </summary>
 public static class LocalStackConfigurationExtensions
 {
+    private const string ObsoleteMessage = "Use LocalStackHostingOptions and LocalStackHostingOptionsExtensions instead. This method will be removed in the next major version.";
+
     /// <summary>
     /// Sets whether to use LocalStack instead of real AWS services.
     /// </summary>
     /// <param name="options">The LocalStack options.</param>
     /// <param name="useLocalStack">Whether to use LocalStack.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithUseLocalStack(this ILocalStackOptions options, bool useLocalStack)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -28,6 +33,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="edgePort">The edge port to use.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithEdgePort(this ILocalStackOptions options, int edgePort)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -47,6 +55,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="localStackHost">The LocalStack host to use.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithLocalStackHost(this ILocalStackOptions options, string localStackHost)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -67,6 +78,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="useSsl">Whether to use SSL.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithUseSsl(this ILocalStackOptions options, bool useSsl)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -86,6 +100,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="sessionOptions">The session options to use.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithSessionOptions(this ILocalStackOptions options, SessionOptions sessionOptions)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -100,6 +117,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="configOptions">The config options to use.</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithConfigOptions(this ILocalStackOptions options, ConfigOptions configOptions)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -114,6 +134,9 @@ public static class LocalStackConfigurationExtensions
     /// <param name="options">The LocalStack options.</param>
     /// <param name="regionName">The AWS region name (e.g., "us-east-1", "eu-central-1").</param>
     /// <returns>New LocalStack options with updated settings.</returns>
+#pragma warning disable S1133
+    [Obsolete(ObsoleteMessage, false)]
+#pragma warning restore S1133
     public static ILocalStackOptions WithRegion(this ILocalStackOptions options, string regionName)
     {
         ArgumentNullException.ThrowIfNull(options);

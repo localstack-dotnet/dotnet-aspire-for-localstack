@@ -46,7 +46,6 @@ public class LocalStackEnabledAnnotationTests
 
     private static LocalStackResource CreateTestLocalStackResource()
     {
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-        return new LocalStackResource("test-localstack", options);
+        return new LocalStackResource("test-localstack", TestDataBuilders.CreateHostingState());
     }
 }

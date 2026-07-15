@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 
-- **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).
+- **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).
+- **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values and cannot observe callbacks appended after its `BeforeStartEvent` registration.
 
 ## [13.4.0] - 2026-07-09
 

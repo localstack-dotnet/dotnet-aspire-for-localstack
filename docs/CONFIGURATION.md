@@ -17,6 +17,57 @@ This guide covers configuration options for customizing LocalStack container beh
 | `LogLevel` | `LocalStackLogLevel` | `Error` | LocalStack LS_LOG level |
 | `AdditionalEnvironmentVariables` | `IDictionary<string, string>` | `{}` (empty) | Custom environment variables |
 
+## Host Configuration
+
+Host-level LocalStack settings control whether the LocalStack resource is created and how it authenticates. These use the canonical `Aspire:Hosting:LocalStack` configuration section.
+
+### Canonical Configuration
+
+```json
+{
+  "Aspire": {
+    "Hosting": {
+      "LocalStack": {
+        "Enabled": true,
+        "Region": "us-east-1",
+        "AccessKeyId": "accessKey",
+        "SecretAccessKey": "secretKey",
+        "SessionToken": "token"
+      }
+    }
+  }
+}
+```
+
+Environment variable equivalents:
+
+```text
+Aspire__Hosting__LocalStack__Enabled=true
+Aspire__Hosting__LocalStack__Region=us-east-1
+Aspire__Hosting__LocalStack__AccessKeyId=accessKey
+Aspire__Hosting__LocalStack__SecretAccessKey=secretKey
+Aspire__Hosting__LocalStack__SessionToken=token
+```
+
+> **Migration note:** The legacy `LocalStack:*` section (e.g. `"LocalStack": { "UseLocalStack": true }`) remains supported for backward compatibility. Canonical `Aspire:Hosting:LocalStack:*` settings take precedence when both are present. New projects should use the canonical section.
+
+### C# Callback Configuration
+
+Hosting options can also be set programmatically in the `AddLocalStack` callback:
+
+```csharp
+var localStack = builder.AddLocalStack(
+    "localstack",
+    awsConfig,
+    options => options
+        .WithEnabled(true)
+        .WithRegion("us-east-1")
+        .WithCredentials("accessKey", "secretKey", "token"),
+    container => container.Lifetime = ContainerLifetime.Session);
+```
+
+Call site overrides take the highest precedence, above configuration file values.
+
 ## Service Loading Strategy
 
 LocalStack supports two service loading strategies via the [`EAGER_SERVICE_LOADING`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) configuration.
@@ -40,7 +91,7 @@ var localstack = builder.AddLocalStack(); // No eager loading - uses lazy loadin
 Pre-loads specific AWS services during container startup. The container takes longer to start but subsequent requests have no cold-start latency.
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
 });
@@ -181,7 +232,7 @@ Organizations often need to pull images from:
 Three properties work together to specify the complete image location:
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     container.ContainerRegistry = "artifactory.company.com";  // Where to pull from
     container.ContainerImage = "docker-mirrors/localstack/localstack";  // Image path
@@ -269,7 +320,7 @@ All three properties are optional and default to the public Docker Hub image:
 // These are equivalent:
 builder.AddLocalStack();
 
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     container.ContainerRegistry = "docker.io";
     container.ContainerImage = "localstack/localstack";
@@ -363,7 +414,7 @@ container.AdditionalEnvironmentVariables["PERSISTENCE"] = "1";
 ### Development (Fast Iteration)
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Default Session lifetime is fine for most development
     container.LogLevel = LocalStackLogLevel.Warn;
@@ -374,7 +425,7 @@ builder.AddLocalStack(configureContainer: container =>
 ### Development (Container Reuse)
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Use Persistent to reuse container between runs
     container.Lifetime = ContainerLifetime.Persistent;
@@ -385,7 +436,7 @@ builder.AddLocalStack(configureContainer: container =>
 ### CI/CD
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Default Session lifetime is perfect for CI/CD
     container.LogLevel = LocalStackLogLevel.Error;
@@ -398,7 +449,7 @@ builder.AddLocalStack(configureContainer: container =>
 ### Enterprise with Private Registry
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Pull from private Artifactory
     container.ContainerRegistry = "artifactory.company.com";
@@ -416,7 +467,7 @@ builder.AddLocalStack(configureContainer: container =>
 ### Debugging
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Default Session lifetime - clean state for each debug session
     container.LogLevel = LocalStackLogLevel.Debug;
@@ -433,7 +484,7 @@ builder.AddLocalStack(configureContainer: container =>
 ### Integration Testing
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Default Session lifetime - perfect for isolated test runs
     container.LogLevel = LocalStackLogLevel.Error;

@@ -17,8 +17,7 @@ public class UseLocalStackTests
     {
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (disabledOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
-            var localStack = builder.AddLocalStack(localStackOptions: disabledOptions);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(false));
             builder.UseLocalStack(localStack);
         });
 
@@ -31,8 +30,7 @@ public class UseLocalStackTests
         var (app, cfResource) = TestApplicationBuilder.CreateWithResource<ICloudFormationTemplateResource>("test-cf", builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             // Add CloudFormation template BEFORE calling UseLocalStack
             builder.AddAWSCloudFormationTemplate("test-cf", "template.yaml")
@@ -52,8 +50,10 @@ public class UseLocalStackTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack(
+                "localstack",
+                awsConfig: null,
+                options => options.WithEnabled(true));
 
             // Add multiple CloudFormation resources
             builder.AddAWSCloudFormationTemplate("cf-1", "template1.yaml").WithReference(awsConfig);
@@ -78,8 +78,7 @@ public class UseLocalStackTests
         var (_, projectResource) = TestApplicationBuilder.CreateWithResource<ProjectResource>("test-project", builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             var cfTemplate = builder.AddAWSCloudFormationTemplate("cf-template", "template.yaml")
                 .WithReference(awsConfig);
@@ -100,8 +99,7 @@ public class UseLocalStackTests
     {
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             // Explicitly create CDK bootstrap (this tests the actual method)
             builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStack);
@@ -122,8 +120,7 @@ public class UseLocalStackTests
     {
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             // Call UseLocalStack on an empty application - should not throw
             builder.UseLocalStack(localStack);
@@ -138,8 +135,7 @@ public class UseLocalStackTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             // Manually configure a CloudFormation resource with LocalStack first
             builder.AddAWSCloudFormationTemplate("manually-configured", "template.yaml")
@@ -167,8 +163,7 @@ public class UseLocalStackTests
         await using var app = TestApplicationBuilder.Create(builder =>
         {
             var awsConfig = builder.AddAWSSDKConfig().WithRegion(Amazon.RegionEndpoint.USEast1);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
             builder.AddAWSCloudFormationTemplate("test-resource", "template.yaml")
                 .WithReference(awsConfig);
@@ -191,8 +186,7 @@ public class UseLocalStackTests
     {
         await using var app = TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             builder.AddResource(TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper"));
 
             builder.UseLocalStack(localStack);
@@ -211,8 +205,7 @@ public class UseLocalStackTests
     {
         await Assert.That(() => TestApplicationBuilder.Create(builder =>
         {
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-            var localStack = builder.AddLocalStack(localStackOptions: options);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
             builder.AddAWSDynamoDBLocal("dynamodb-local");
 
             builder.UseLocalStack(localStack);
@@ -223,8 +216,7 @@ public class UseLocalStackTests
     public async Task UseLocalStack_Should_Throw_Before_Start_When_DynamoDb_Local_Is_Added_After_UseLocalStack()
     {
         var builder = DistributedApplication.CreateBuilder(["--AppHost:Operation=publish"]);
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
-        var localStack = builder.AddLocalStack(localStackOptions: options);
+        var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
         builder.UseLocalStack(localStack);
         builder.AddAWSDynamoDBLocal("dynamodb-local");

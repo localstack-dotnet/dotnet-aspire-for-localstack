@@ -1,6 +1,5 @@
 using Amazon;
 using Amazon.Runtime;
-using LocalStack.Client.Contracts;
 
 namespace Aspire.Hosting.LocalStack.Internal;
 
@@ -16,15 +15,13 @@ namespace Aspire.Hosting.LocalStack.Internal;
 /// </remarks>
 internal static class LocalStackCdkCredentialsOverride
 {
-    internal static void Apply(ILocalStackOptions options)
+    internal static void Apply(LocalStackHostingState state)
     {
-        ArgumentNullException.ThrowIfNull(options);
-
-        var session = options.Session;
+        ArgumentNullException.ThrowIfNull(state);
 
         AWSConfigs.AWSCredentialsGenerators =
         [
-            () => new SessionAWSCredentials(session.AwsAccessKeyId, session.AwsAccessKey, session.AwsSessionToken),
+            () => new SessionAWSCredentials(state.AccessKeyId, state.SecretAccessKey, state.SessionToken),
         ];
     }
 }

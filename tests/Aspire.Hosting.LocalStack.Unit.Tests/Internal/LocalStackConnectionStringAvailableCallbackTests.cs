@@ -35,10 +35,10 @@ public class LocalStackConnectionStringAvailableCallbackTests
     public async Task Callback_Should_Skip_When_UseLocalStack_Is_False()
     {
         var builder = Substitute.For<IDistributedApplicationBuilder>();
-        var localStackResource = Substitute.For<ILocalStackResource>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
-
-        localStackResource.Options.Returns(options);
+        var localStackResource = new TestLocalStackResource(
+            "localstack",
+            TestDataBuilders.CreateHostingState(enabled: false),
+            "http://localhost:4566");
 
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
 
@@ -56,15 +56,12 @@ public class LocalStackConnectionStringAvailableCallbackTests
         try
         {
             var builder = DistributedApplication.CreateBuilder([]);
-            var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true, regionName: "us-west-2");
-            var localStackAnnotations = new ResourceAnnotationCollection();
             var stackAnnotations = new ResourceAnnotationCollection();
             var connectionString = "http://localhost:4566";
-            var localStackResource = Substitute.For<ILocalStackResource>();
-            localStackResource.Name.Returns("localstack");
-            localStackResource.Options.Returns(options);
-            localStackResource.Annotations.Returns(localStackAnnotations);
-            localStackResource.ConnectionStringExpression.Returns(ReferenceExpression.Create($"{connectionString}"));
+            var localStackResource = new TestLocalStackResource(
+                "localstack",
+                TestDataBuilders.CreateHostingState(regionName: "us-west-2"),
+                connectionString);
 
             var awsSdkConfig = Substitute.For<IAWSSDKConfig>();
             awsSdkConfig.Profile = "default";
@@ -80,7 +77,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
                 .When(static resource => resource.AWSSDKConfig = Arg.Any<IAWSSDKConfig?>())
                 .Do(callInfo => assignedConfig = callInfo.Arg<IAWSSDKConfig?>());
             stackAnnotations.Add(new LocalStackEnabledAnnotation(localStackResource));
-            localStackAnnotations.Add(new LocalStackReferenceAnnotation(stackResource));
+            localStackResource.Annotations.Add(new LocalStackReferenceAnnotation(stackResource));
 
             var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
 
@@ -103,21 +100,16 @@ public class LocalStackConnectionStringAvailableCallbackTests
     public async Task Callback_Should_Configure_DynamoDb_Streams_Event_Source_Resource()
     {
         var builder = DistributedApplication.CreateBuilder([]);
-        var localStackAnnotations = new ResourceAnnotationCollection();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true, regionName: "eu-central-1");
         var helperResource = TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper");
-
-        helperResource.Annotations.Add(new LocalStackEnabledAnnotation(Substitute.For<ILocalStackResource>()));
-
         var connectionString = "http://localhost:4566";
-        var localStackResource = Substitute.For<ILocalStackResource>();
-        localStackResource.Name.Returns("localstack");
-        localStackResource.Options.Returns(options);
-        localStackResource.Annotations.Returns(localStackAnnotations);
-        // ReferenceExpression.Create takes an interpolated-string handler; a bare string literal does not compile.
-        localStackResource.ConnectionStringExpression.Returns(ReferenceExpression.Create($"{connectionString}"));
 
-        localStackAnnotations.Add(new LocalStackReferenceAnnotation(helperResource));
+        var localStackResource = new TestLocalStackResource(
+            "localstack",
+            TestDataBuilders.CreateHostingState(regionName: "eu-central-1"),
+            connectionString);
+        helperResource.Annotations.Add(new LocalStackEnabledAnnotation(localStackResource));
+
+        localStackResource.Annotations.Add(new LocalStackReferenceAnnotation(helperResource));
 
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
 
@@ -131,5 +123,23 @@ public class LocalStackConnectionStringAvailableCallbackTests
         await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB"]).IsEqualTo("http://localhost:4566/");
         await Assert.That(env["AWS_ENDPOINT_URL_DYNAMODB_STREAMS"]).IsEqualTo("http://localhost:4566/");
         await Assert.That(env["AWS_DEFAULT_REGION"]).IsEqualTo("eu-central-1");
+    }
+
+    private sealed class TestLocalStackResource(
+        string name,
+        LocalStackHostingState hostingState,
+        string connectionString) : ILocalStackResource, ILocalStackHostingStateProvider
+    {
+        public string Name { get; } = name;
+
+        public ResourceAnnotationCollection Annotations { get; } = [];
+
+        public ReferenceExpression ConnectionStringExpression { get; } = ReferenceExpression.Create($"{connectionString}");
+
+        public LocalStackHostingState HostingState { get; } = hostingState;
+
+#pragma warning disable CS0618
+        public ILocalStackOptions Options => throw new NotSupportedException();
+#pragma warning restore CS0618
     }
 }

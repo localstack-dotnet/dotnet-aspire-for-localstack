@@ -50,7 +50,7 @@ When LocalStack is disabled in configuration, both host and client configuration
 
 ### Host Configuration (AppHost)
 
-Configure LocalStack integration in your Aspire AppHost project using auto-configuration:
+Configure LocalStack integration in your Aspire AppHost project using the package-owned hosting API:
 
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
@@ -60,14 +60,15 @@ var awsConfig = builder.AddAWSSDKConfig()
     .WithProfile("default")
     .WithRegion(RegionEndpoint.USWest2);
 
-// 2. Add LocalStack container
-var localstack = builder
-    .AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
-    {
-        container.Lifetime = ContainerLifetime.Session;
-        container.DebugLevel = 1;
-        container.LogLevel = LocalStackLogLevel.Debug;
-    });
+// 2. Add LocalStack container with hosting options
+var localStack = builder.AddLocalStack(
+    "localstack",
+    awsConfig,
+    options => options
+        .WithEnabled(true)
+        .WithRegion("us-east-1")
+        .WithCredentials("accessKey", "secretKey", "token"),
+    container => container.Lifetime = ContainerLifetime.Session);
 
 // 3. Add your AWS resources as usual
 var awsResources = builder.AddAWSCloudFormationTemplate("resources", "template.yaml")
@@ -77,9 +78,23 @@ var project = builder.AddProject<Projects.MyService>("api")
     .WithReference(awsResources);
 
 // 4. Auto-configure LocalStack for all AWS resources
-builder.UseLocalStack(localstack);
+builder.UseLocalStack(localStack);
 
 builder.Build().Run();
+```
+
+Simpler configurations are also supported:
+
+```csharp
+// Minimal: defaults only
+var localStack = builder.AddLocalStack();
+
+// Named resource
+var localStack = builder.AddLocalStack("localstack");
+
+// Named resource with AWS config and container options
+var localStack = builder.AddLocalStack("localstack", awsConfig,
+    configureContainer: container => container.Lifetime = ContainerLifetime.Session);
 ```
 
 The `UseLocalStack()` method automatically:
@@ -89,12 +104,41 @@ The `UseLocalStack()` method automatically:
 - Sets up proper dependency ordering and CDK bootstrap if needed
 - Transfers LocalStack configuration to service projects via environment variables
 
+#### AppHost Configuration
+
+Host-level LocalStack settings use the canonical configuration section `Aspire:Hosting:LocalStack`:
+
+```json
+{
+  "Aspire": {
+    "Hosting": {
+      "LocalStack": {
+        "Enabled": true,
+        "Region": "us-east-1",
+        "AccessKeyId": "accessKey",
+        "SecretAccessKey": "secretKey",
+        "SessionToken": "token"
+      }
+    }
+  }
+}
+```
+
+Environment variable equivalents use standard double-underscore naming:
+
+```text
+Aspire__Hosting__LocalStack__Enabled=true
+Aspire__Hosting__LocalStack__Region=us-east-1
+```
+
+> **Migration note:** The legacy `LocalStack:*` section (e.g. `"LocalStack": { "UseLocalStack": true }`) remains supported for backward compatibility. Canonical `Aspire:Hosting:LocalStack:*` settings take precedence when both are present.
+
 #### Container Configuration
 
 The `configureContainer` parameter allows you to customize LocalStack container behavior. By default, LocalStack uses lazy loading - services start only when first accessed. For faster startup in CI or when you know which services you need, configure eager loading:
 
 ```csharp
-builder.AddLocalStack(configureContainer: container =>
+builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Eagerly load specific services for faster startup
     container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
@@ -185,7 +229,8 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 
 - **`AddAWSDynamoDBLocal` cannot be combined with `UseLocalStack()`.** DynamoDB Local and LocalStack's DynamoDB are competing backends — data written to one is invisible to the other — so `UseLocalStack()` fails fast with a clear error instead of silently splitting DynamoDB state. Model DynamoDB through the CDK/CloudFormation path so LocalStack serves it, or drop `UseLocalStack()` to keep DynamoDB Local. Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain fully supported.
 - **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region. LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect; this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources are not affected.
-- **Do not combine LocalStack.Client proxy configuration with `AWS_ENDPOINT_URL*`.** If `LocalStack__UseLocalStack=true`, LocalStack.Client configures an AWS SDK proxy. Native endpoint variables can also populate `ClientConfig.ServiceURL`, creating a mixed configuration where traffic follows the Client proxy while signing behavior follows the custom endpoint. On affected AWSSDK.Core versions, a request configured for a non-default region can silently be signed for `us-east-1`. Use either the LocalStack.Client integration or an explicit native AWS SDK endpoint setup, not both. Bare AWS SDK custom-endpoint users are also subject to the upstream signing-region defect. See [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791) for the verified runtime matrix.
+- **Do not combine LocalStack.Client proxy configuration with `AWS_ENDPOINT_URL*`.** If `LocalStack__UseLocalStack=true`, LocalStack.Client configures an AWS SDK proxy. Native endpoint variables can also populate `ClientConfig.ServiceURL`, creating a mixed configuration where traffic follows the Client proxy while signing behavior follows the custom endpoint. On affected AWSSDK.Core versions, a request configured for a non-default region can silently be signed for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Use either the LocalStack.Client integration or an explicit native AWS SDK endpoint setup, not both. Bare AWS SDK custom-endpoint users are also subject to the upstream signing-region defect. See [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791) for the verified runtime matrix.
+- **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not add, remove, or overwrite environment values, and it cannot observe environment callbacks that are appended after its own `BeforeStartEvent` registration.
 
 ## Examples
 

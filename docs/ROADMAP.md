@@ -18,7 +18,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
 | WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | — implemented + runtime-verified 2026-07-04 with integration coverage on the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision |
-| WS3A | AppHost API boundary + endpoint-conflict warning | P1 | 📐 | [plan](plans/2026-07-14-ws3a-apphost-api-boundary.md) |
+| WS3A | AppHost API boundary + endpoint-conflict warning | P1 | ✅ | [plan](plans/2026-07-14-ws3a-apphost-api-boundary.md) |
 | WS3B | Resource-wiring correctness | P1 | 🔜 | — research required before planning |
 | WS4 | Bugs & correctness | P2 | 🔜 | — |
 | WS5 | Test integrity | P2 | 🔜 | — |

@@ -7,14 +7,14 @@ public class LocalStackResourceConfiguratorTests
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("http://localhost:4566");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+        var state = TestDataBuilders.CreateHostingState();
 
         AmazonCloudFormationClient? capturedClient = null;
         cfResource
             .When(x => x.CloudFormationClient = Arg.Any<AmazonCloudFormationClient>())
             .Do(x => capturedClient = x.Args()[0] as AmazonCloudFormationClient);
 
-        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, state);
 
         await Assert.That(capturedClient).IsNotNull();
         await Assert.That(capturedClient).IsTypeOf<AmazonCloudFormationClient>();
@@ -25,17 +25,14 @@ public class LocalStackResourceConfiguratorTests
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("http://test-host:9999");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "test-host",
-            useSsl: false);
+        var state = TestDataBuilders.CreateHostingState(useSsl: false);
 
         AmazonCloudFormationClient? capturedClient = null;
         cfResource
             .When(x => x.CloudFormationClient = Arg.Any<AmazonCloudFormationClient>())
             .Do(x => capturedClient = x.Args()[0] as AmazonCloudFormationClient);
 
-        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, state);
 
         await Assert.That(capturedClient).IsNotNull();
         await Assert.That(capturedClient.Config).IsNotNull();
@@ -58,14 +55,14 @@ public class LocalStackResourceConfiguratorTests
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
         var localStackUrl = new Uri("https://localhost:4566");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useSsl: true);
+        var state = TestDataBuilders.CreateHostingState(useSsl: true);
 
         AmazonCloudFormationClient? capturedClient = null;
         cfResource
             .When(x => x.CloudFormationClient = Arg.Any<AmazonCloudFormationClient>())
             .Do(x => capturedClient = x.Args()[0] as AmazonCloudFormationClient);
 
-        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureCloudFormationResource(cfResource, localStackUrl, state);
 
         await Assert.That(capturedClient).IsNotNull();
         await Assert.That(capturedClient.Config).IsNotNull();
@@ -85,17 +82,14 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockResource);
 
         var localStackUrl = new Uri("http://localhost:4566");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            useLocalStack: true,
+        var state = TestDataBuilders.CreateHostingState(
             regionName: "us-west-2",
-            edgePort: 4566,
-            localStackHost: "localhost",
             useSsl: false);
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
 
         await Assert.That(mockBuilder).IsNotNull();
-        await Assert.That(options).IsNotNull();
+        await Assert.That(state).IsNotNull();
     }
 
     [Test]
@@ -106,13 +100,45 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockResource);
 
         var localStackUrl = new Uri("https://custom-host:9999");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "custom-host",
-            useSsl: true);
+        var state = TestDataBuilders.CreateHostingState(useSsl: true);
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
         await Assert.That(mockBuilder).IsNotNull();
+    }
+
+    [Test]
+    public async Task ConfigureProjectResource_Should_Emit_LocalStack_Client_Environment_From_State_And_Allocated_Endpoint()
+    {
+        var projectResource = new ExecutableResource("project", "command", "workdir");
+        var builder = Substitute.For<IResourceBuilder<IResourceWithEnvironment>>();
+        builder.Resource.Returns(projectResource);
+        builder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(projectResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
+            .Returns(builder);
+        var state = TestDataBuilders.CreateHostingState(
+            regionName: "eu-central-1",
+            useSsl: true,
+            useLegacyPorts: true,
+            awsAccessKeyId: "state-key",
+            awsAccessKey: "state-secret",
+            awsSessionToken: "state-token");
+        var allocatedEndpoint = new Uri("http://allocated-host:12345");
+
+        LocalStackResourceConfigurator.ConfigureProjectResource(builder, allocatedEndpoint, state);
+
+        var envAnnotation = projectResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
+        var env = new Dictionary<string, object>(StringComparer.Ordinal);
+        var context = new EnvironmentCallbackContext(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), projectResource, env);
+        await envAnnotation.Callback(context);
+
+        await Assert.That(env["LocalStack__UseLocalStack"]).IsEqualTo("True");
+        await Assert.That(env["LocalStack__Session__AwsAccessKeyId"]).IsEqualTo("state-key");
+        await Assert.That(env["LocalStack__Session__AwsAccessKey"]).IsEqualTo("state-secret");
+        await Assert.That(env["LocalStack__Session__AwsSessionToken"]).IsEqualTo("state-token");
+        await Assert.That(env["LocalStack__Session__RegionName"]).IsEqualTo("eu-central-1");
+        await Assert.That(env["LocalStack__Config__LocalStackHost"]).IsEqualTo("allocated-host");
+        await Assert.That(env["LocalStack__Config__UseSsl"]).IsEqualTo("True");
+        await Assert.That(env["LocalStack__Config__UseLegacyPorts"]).IsEqualTo("True");
+        await Assert.That(env["LocalStack__Config__EdgePort"]).IsEqualTo("12345");
     }
 
     [Test]
@@ -123,23 +149,19 @@ public class LocalStackResourceConfiguratorTests
         mockBuilder.Resource.Returns(mockResource);
 
         var localStackUrl = new Uri("http://localhost:4566");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+        var state = TestDataBuilders.CreateHostingState();
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
 
-        await Assert.That(options.UseLocalStack || !options.UseLocalStack).IsTrue(); // Verifies bool is accessible
-        await Assert.That(options.Session).IsNotNull();
-        await Assert.That(options.Config).IsNotNull();
+        await Assert.That(state.Enabled || !state.Enabled).IsTrue(); // Verifies bool is accessible
+        await Assert.That(state.Region).IsNotNull();
     }
 
     [Test]
     public async Task ConfigureSqsEventSourceResource_Should_Add_Environment_Annotation_With_AWS_Endpoint_URL()
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "test-host",
-            useSsl: false);
+        var state = TestDataBuilders.CreateHostingState(useSsl: false);
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
         mockBuilder.Resource.Returns(mockExecutableResource);
 
@@ -149,7 +171,7 @@ public class LocalStackResourceConfiguratorTests
 
         var localStackUrl = new Uri("http://localhost:4566");
 
-        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, state);
 
         var envAnnotations = mockExecutableResource.Annotations
             .OfType<EnvironmentCallbackAnnotation>()
@@ -164,10 +186,7 @@ public class LocalStackResourceConfiguratorTests
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "test-host",
-            useSsl: false);
+        var state = TestDataBuilders.CreateHostingState(useSsl: false);
 
         mockBuilder.Resource.Returns(mockExecutableResource);
 
@@ -182,7 +201,7 @@ public class LocalStackResourceConfiguratorTests
         var initialAnnotationCount = mockExecutableResource.Annotations.Count;
         var localStackUrl = new Uri("http://localhost:4566");
 
-        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, state);
 
         await Assert.That(mockExecutableResource.Annotations.Count).IsEqualTo(initialAnnotationCount + 1);
 
@@ -197,10 +216,7 @@ public class LocalStackResourceConfiguratorTests
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "test-host",
-            useSsl: false);
+        var state = TestDataBuilders.CreateHostingState(useSsl: false);
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
@@ -210,7 +226,7 @@ public class LocalStackResourceConfiguratorTests
         var initialAnnotationCount = mockExecutableResource.Annotations.Count;
         var localStackUrl = new Uri("http://localhost:4566");
 
-        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, localStackUrl, state);
 
         // Should have added exactly one EnvironmentCallbackAnnotation
         await Assert.That(mockExecutableResource.Annotations.Count).IsEqualTo(initialAnnotationCount + 1);
@@ -222,10 +238,7 @@ public class LocalStackResourceConfiguratorTests
     {
         var mockExecutableResource = new ExecutableResource("test-sqs-resource", "test-command", "test-workdir");
         var mockBuilder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(
-            edgePort: 9999,
-            localStackHost: "test-host",
-            useSsl: false);
+        var state = TestDataBuilders.CreateHostingState(useSsl: false);
         mockBuilder.Resource.Returns(mockExecutableResource);
 
         // Configure the mock to actually add annotations when WithAnnotation is called
@@ -234,7 +247,7 @@ public class LocalStackResourceConfiguratorTests
 
         var customLocalStackUrl = new Uri("https://custom-host:9999");
 
-        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, customLocalStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(mockBuilder, customLocalStackUrl, state);
 
         var envAnnotation = mockExecutableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().FirstOrDefault();
         await Assert.That(envAnnotation).IsNotNull();
@@ -245,7 +258,7 @@ public class LocalStackResourceConfiguratorTests
     {
         var executableResource = new ExecutableResource("test-ddb-streams-resource", "test-command", "test-workdir");
         var builder = Substitute.For<IResourceBuilder<ExecutableResource>>();
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "eu-central-1");
+        var state = TestDataBuilders.CreateHostingState(regionName: "eu-central-1");
 
         builder.Resource.Returns(executableResource);
         builder.WithAnnotation(Arg.Do<EnvironmentCallbackAnnotation>(executableResource.Annotations.Add), Arg.Any<ResourceAnnotationMutationBehavior>())
@@ -253,7 +266,7 @@ public class LocalStackResourceConfiguratorTests
 
         var localStackUrl = new Uri("http://localhost:4566");
 
-        LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(builder, localStackUrl, options);
+        LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(builder, localStackUrl, state);
 
         var envAnnotation = executableResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
         var env = new Dictionary<string, object>(StringComparer.Ordinal);
@@ -279,9 +292,9 @@ public class LocalStackResourceConfiguratorTests
         stackResource
             .When(static r => r.AWSSDKConfig = Arg.Any<IAWSSDKConfig?>())
             .Do(callInfo => assigned = callInfo.Arg<IAWSSDKConfig?>());
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "eu-central-1");
+        var state = TestDataBuilders.CreateHostingState(regionName: "eu-central-1");
 
-        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, options);
+        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, state);
 
         await Assert.That(assigned).IsNotNull();
         await Assert.That(assigned!.Region).IsEqualTo(Amazon.RegionEndpoint.EUCentral1);
@@ -297,9 +310,9 @@ public class LocalStackResourceConfiguratorTests
         stackResource
             .When(static r => r.AWSSDKConfig = Arg.Any<IAWSSDKConfig?>())
             .Do(callInfo => assigned = callInfo.Arg<IAWSSDKConfig?>());
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions(regionName: "");
+        var state = TestDataBuilders.CreateHostingState(regionName: "");
 
-        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, options);
+        LocalStackResourceConfigurator.ConfigureStackResource(stackResource, state);
 
         await Assert.That(assigned).IsNotNull();
         await Assert.That(assigned!.Region).IsEqualTo(Amazon.RegionEndpoint.USEast1);
