@@ -31,12 +31,13 @@ dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-locals
 
 > **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
 
+> **Note**: NuGet can only encrypt stored credentials on Windows. On Linux and macOS add `--store-password-in-clear-text`, which writes the token unencrypted into your NuGet config.
+
 ## Version Policy
 
 This package follows Aspire's **major.minor** versioning but releases **patch versions** independently.
 
 - `9.5.x` works with Aspire 9.5.x
-- `9.6.x` works with Aspire 9.6.x
 - `13.1.x` works with Aspire 13.1.x
 - `13.4.x` works with Aspire 13.4.x
 
@@ -66,7 +67,6 @@ var localStack = builder.AddLocalStack(
     awsConfig,
     options => options
         .WithEnabled(true)
-        .WithRegion("us-east-1")
         .WithCredentials("accessKey", "secretKey", "token"),
     container => container.Lifetime = ContainerLifetime.Session);
 
@@ -83,10 +83,12 @@ builder.UseLocalStack(localStack);
 builder.Build().Run();
 ```
 
+> **Region precedence:** the region comes from `awsConfig` here (`us-west-2`), which is why the options callback does not set one. Resolution order, lowest to highest, is defaults -> legacy `LocalStack:*` -> canonical `Aspire:Hosting:LocalStack:*` -> the `configureOptions` callback -> `IAWSSDKConfig.Region`, so an `awsConfig` region, when one is set, wins over `.WithRegion(...)`.
+
 Simpler configurations are also supported:
 
 ```csharp
-// Minimal: defaults only
+// Minimal: everything from configuration
 var localStack = builder.AddLocalStack();
 
 // Named resource
@@ -96,6 +98,8 @@ var localStack = builder.AddLocalStack("localstack");
 var localStack = builder.AddLocalStack("localstack", awsConfig,
     configureContainer: container => container.Lifetime = ContainerLifetime.Session);
 ```
+
+> **LocalStack is opt-in.** `Enabled` defaults to `false`, so an `AddLocalStack` call that is not explicitly enabled returns `null`, `UseLocalStack(null)` becomes a no-op, and no container starts. Enable it with `Aspire:Hosting:LocalStack:Enabled=true` (or the legacy `LocalStack:UseLocalStack=true`), or by calling `.WithEnabled(true)` in a `configureOptions` callback.
 
 The `UseLocalStack()` method automatically:
 
@@ -135,13 +139,13 @@ Aspire__Hosting__LocalStack__Region=us-east-1
 
 #### Container Configuration
 
-The `configureContainer` parameter allows you to customize LocalStack container behavior. By default, LocalStack uses lazy loading - services start only when first accessed. For faster startup in CI or when you know which services you need, configure eager loading:
+The `configureContainer` parameter allows you to customize LocalStack container behavior. By default, LocalStack uses lazy loading - services start only when first accessed. Eager loading starts a chosen set of services up front, which removes cold-start latency but also restricts the container to that set - see the note below the options list before using it:
 
 ```csharp
 builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
     // Eagerly load specific services for faster startup
-    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
+    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
 
     // Optional: Use Persistent lifetime for container reuse between runs
     // (Default is Session - container cleaned up when application stops)
@@ -158,15 +162,18 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 **Available Options:**
 
-- **`EagerLoadedServices`** - Pre-load specific AWS services at startup (reduces cold start latency)
+- **`EagerLoadedServices`** - Pre-load specific AWS services at startup (reduces cold start latency, and restricts the container to those services - see below)
 - **`Lifetime`** - Container lifecycle: `Session` (default - cleaned up on stop) or `Persistent` (survives restarts)
 - **`DebugLevel`** - LocalStack debug verbosity (0 = default, 1 = verbose)
 - **`LogLevel`** - Log level control (Error, Warn, Info, Debug, Trace, etc.)
 - **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
 - **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
 - **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
-- **`ContainerImageTag`** - Custom image tag/version (default: the current LocalStack tag). Use to pin to a specific LocalStack version
+- **`ContainerImageTag`** - Custom image tag/version (default: a fixed `4.12.0` pin, kept deliberately because it is the last LocalStack image that needs no auth token). Use to move to a different LocalStack version - newer images may require `LOCALSTACK_AUTH_TOKEN`
+- **`EnableDockerSocket`** - Mounts `/var/run/docker.sock` so LocalStack can start its own containers (required for LocalStack Lambda support; default: `false`, and it carries security implications)
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
+
+> **`EagerLoadedServices` is an allow-list, not just a warm-up.** Setting it emits both `EAGER_SERVICE_LOADING=1` and `SERVICES=<your services>`, and `SERVICES` restricts the container to exactly those services - every other AWS service becomes unavailable. The same list also becomes the set the health check must see as ready, so the container takes longer to report healthy. Leave it unset unless you know the full set of services your workload needs.
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).
 
@@ -176,11 +183,11 @@ For fine-grained control, you can manually configure each resource:
 
 ```csharp
 var awsResources = builder.AddAWSCloudFormationTemplate("resources", "template.yaml")
-    .WithReference(localstack)  // Manual LocalStack reference
+    .WithReference(localStack)  // Manual LocalStack reference
     .WithReference(awsConfig);
 
 var project = builder.AddProject<Projects.MyService>("api")
-    .WithReference(localstack)  // Manual project reference
+    .WithReference(localStack)  // Manual project reference
     .WithReference(awsResources);
 ```
 
@@ -197,7 +204,7 @@ builder.Services.AddLocalStack(builder.Configuration);
 // Register AWS services - automatically configured for LocalStack when enabled
 builder.Services.AddAwsService<IAmazonS3>();
 builder.Services.AddAwsService<IAmazonDynamoDB>();
-builder.Services.AddAwsService<IAmazonSNS>();
+builder.Services.AddAwsService<IAmazonSimpleNotificationService>();
 
 var app = builder.Build();
 ```
@@ -212,7 +219,7 @@ For more details on client configuration options, see the [LocalStack.NET Client
 
 The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configuration to service projects via environment variables. This works with the standard [.NET configuration hierarchy](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#configuration-providers): appsettings.json files -> Environment variables (can override appsettings) -> Command line arguments
 
-**Important**: Ensure your service projects include the [EnvironmentVariablesConfigurationProvider](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0#evcp) in the correct order for automatic configuration to work.
+**Important**: Ensure your service projects include the [EnvironmentVariablesConfigurationProvider](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/configuration/?view=aspnetcore-9.0) in the correct order for automatic configuration to work.
 
 ## Features
 
@@ -229,7 +236,7 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 
 - **`AddAWSDynamoDBLocal` cannot be combined with `UseLocalStack()`.** DynamoDB Local and LocalStack's DynamoDB are competing backends — data written to one is invisible to the other — so `UseLocalStack()` fails fast with a clear error instead of silently splitting DynamoDB state. Model DynamoDB through the CDK/CloudFormation path so LocalStack serves it, or drop `UseLocalStack()` to keep DynamoDB Local. Complementary compute emulators (Lambda, API Gateway, SQS/DynamoDB Streams pollers) remain fully supported.
 - **DynamoDB Streams event sources currently require `us-east-1`.** The AWS Lambda Test Tool's bundled AWS SDK signs requests for `us-east-1` whenever a custom endpoint (such as LocalStack) is configured, regardless of the configured region. LocalStack namespaces resources per signing region, so the stream poller only finds tables deployed to `us-east-1`. This is an upstream SDK defect; this package's configuration is correct and needs no change once the upstream fix ships. SQS event sources are not affected.
-- **Do not combine LocalStack.Client proxy configuration with `AWS_ENDPOINT_URL*`.** If `LocalStack__UseLocalStack=true`, LocalStack.Client configures an AWS SDK proxy. Native endpoint variables can also populate `ClientConfig.ServiceURL`, creating a mixed configuration where traffic follows the Client proxy while signing behavior follows the custom endpoint. On affected AWSSDK.Core versions, a request configured for a non-default region can silently be signed for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Use either the LocalStack.Client integration or an explicit native AWS SDK endpoint setup, not both. Bare AWS SDK custom-endpoint users are also subject to the upstream signing-region defect. See [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791) for the verified runtime matrix.
+- **Do not combine LocalStack.Client proxy configuration with `AWS_ENDPOINT_URL*`.** If `LocalStack__UseLocalStack=true`, LocalStack.Client configures an AWS SDK proxy. Native endpoint variables can also populate `ClientConfig.ServiceURL`, creating a mixed configuration where traffic follows the Client proxy while signing behavior follows the custom endpoint. On affected AWSSDK.Core versions, a request configured for a non-default region can silently be signed for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values on your service projects or AWS resources. (The internal SQS and DynamoDB Streams event-source helper resources are the exception: they are external Lambda Test Tool processes with no LocalStack.Client, so they are routed through `AWS_ENDPOINT_URL*` by design.) Use either the LocalStack.Client integration or an explicit native AWS SDK endpoint setup, not both. Bare AWS SDK custom-endpoint users are also subject to the upstream signing-region defect. See [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791) for the verified runtime matrix.
 - **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not add, remove, or overwrite environment values, and it cannot observe environment callbacks that are appended after its own `BeforeStartEvent` registration.
 
 ## Examples
@@ -262,7 +269,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed history of changes, new features
 
 ## Related Projects
 
-- [Aspire](https://github.com/dotnet/aspire) - Aspire is a unified toolchain that simplifies building, debugging, and deploying observable, production-ready distributed apps through a code-first app model.
+- [Aspire](https://github.com/microsoft/aspire) - Aspire is a unified toolchain that simplifies building, debugging, and deploying observable, production-ready distributed apps through a code-first app model.
 - [AWS Integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) - Official AWS integrations that this project extends
 - [LocalStack .NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) - The .NET client library for LocalStack that we integrate with
 

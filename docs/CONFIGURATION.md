@@ -11,7 +11,7 @@ This guide covers configuration options for customizing LocalStack container beh
 | `Port` | `int?` | `null` | Static port mapping for LocalStack container |
 | `ContainerRegistry` | `string?` | `null` (`docker.io`) | Custom container registry |
 | `ContainerImage` | `string?` | `null` (`localstack/localstack`) | Custom container image name |
-| `ContainerImageTag` | `string?` | `null` (current LocalStack tag) | Custom container image tag/version |
+| `ContainerImageTag` | `string?` | `null` (pinned `4.12.0`) | Custom container image tag/version |
 | `EnableDockerSocket` | `bool` | `false` | Mount Docker socket for Lambda support |
 | `DebugLevel` | `int` | `0` | LocalStack DEBUG flag (0 or 1) |
 | `LogLevel` | `LocalStackLogLevel` | `Error` | LocalStack LS_LOG level |
@@ -20,6 +20,8 @@ This guide covers configuration options for customizing LocalStack container beh
 ## Host Configuration
 
 Host-level LocalStack settings control whether the LocalStack resource is created and how it authenticates. These use the canonical `Aspire:Hosting:LocalStack` configuration section.
+
+> **LocalStack is disabled by default.** `LocalStackHostingOptions.Enabled` defaults to `false`, so until you opt in `AddLocalStack` returns `null`, `UseLocalStack(null)` is a no-op, and no container starts. Every `configureContainer` example in this guide assumes that opt-in is already in place. Opt in one of three ways: set `Aspire:Hosting:LocalStack:Enabled` to `true` in configuration (shown below), set the legacy `LocalStack:UseLocalStack` to `true`, or pass a `configureOptions` callback that calls `.WithEnabled(true)`.
 
 ### Canonical Configuration
 
@@ -66,7 +68,7 @@ var localStack = builder.AddLocalStack(
     container => container.Lifetime = ContainerLifetime.Session);
 ```
 
-Call site overrides take the highest precedence, above configuration file values.
+Options are resolved from lowest to highest precedence: built-in defaults, the legacy `LocalStack:*` section, the canonical `Aspire:Hosting:LocalStack:*` section, the `configureOptions` callback, and finally `IAWSSDKConfig.Region`. The callback therefore overrides configuration file values, but an `awsConfig` that carries a region overrides the callback's region.
 
 ## Service Loading Strategy
 
@@ -93,11 +95,13 @@ Pre-loads specific AWS services during container startup. The container takes lo
 ```csharp
 builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
 {
-    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
+    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
 });
 ```
 
 This sets the [`EAGER_SERVICE_LOADING=1`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) and [`SERVICES`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) environment variables automatically.
+
+> **Eager loading is also an allow-list.** Because `SERVICES` is emitted alongside `EAGER_SERVICE_LOADING=1`, the container is **restricted to exactly the services you list** - every other AWS service becomes unavailable in that container. The list is also the health check's required set, so each listed service must report `running` before the resource turns healthy; that makes the check harder to pass, not easier. Use eager loading only when you know the complete set of services your app touches, and list all of them.
 
 **When to use:**
 
@@ -113,7 +117,7 @@ You can eagerly load any AWS service supported by LocalStack. Common examples:
 container.EagerLoadedServices =
 [
     AwsService.Sqs,           // Simple Queue Service
-    AwsService.DynamoDB,      // DynamoDB
+    AwsService.DynamoDb,      // DynamoDB
     AwsService.S3,            // S3 Storage
     AwsService.Sns,           // Simple Notification Service
     AwsService.Lambda,        // Lambda Functions
@@ -236,7 +240,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 {
     container.ContainerRegistry = "artifactory.company.com";  // Where to pull from
     container.ContainerImage = "docker-mirrors/localstack/localstack";  // Image path
-    container.ContainerImageTag = "4.x.x";  // Pin to a specific LocalStack version
+    container.ContainerImageTag = "4.12.0";  // Pin to a specific LocalStack version
 });
 ```
 
@@ -244,7 +248,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 - `ContainerRegistry`: `docker.io` (Docker Hub)
 - `ContainerImage`: `localstack/localstack`
-- `ContainerImageTag`: the LocalStack tag pinned by the installed package version (visible from the Aspire dashboard or container logs)
+- `ContainerImageTag`: `4.12.0` - a fixed pin, not a floating "current" tag. The pin is deliberate: `4.12.0` is the last LocalStack image that runs without an auth token. Upstream left semver after `4.14.0` and now publishes calendar versions, so newer tags look like `2026.10.0`.
 
 ### Common Scenarios
 
@@ -253,8 +257,8 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 ```csharp
 container.ContainerRegistry = "artifactory.company.com";
 container.ContainerImage = "docker-local/localstack/localstack";
-container.ContainerImageTag = "4.x.x";
-// Pulls: artifactory.company.com/docker-local/localstack/localstack:4.x.x
+container.ContainerImageTag = "4.12.0";
+// Pulls: artifactory.company.com/docker-local/localstack/localstack:4.12.0
 ```
 
 #### Azure Container Registry (ACR)
@@ -262,8 +266,8 @@ container.ContainerImageTag = "4.x.x";
 ```csharp
 container.ContainerRegistry = "mycompany.azurecr.io";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.x.x";
-// Pulls: mycompany.azurecr.io/localstack/localstack:4.x.x
+container.ContainerImageTag = "4.12.0";
+// Pulls: mycompany.azurecr.io/localstack/localstack:4.12.0
 ```
 
 #### AWS Elastic Container Registry (ECR)
@@ -271,8 +275,8 @@ container.ContainerImageTag = "4.x.x";
 ```csharp
 container.ContainerRegistry = "123456789012.dkr.ecr.us-west-2.amazonaws.com";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.x.x";
-// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:4.x.x
+container.ContainerImageTag = "4.12.0";
+// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:4.12.0
 ```
 
 #### GitHub Container Registry (GHCR)
@@ -288,8 +292,8 @@ container.ContainerImageTag = "custom-build-123";
 
 ```csharp
 // Only override the tag to use a different LocalStack version
-container.ContainerImageTag = "3.8.1";
-// Pulls: docker.io/localstack/localstack:3.8.1
+container.ContainerImageTag = "2026.10.0";
+// Pulls: docker.io/localstack/localstack:2026.10.0
 ```
 
 Newer LocalStack images may require `LOCALSTACK_AUTH_TOKEN`. If you override the pinned default image tag, check the LocalStack image's requirements and pass the token through `AdditionalEnvironmentVariables` when needed.
@@ -324,7 +328,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 {
     container.ContainerRegistry = "docker.io";
     container.ContainerImage = "localstack/localstack";
-    container.ContainerImageTag = "4.x.x"; // Pin to a specific LocalStack version
+    container.ContainerImageTag = "4.12.0"; // Pin to a specific LocalStack version
 });
 ```
 
@@ -395,7 +399,6 @@ This mounts `/var/run/docker.sock` from the host into the LocalStack container, 
 For advanced scenarios, you can pass custom environment variables to the LocalStack container:
 
 ```csharp
-container.AdditionalEnvironmentVariables["LOCALSTACK_API_KEY"] = "your-pro-key";
 container.AdditionalEnvironmentVariables["LOCALSTACK_AUTH_TOKEN"] = "your-auth-token";
 container.AdditionalEnvironmentVariables["PERSISTENCE"] = "1";
 ```
@@ -404,8 +407,7 @@ container.AdditionalEnvironmentVariables["PERSISTENCE"] = "1";
 
 **Common Use Cases:**
 
-- LocalStack Pro features ([`LOCALSTACK_API_KEY`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#localstack-pro))
-- Newer LocalStack images that require `LOCALSTACK_AUTH_TOKEN`
+- Licensed LocalStack features and newer LocalStack images, both of which need [`LOCALSTACK_AUTH_TOKEN`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#localstack-for-aws) - on LocalStack 4.x the auth token replaced `LOCALSTACK_API_KEY`, which no longer activates a license
 - [Persistence configuration](https://docs.localstack.cloud/aws/capabilities/state-management/persistence/) (`PERSISTENCE`)
 - Custom [configuration options](https://docs.localstack.cloud/aws/capabilities/config/configuration/)
 
@@ -442,7 +444,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
     container.LogLevel = LocalStackLogLevel.Error;
 
     // Eagerly load all services used in tests
-    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
+    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
 });
 ```
 
@@ -454,7 +456,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
     // Pull from private Artifactory
     container.ContainerRegistry = "artifactory.company.com";
     container.ContainerImage = "docker-local/localstack/localstack";
-    container.ContainerImageTag = "4.x.x";
+    container.ContainerImageTag = "4.12.0";
 
     container.Lifetime = ContainerLifetime.Persistent;
     container.LogLevel = LocalStackLogLevel.Warn;
@@ -492,7 +494,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
     // Dynamic ports by default - allows parallel test runs without conflicts
 
     // Eagerly load services to avoid cold-start variance
-    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB];
+    container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb];
 });
 ```
 
@@ -515,7 +517,7 @@ container.AdditionalEnvironmentVariables["SERVICES"] = "sqs,dynamodb";
 container.EagerLoadedServices = [AwsService.S3]; // Conflict!
 
 // ✅ DO THIS
-container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDB, AwsService.S3];
+container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
 ```
 
 ### Container Health Checks Fail
@@ -531,10 +533,11 @@ If health checks fail after container starts:
 
 2. **Check Aspire Dashboard:** Look at health check details for specific failing services
 
-3. **Try eager loading:** Some services may benefit from eager loading:
+3. **Review `EagerLoadedServices`:** Eager loading does not help a failing health check - it makes the check stricter, because every listed service must report `running`, and `SERVICES` restricts the container to that list. If the check names services that are not running, shorten the list or clear it rather than extending it:
 
    ```csharp
-   container.EagerLoadedServices = [AwsService.Sqs];
+   // With no services listed the check only requires the container to report healthy
+   container.EagerLoadedServices = [];
    ```
 
 ### Data Not Persisting
@@ -555,7 +558,7 @@ If you expect data to persist between runs:
 3. **Keep logging minimal in CI** - Use `LogLevel.Error` for cleaner output
 4. **Use Persistent lifetime for development** - Faster iteration with container reuse
 5. **Start with lazy loading** - Only use eager loading when you have a specific need
-6. **Limit eager loaded services** - Only pre-load services you actually use
+6. **Limit eager loaded services** - The list is both an allow-list (`SERVICES`) and the health check's required set, so list every service you use and nothing more
 7. **Document your configuration** - Add comments explaining configuration choices
 
 ## Related Documentation

@@ -26,8 +26,8 @@ Provide a clear and concise description of the changes.
 
 ## 🎯 Aspire Compatibility
 
-- [ ] Compatible with .NET Aspire 9.x
-- [ ] Supports both .NET 8.0 and .NET 9.0
+- [ ] Compatible with .NET Aspire 13.x
+- [ ] Supports .NET 8.0, .NET 9.0 and .NET 10.0
 - [ ] Follows Aspire.Hosting.AWS patterns
 - [ ] Works with existing AWS integrations
 
@@ -108,6 +108,6 @@ builder.Build().Run();
 
 By submitting this pull request, I confirm that:
 
-- [ ] I have read and agree to the project's [Code of Conduct](.github/CODE_OF_CONDUCT.md)
-- [ ] I understand that this contribution may be subject to the [.NET Foundation CLA](.github/CONTRIBUTING.md)
+- [ ] I have read and agree to the project's [Code of Conduct](CODE_OF_CONDUCT.md)
+- [ ] I have read the [contribution licensing terms](CONTRIBUTING.md) (inbound=outbound MIT, no CLA to sign)
 - [ ] My contribution is licensed under the same terms as the project (MIT License)

@@ -18,7 +18,7 @@ The application demonstrates a typical AWS messaging flow: messages are publishe
 
 ### AppHost Projects (Provisioning Methods)
 
-Both projects create **identical AWS resources** but use different provisioning approaches:
+Both projects create the same **messaging resources** (SNS topic, SQS queue, subscription, DynamoDB table) but use different provisioning approaches — the CDK stack additionally creates an S3 bucket:
 
 - **`LocalStack.Provisioning.CloudFormation.AppHost`** - Uses [CloudFormation template](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template) for AWS resource provisioning
 - **`LocalStack.Provisioning.CDK.AppHost`** - Uses [AWS CDK Stack](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs) for AWS resource provisioning
@@ -26,7 +26,7 @@ Both projects create **identical AWS resources** but use different provisioning 
 ### Application Projects
 
 - **`LocalStack.Provisioning.Frontend`** - Blazor Server Command Center with a live pipeline visualization, instant message feed, DynamoDB browser, and configuration drawer
-- **`LocalStack.Provisioning.ServiceDefaults`** - Shared service defaults and configurations
+- **`LocalStack.Playground.ServiceDefaults`** (lives in `playground/`, shared with the Lambda example) - Shared service defaults and configurations
 
 **Note**: The Frontend application behaves identically regardless of which AppHost you use.
 
@@ -52,7 +52,7 @@ This integration provides **two ways** to configure LocalStack with your AWS res
 
 ```csharp
 // 1. Add LocalStack container
-var localstack = builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container => {
+var localstack = builder.AddLocalStack("localstack", awsConfig, configureContainer: container => {
     container.Lifetime = ContainerLifetime.Session;
     container.LogLevel = LocalStackLogLevel.Debug;
 });
@@ -74,11 +74,11 @@ builder.UseLocalStack(localstack);  // 🪄 Automatically detects and configures
 var awsResources = builder.AddAWSCloudFormationTemplate("resources", "app-resources.template")
     .WithReference(localstack);  // Manual LocalStack reference
 
-var project = builder.AddProject<Projects.Frontend>("Frontend")
+var project = builder.AddProject<Projects.LocalStack_Provisioning_Frontend>("Frontend")
     .WithReference(localstack);  // Manual project reference
 ```
 
-**💡 Hands-on Learning**: Both `Program.cs` files contain commented code blocks. You can easily switch between manual and auto approaches by commenting/uncommenting the relevant sections.
+**💡 Hands-on Learning**: Both `Program.cs` files document the manual approach in comments. The CloudFormation AppHost has ready-to-uncomment `.WithReference(localstack)` lines; the CDK AppHost only describes the manual lines, so you add them by hand. Either way, comment out `builder.UseLocalStack(localstack);` first.
 
 ## Getting Started
 
@@ -95,7 +95,7 @@ Choose your preferred provisioning method:
 #### Option 1: CloudFormation Template Approach
 
 ```bash
-dotnet run --project LocalStack.Provisioning.CloudFormation.AppHost
+aspire run --apphost LocalStack.Provisioning.CloudFormation.AppHost
 ```
 
 👀 **Explore**: [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/Program.cs) | [Template](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CloudFormation.AppHost/app-resources.template)
@@ -103,7 +103,7 @@ dotnet run --project LocalStack.Provisioning.CloudFormation.AppHost
 #### Option 2: AWS CDK Approach
 
 ```bash
-dotnet run --project LocalStack.Provisioning.CDK.AppHost
+aspire run --apphost LocalStack.Provisioning.CDK.AppHost
 ```
 
 👀 **Explore**: [Program.cs](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/Program.cs) | [CDK Stack](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/tree/master/playground/provisioning/LocalStack.Provisioning.CDK.AppHost/CustomStack.cs)
@@ -141,14 +141,18 @@ Both `Program.cs` files are currently configured for **auto-configure mode**. To
 
 #### In CDK AppHost
 
+Only the bootstrap call is left as a comment here, so the manual references have to be written by hand:
+
 ```csharp
 // Comment out auto-configure
 // builder.UseLocalStack(localstack);
 
-// Uncomment manual CDK bootstrap and references
-// var cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplate()...
+// Add the CDK bootstrap stack back (returns null when LocalStack is disabled)
+var cdkBootstrap = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localstack);
+
+// Then add these to the CDK stack and the Frontend project
 // .WithReference(localstack)
-// .WaitFor(cdkBootstrap)
+// .WaitFor(cdkBootstrap!)
 ```
 
 ## Frontend Application
@@ -183,14 +187,14 @@ Instant UI update (in-process MessageFlowNotifier)
 
 ## AWS Resources Provisioned
 
-Both provisioning approaches create these resources:
+Both provisioning approaches create these resources. The names below are the CloudFormation/CDK logical IDs; only the DynamoDB table has a pinned physical name, the rest get auto-generated ones:
 
-- **SNS Topic**: `ChatTopic` for message publishing
-- **SQS Queue**: `ChatMessagesQueue` with configurable visibility timeout
+- **SNS Topic**: `ChatTopic` for message publishing (physical topic name generated)
+- **SQS Queue**: `ChatMessagesQueue` with configurable visibility timeout (physical queue name generated)
 - **SNS Subscription**: Connects SNS topic to SQS queue
 - **Queue Policy**: Allows SNS to send messages to SQS
-- **DynamoDB Table**: `ChatMessages` with composite key (MessageId, Timestamp) and global secondary index
-- **S3 Bucket**: (CDK approach only) Additional storage demonstration
+- **DynamoDB Table**: `ChatMessagesTable`, physically named `ChatMessages`, with composite key (MessageId, Timestamp) and global secondary index
+- **S3 Bucket**: `Bucket` (CDK approach only) Additional storage demonstration
 
 ## Testing
 

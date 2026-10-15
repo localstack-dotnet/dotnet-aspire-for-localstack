@@ -39,22 +39,22 @@ builder.Build().Run();
 
 **LocalStack.Aspire.Hosting Version:**
 
-- Version: (e.g., 9.4.0)
+- Version: (e.g., 13.4.0)
 
 **.NET Aspire Information:**
 
-- Aspire Version: (e.g., 9.4.0)
-- Aspire.Hosting.AWS Version: (e.g., 9.4.0)
+- Aspire Version: (e.g., 13.6.1)
+- Aspire.Hosting.AWS Version: (e.g., 13.7.2)
 
 **LocalStack Information:**
 
-- LocalStack Version: (e.g., 4.6.0)
-- LocalStack Image: (e.g., `localstack/localstack:4.6.0`)
+- LocalStack Version: (e.g., 4.12.0)
+- LocalStack Image: (e.g., `localstack/localstack:4.12.0`)
 - LocalStack Services Used: (e.g., S3, DynamoDB, SNS, CloudFormation, CDK)
 
 **.NET Information:**
 
-- .NET Version: (e.g., .NET 8, .NET 9)
+- .NET Version: (e.g., .NET 8, .NET 9, .NET 10)
 - Operating System: (e.g., Windows 11, Ubuntu 22.04, macOS 14)
 - IDE/Editor: (e.g., Visual Studio 2022, Rider, VS Code)
 
@@ -62,7 +62,8 @@ builder.Build().Run();
 
 ```csharp
 // Your LocalStack container configuration
-var localstack = builder.AddLocalStack(configureContainer: options => {
+var localstack = builder.AddLocalStack("localstack", awsConfig: null, configureContainer: options =>
+{
     options.LogLevel = LocalStackLogLevel.Debug;
     options.DebugLevel = 1;
 });

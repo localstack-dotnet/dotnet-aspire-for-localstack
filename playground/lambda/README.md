@@ -96,10 +96,10 @@ The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` p
 
 ```bash
 # 1. Start the application (Docker must be running)
-dotnet run --project LocalStack.Lambda.AppHost
+aspire run --apphost LocalStack.Lambda.AppHost
 ```
 
-**💡 Get URLs from Aspire Dashboard**: Aspire dynamically assigns host and port numbers. Open the Aspire Dashboard at `http://localhost:18888` to get the actual endpoints for:
+**💡 Get URLs from Aspire Dashboard**: Aspire dynamically assigns host and port numbers. Open the Aspire Dashboard using the URL printed in the `aspire run` output (it differs per launch profile) to get the actual endpoints for:
 
 - **APIGatewayEmulator**: For making HTTP requests to your Lambda functions
 - **Lambda Test Tool**: For testing individual Lambda functions with sample payloads
@@ -194,7 +194,7 @@ aws sqs get-queue-attributes --queue-url {ANALYTICS_QUEUE_URL} --attribute-names
 
 ## AWS Emulator Integration
 
-This example demonstrates how LocalStack works seamlessly with the new AWS emulators introduced in [.NET Aspire 9.x](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-1/):
+This example demonstrates how LocalStack works seamlessly with the [AWS emulators for .NET Aspire](https://aws.amazon.com/blogs/developer/building-lambda-with-aspire-part-1/) (this sample builds against Aspire 13.6.1 and `Aspire.Hosting.AWS` 13.7.2):
 
 - **Lambda Emulator**: Provides sub-second feedback for Lambda development
 - **API Gateway Emulator**: Local HTTP API Gateway for routing

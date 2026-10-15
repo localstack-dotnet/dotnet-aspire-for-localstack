@@ -6,7 +6,7 @@ We maintain a versioning strategy aligned with .NET Aspire releases. Security pa
 
 ### Security Patch Policy
 
-| CVSS v3.0 | v9.x (Current) |
+| CVSS v3.0 | v13.x (Current) |
 | --------- | -------------- |
 | 9.0-10.0  | ✅ All releases within previous 3 months |
 | 4.0-8.9   | ✅ Most recent release |
