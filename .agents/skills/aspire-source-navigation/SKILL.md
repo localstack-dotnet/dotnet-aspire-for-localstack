@@ -31,7 +31,7 @@ Do not use this skill for ordinary Markdown edits, general C# cleanup, or playgr
 ## Required Workflow
 
 1. Read `Directory.Packages.props` and identify the exact package versions involved.
-2. Map the packages to their upstream repositories: Aspire packages to `dotnet/aspire`, `Aspire.Hosting.AWS` to `aws/integrations-on-dotnet-aspire-for-aws`, and LocalStack packages to `localstack-dotnet/localstack-dotnet-client`.
+2. Map the packages to their upstream repositories: Aspire packages to `microsoft/aspire`, `Aspire.Hosting.AWS` to `aws/integrations-on-dotnet-aspire-for-aws`, and LocalStack packages to `localstack-dotnet/localstack-dotnet-client`.
 3. Check whether a matching local checkout exists under `external/`. Because `external/` is gitignored, use an ignored-file-aware check such as `Test-Path external`, `git ls-files --others --ignored --exclude-standard external/`, or a direct directory listing. Do not rely on workspace glob/search tools that skip ignored paths.
 4. Verify the local checkout's branch/tag/commit against the package version and upstream tags/releases before trusting it.
 5. If local source is missing or stale, report that explicitly. Use GitHub MCP only for tag/ref discovery, release verification, or targeted fallback reads.
@@ -45,7 +45,7 @@ Resolve package versions from `Directory.Packages.props` each time. Do not copy 
 
 | Package or behavior | Upstream source | Local checkout root |
 | --- | --- | --- |
-| `Aspire.Hosting`, `Aspire.Hosting.AppHost`, `Aspire.Hosting.Testing` | `dotnet/aspire` | `external/aspire/{ref}/` |
+| `Aspire.Hosting`, `Aspire.Hosting.AppHost`, `Aspire.Hosting.Testing` | `microsoft/aspire` | `external/aspire/{ref}/` |
 | `Aspire.Hosting.AWS`, CloudFormation, CDK, Lambda emulator integration | `aws/integrations-on-dotnet-aspire-for-aws` | `external/aws-integrations/{ref}/` |
 | `LocalStack.Client`, `LocalStack.Client.Extensions`, `ILocalStackOptions`, session/config options | `localstack-dotnet/localstack-dotnet-client` | `external/localstack-dotnet-client/{ref}/` |
 
@@ -138,32 +138,11 @@ These are starting points, not a fixed checklist. Add or remove searches based o
 
 ## Official Aspire Skills Cross-Check
 
-Official Microsoft Aspire skills are useful for Aspire CLI and distributed application workflows, but they may describe newer Aspire versions than this repository uses. If official guidance conflicts with verified package source, prefer verified package source and call out the version mismatch.
-
-Use official skills when available for:
-
-| Task | Skill |
-| --- | --- |
-| AppHost lifecycle | `aspire` or `aspire-orchestration` |
-| Logs, dashboard, traces | `aspire-monitoring` |
-| AppHost scaffold/resource graph work | `aspireify` |
-| New skeleton creation | `aspire-init` |
-| Publish/deploy/destroy | `aspire-deployment`, approval-gated |
-
-Installed local skills can supplement this one:
-
-| Task | Skill |
-| --- | --- |
-| Explicit configuration and env vars | `aspire-configuration` |
-| Playground ServiceDefaults | `aspire-service-defaults` |
-| `DistributedApplicationTestingBuilder` patterns | `aspire-integration-testing`, adapted to this repo's test framework |
+Whatever Aspire tooling the harness exposes may describe a newer Aspire than this repository pins. When that guidance conflicts with verified package source, the source wins — and say which version the mismatch is against.
 
 ## Common Mistakes
 
-- Do not use upstream default branches for compatibility-sensitive source checks.
-- Do not assume package versions map directly to semver git tags; verify the upstream tag/release scheme.
-- Do not copy examples from external testing guidance without adapting them to this repo's test framework.
-- Do not commit `external/` source checkouts.
-- Do not treat GitHub MCP as the default source-reading path when local source is available.
-- Do not claim source compatibility from this repository's tests alone; upstream API shape must be checked for version-sensitive behavior.
-- Do not leave the evidence trail implicit in chat history; summarize refs and file paths before the recommendation or edit.
+- Verify the upstream tag and release scheme rather than assuming the package version maps to a semver git tag.
+- Adapt examples from external testing guidance to this repository's test framework before using them.
+- Establish compatibility from upstream API shape, not from this repository's tests alone; version-sensitive behavior does not show up there.
+- Summarize the refs and file paths you checked before the recommendation or edit, rather than leaving the trail in chat history.
