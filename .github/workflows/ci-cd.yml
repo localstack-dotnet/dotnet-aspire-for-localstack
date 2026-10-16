@@ -188,6 +188,9 @@ jobs:
       - name: "Build"
         run: dotnet build --configuration Release --no-restore
 
+      - name: "Raise inotify instance limit"
+        run: sudo sysctl -w fs.inotify.max_user_instances=1024
+
       - name: "Run Unit Tests"
         run:  dotnet test --project ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build -- --timeout 5m
 

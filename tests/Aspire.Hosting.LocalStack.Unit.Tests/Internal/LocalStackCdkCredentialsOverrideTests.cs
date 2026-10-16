@@ -9,11 +9,11 @@ public class LocalStackCdkCredentialsOverrideTests
     public async Task Apply_Should_Install_Generator_Returning_LocalStack_Session_Credentials()
     {
         var previous = AWSConfigs.AWSCredentialsGenerators;
-        var (options, _, _) = TestDataBuilders.CreateMockLocalStackOptions();
+        var state = TestDataBuilders.CreateHostingState();
 
         try
         {
-            LocalStackCdkCredentialsOverride.Apply(options);
+            LocalStackCdkCredentialsOverride.Apply(state);
 
             var generators = AWSConfigs.AWSCredentialsGenerators;
             await Assert.That(generators).IsNotNull();
@@ -21,9 +21,9 @@ public class LocalStackCdkCredentialsOverrideTests
 
             var credentials = generators[0]();
             var immutable = await credentials.GetCredentialsAsync();
-            await Assert.That(immutable.AccessKey).IsEqualTo(options.Session.AwsAccessKeyId);
-            await Assert.That(immutable.SecretKey).IsEqualTo(options.Session.AwsAccessKey);
-            await Assert.That(immutable.Token).IsEqualTo(options.Session.AwsSessionToken);
+            await Assert.That(immutable.AccessKey).IsEqualTo(state.AccessKeyId);
+            await Assert.That(immutable.SecretKey).IsEqualTo(state.SecretAccessKey);
+            await Assert.That(immutable.Token).IsEqualTo(state.SessionToken);
         }
         finally
         {

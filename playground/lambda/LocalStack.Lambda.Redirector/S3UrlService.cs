@@ -22,7 +22,10 @@ internal sealed class S3UrlService : IS3UrlService
     {
         if (_localStackOptions.UseLocalStack)
         {
+            // LocalStack's edge endpoint serves plain HTTP on the local machine; HTTPS is not available there.
+#pragma warning disable S5332
             return new Uri($"http://{_localStackOptions.Config.LocalStackHost}:{_localStackOptions.Config.EdgePort}/{bucket}/{key}");
+#pragma warning restore S5332
         }
 
         var request = new Amazon.S3.Model.GetPreSignedUrlRequest

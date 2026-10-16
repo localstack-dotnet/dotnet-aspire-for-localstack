@@ -14,7 +14,7 @@ public class EagerLoadedServicesTests
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
@@ -72,7 +72,7 @@ public class EagerLoadedServicesTests
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
@@ -109,7 +109,7 @@ public class EagerLoadedServicesTests
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
@@ -151,7 +151,7 @@ public class EagerLoadedServicesTests
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;

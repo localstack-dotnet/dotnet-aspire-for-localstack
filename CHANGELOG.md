@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [13.6.0] - Unreleased
+
+### Added
+
+- **Package-owned AppHost configuration.** `LocalStackHostingOptions` (`Enabled`, `Region`, `AccessKeyId`, `SecretAccessKey`, `SessionToken`) now owns host-level LocalStack settings, with `WithEnabled(...)`, `WithRegion(...)`, and `WithCredentials(...)` fluent extensions in the `Aspire.Hosting` namespace — configuring an AppHost no longer requires LocalStack.Client types.
+- **Canonical `Aspire:Hosting:LocalStack` configuration section.** Host settings bind from `Aspire:Hosting:LocalStack` (`Aspire__Hosting__LocalStack__*` as environment variables). The legacy `LocalStack:*` section remains honored at lower precedence; resolution runs defaults → legacy `LocalStack:*` → canonical `Aspire:Hosting:LocalStack:*` → the `configureOptions` callback → `IAWSSDKConfig.Region`.
+- **New `AddLocalStack` overloads.** `AddLocalStack()`, `AddLocalStack(name)`, `AddLocalStack(name, awsConfig, configureContainer)`, and `AddLocalStack(name, awsConfig, configureOptions, configureContainer)` replace the previous all-optional signature. `Enabled` defaults to `false`, so each overload still returns `null` — and starts no container — until LocalStack is enabled through configuration or the `configureOptions` callback.
+- **Fail-fast validation of enabled hosting options.** When LocalStack is enabled, a missing or whitespace `Region`, `AccessKeyId`, `SecretAccessKey`, or `SessionToken` throws a `DistributedApplicationException` that aggregates every invalid property name without echoing the supplied credential values. When LocalStack is disabled, validation is skipped entirely.
+- **Endpoint-conflict warning.** When LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` configuration coexist on the same workload, the package emits a read-only, best-effort warning through the resource logger. It never adds, removes, or overwrites environment values.
+
+### Changed
+
+- **Internal hosting-state boundary.** Resolved configuration is frozen into an immutable internal snapshot, so LocalStack.Client models are translated only at the runtime seam instead of flowing through the hosting API. Workload `LocalStack__*` environment emission is unchanged.
+- **Dependencies**: Updated `Aspire.Hosting` to `13.6.1` and `Aspire.Hosting.AWS` to `13.7.2`
+  - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, `LocalStack.Client.Extensions` (`2.0.1`), and the analyzer set to their latest stable versions
+  - Moved the `global.json` SDK pin to `10.0.402`
+- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.1. No `13.4.1` was ever published; the entry was renumbered in place.
+
+### Deprecated
+
+- **LocalStack.Client-shaped hosting API.** The released all-optional `AddLocalStack(name, localStackOptions, awsConfig, configureContainer)` overload and `AddLocalStackOptions()` are retained as `[Obsolete]` compatibility adapters (warning, not error) and will be removed in the next major version. `ILocalStackResource.Options`, the `LocalStackResource(string, ILocalStackOptions)` constructor, and the `ILocalStackOptions` helpers in `LocalStackConfigurationExtensions` are deprecated alongside them. Migrate to the package-owned `AddLocalStack` overloads and `Aspire:Hosting:LocalStack` configuration.
+
+### Fixed
+
+- **MessagePack security dependency.** Require MessagePack `2.5.303` or later so this package and its consumers do not resolve the vulnerable transitive `2.5.302` version ([GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h)).
+
+### Known Issues
+
+- **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).
+- **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values and cannot observe callbacks appended after its `BeforeStartEvent` registration.
+
 ## [13.4.0] - 2026-07-09
 
 ### Added

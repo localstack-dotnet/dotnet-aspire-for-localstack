@@ -23,9 +23,9 @@ internal static class LocalStackConnectionStringAvailableCallback
 
         return async (localStackResource, _, ct) =>
         {
-            var localStackOptions = localStackResource.Options;
+            var hostingState = localStackResource.GetHostingState();
 
-            if (!localStackOptions.UseLocalStack)
+            if (!hostingState.Enabled)
             {
                 return;
             }
@@ -53,24 +53,24 @@ internal static class LocalStackConnectionStringAvailableCallback
 
                 if (resource is IStackResource stackResource)
                 {
-                    LocalStackResourceConfigurator.ConfigureCloudFormationResource(stackResource, localStackUrl, localStackOptions);
-                    LocalStackResourceConfigurator.ConfigureStackResource(stackResource, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureCloudFormationResource(stackResource, localStackUrl, hostingState);
+                    LocalStackResourceConfigurator.ConfigureStackResource(stackResource, hostingState);
                     hasCdkStackResources = true;
                 }
                 else if (resource is ICloudFormationTemplateResource cft)
                 {
-                    LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, hostingState);
                 }
                 else if (resource is ExecutableResource er && string.Equals(er.GetType().FullName, Constants.SQSEventSourceResource, StringComparison.Ordinal))
                 {
                     var executableResourceBuilder = builder.CreateResourceBuilder(er);
-                    LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureSqsEventSourceResource(executableResourceBuilder, localStackUrl, hostingState);
                 }
                 else if (resource is ExecutableResource dynamoDbStreamsResource &&
                          string.Equals(dynamoDbStreamsResource.GetType().FullName, Constants.DynamoDbStreamsEventSourceResource, StringComparison.Ordinal))
                 {
                     var executableResourceBuilder = builder.CreateResourceBuilder(dynamoDbStreamsResource);
-                    LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(executableResourceBuilder, localStackUrl, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(executableResourceBuilder, localStackUrl, hostingState);
                 }
                 else if (resource.Annotations.Any(a =>
                              a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
@@ -79,13 +79,13 @@ internal static class LocalStackConnectionStringAvailableCallback
                 {
                     var projectResourceBuilder = builder.CreateResourceBuilder(resourceWithEnvironment);
 
-                    LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder, localStackUrl, localStackOptions);
+                    LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder, localStackUrl, hostingState);
                 }
             }
 
             if (hasCdkStackResources)
             {
-                LocalStackCdkCredentialsOverride.Apply(localStackOptions);
+                LocalStackCdkCredentialsOverride.Apply(hostingState);
                 LocalStackCdkAssetUploadEndpointCustomizer.Register(localStackUrl);
             }
         };

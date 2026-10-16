@@ -39,7 +39,7 @@ Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for se
 
 - .NET 10.0 or later
 - Docker Desktop (for LocalStack containers)
-- Node.js 18+ and AWS CDK v2 (for CDK examples only)
+- Node.js 18+ and AWS CDK v2 (needed by both examples: the Lambda example and the provisioning CDK AppHost deploy CDK stacks)
 
 ---
 

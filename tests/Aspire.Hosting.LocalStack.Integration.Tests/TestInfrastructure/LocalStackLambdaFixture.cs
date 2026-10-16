@@ -51,12 +51,9 @@ public sealed class LocalStackLambdaFixture : IAsyncInitializer, IAsyncDisposabl
         await resourceNotificationService.WaitForResourceAsync("CDKBootstrap", KnownResourceStates.Running, cts.Token);
 
         // Get LocalStack connection string and region
-        var localStackResource = appHost.Resources.OfType<ILocalStackResource>().FirstOrDefault()
-                                 ?? throw new InvalidOperationException("LocalStack resource not found");
         LocalStackConnectionString = await _app.GetConnectionStringAsync("localstack", cancellationToken: cts.Token)
                                      ?? throw new InvalidOperationException("LocalStack connection string is null");
-        RegionName = localStackResource.Options.Session.RegionName
-                     ?? throw new InvalidOperationException("LocalStack region not configured");
+        RegionName = RegionEndpoint.USEast1.SystemName;
 
         // Extract CloudFormation outputs
         _stackOutputs = await LocalStackTestHelpers.WaitForStackOutputsAsync(

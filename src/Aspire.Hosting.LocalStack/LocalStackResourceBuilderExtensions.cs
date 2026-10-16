@@ -57,13 +57,14 @@ public static class LocalStackResourceBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        if (localStack?.Resource.Options.UseLocalStack != true)
+        if (localStack is null || !localStack.Resource.GetHostingState().Enabled)
         {
             return builder;
         }
 
         ThrowIfDynamoDbLocalPresent(builder.Resources);
         SubscribeToDynamoDbLocalGuard(builder, localStack.Resource);
+        SubscribeToEndpointConflictWarning(builder);
 
         // Check if we have any CDK stacks (IStackResource) - if so, we need CDK bootstrap
         var hasStackResources = builder.Resources
@@ -138,31 +139,127 @@ public static class LocalStackResourceBuilderExtensions
     /// Adds a LocalStack container to the application model.
     /// </summary>
     /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
+    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
+    public static IResourceBuilder<ILocalStackResource>? AddLocalStack(this IDistributedApplicationBuilder builder)
+        => AddLocalStackCore(
+            builder,
+            name: "localstack",
+            awsConfig: null,
+            localStackOptions: null,
+            configureOptions: null,
+            configureContainer: null);
+
+    /// <summary>
+    /// Adds a LocalStack container to the application model.
+    /// </summary>
+    /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
+    /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
+    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
+    public static IResourceBuilder<ILocalStackResource>? AddLocalStack(this IDistributedApplicationBuilder builder, string name)
+        => AddLocalStackCore(
+            builder,
+            name,
+            awsConfig: null,
+            localStackOptions: null,
+            configureOptions: null,
+            configureContainer: null);
+
+    /// <summary>
+    /// Adds a LocalStack container to the application model.
+    /// </summary>
+    /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
+    /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
+    /// <param name="awsConfig">Optional AWS SDK configuration to inherit region settings from.</param>
+    /// <param name="configureContainer">Optional action to configure container-specific options such as lifetime, logging, and environment variables.</param>
+    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
+    public static IResourceBuilder<ILocalStackResource>? AddLocalStack(
+        this IDistributedApplicationBuilder builder,
+        string name,
+        IAWSSDKConfig? awsConfig,
+        Action<LocalStackContainerOptions>? configureContainer)
+        => AddLocalStackCore(
+            builder,
+            name,
+            awsConfig,
+            localStackOptions: null,
+            configureOptions: null,
+            configureContainer);
+
+    /// <summary>
+    /// Adds a LocalStack container to the application model.
+    /// </summary>
+    /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
+    /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
+    /// <param name="awsConfig">Optional AWS SDK configuration to inherit region settings from.</param>
+    /// <param name="configureOptions">Action to configure package-owned LocalStack hosting options.</param>
+    /// <param name="configureContainer">Optional action to configure container-specific options such as lifetime, logging, and environment variables.</param>
+    /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
+    public static IResourceBuilder<ILocalStackResource>? AddLocalStack(
+        this IDistributedApplicationBuilder builder,
+        string name,
+        IAWSSDKConfig? awsConfig,
+        Action<LocalStackHostingOptions> configureOptions,
+        Action<LocalStackContainerOptions>? configureContainer = null)
+    {
+        ArgumentNullException.ThrowIfNull(configureOptions);
+
+        return AddLocalStackCore(
+            builder,
+            name,
+            awsConfig,
+            localStackOptions: null,
+            configureOptions,
+            configureContainer);
+    }
+
+    /// <summary>
+    /// Adds a LocalStack container to the application model.
+    /// </summary>
+    /// <param name="builder">The <see cref="IDistributedApplicationBuilder"/>.</param>
     /// <param name="name">The name of the resource. This name will be used as the connection string name when referenced in a dependency.</param>
     /// <param name="localStackOptions">The LocalStack configuration options. If null, default options will be used.</param>
     /// <param name="awsConfig">Optional AWS SDK configuration to inherit region settings from.</param>
     /// <param name="configureContainer">Optional action to configure container-specific options such as lifetime, logging, and environment variables.</param>
     /// <returns>A reference to the <see cref="IResourceBuilder{LocalStackResource}"/>. Returns null if LocalStack is disabled in the configuration.</returns>
+#pragma warning disable S3427
+#pragma warning disable S1133
+    [Obsolete("Use AddLocalStack(string name, IAWSSDKConfig? awsConfig, Action<LocalStackContainerOptions>? configureContainer) or AddLocalStack(string name, IAWSSDKConfig? awsConfig, Action<LocalStackHostingOptions> configureOptions, Action<LocalStackContainerOptions>? configureContainer = null) instead. This overload will be removed in the next major version.", false)]
+#pragma warning restore S1133
     public static IResourceBuilder<ILocalStackResource>? AddLocalStack(
         this IDistributedApplicationBuilder builder,
         string name = "localstack",
         ILocalStackOptions? localStackOptions = null,
         IAWSSDKConfig? awsConfig = null,
         Action<LocalStackContainerOptions>? configureContainer = null)
+        => AddLocalStackCore(
+            builder,
+            name,
+            awsConfig,
+            localStackOptions,
+            configureOptions: null,
+            configureContainer);
+#pragma warning restore S3427
+
+    private static IResourceBuilder<ILocalStackResource>? AddLocalStackCore(
+        IDistributedApplicationBuilder builder,
+        string name,
+        IAWSSDKConfig? awsConfig,
+        ILocalStackOptions? localStackOptions,
+        Action<LocalStackHostingOptions>? configureOptions,
+        Action<LocalStackContainerOptions>? configureContainer)
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
 
-        var options = localStackOptions ?? builder.AddLocalStackOptions();
+        var state = LocalStackHostingOptionsResolver.Resolve(
+            builder.Configuration,
+            awsConfig,
+            localStackOptions,
+            configureOptions);
 
-        if (!options.UseLocalStack)
+        if (state is null)
         {
             return null;
-        }
-
-        if (awsConfig is { Region: not null })
-        {
-            options = options.WithRegion(awsConfig.Region.SystemName);
         }
 
         var containerOptions = new LocalStackContainerOptions();
@@ -170,7 +267,7 @@ public static class LocalStackResourceBuilderExtensions
         // Apply container configuration if provided
         configureContainer?.Invoke(containerOptions);
 
-        var resource = new LocalStackResource(name, options);
+        var resource = new LocalStackResource(name, state);
 
         var resourceBuilder = builder.AddResource(resource)
             .WithImage(containerOptions.ContainerImage ?? LocalStackContainerImageTags.Image)
@@ -246,7 +343,7 @@ public static class LocalStackResourceBuilderExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        if (localStackBuilder?.Resource.Options.UseLocalStack != true)
+        if (localStackBuilder is null || !localStackBuilder.Resource.GetHostingState().Enabled)
         {
             return null;
         }
@@ -286,6 +383,9 @@ public static class LocalStackResourceBuilderExtensions
     /// }
     /// </code>
     /// </example>
+#pragma warning disable S1133
+    [Obsolete("Use AddLocalStack package-owned overloads and Aspire:Hosting:LocalStack configuration instead. This method will be removed in the next major version.", false)]
+#pragma warning restore S1133
     public static ILocalStackOptions AddLocalStackOptions(this IDistributedApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -318,6 +418,23 @@ public static class LocalStackResourceBuilderExtensions
         builder.OnBeforeStart((beforeStartEvent, _) =>
         {
             ThrowIfDynamoDbLocalPresent(beforeStartEvent.Model.Resources);
+
+            return Task.CompletedTask;
+        });
+    }
+
+    private static void SubscribeToEndpointConflictWarning(IDistributedApplicationBuilder builder)
+    {
+        builder.OnBeforeStart((beforeStartEvent, _) =>
+        {
+            var loggerService = beforeStartEvent.Services.GetRequiredService<ResourceLoggerService>();
+
+            foreach (var resource in beforeStartEvent.Model.Resources
+                         .OfType<IResourceWithEnvironment>()
+                         .Where(static resource => resource.Annotations.Any(static annotation => annotation is LocalStackEnabledAnnotation)))
+            {
+                LocalStackEndpointConflictWarning.Register(resource, loggerService);
+            }
 
             return Task.CompletedTask;
         });

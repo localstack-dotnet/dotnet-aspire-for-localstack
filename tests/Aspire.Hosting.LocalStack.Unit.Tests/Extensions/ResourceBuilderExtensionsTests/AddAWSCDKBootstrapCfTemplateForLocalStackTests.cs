@@ -16,8 +16,7 @@ public class AddAWSCDKBootstrapCfTemplateForLocalStackTests
     public async Task AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
     {
         var builder = DistributedApplication.CreateBuilder([]);
-        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: false);
-        var localStackBuilder = builder.AddLocalStack(localStackOptions: localStackOptions);
+        var localStackBuilder = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(false));
 
         var result = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStackBuilder);
 
@@ -28,8 +27,7 @@ public class AddAWSCDKBootstrapCfTemplateForLocalStackTests
     public async Task AddAWSCDKBootstrapCloudFormationTemplateForLocalStack_Should_Create_Template_When_LocalStack_Enabled()
     {
         var builder = DistributedApplication.CreateBuilder([]);
-        var (localStackOptions, _, _) = TestDataBuilders.CreateMockLocalStackOptions(useLocalStack: true);
-        var localStackBuilder = builder.AddLocalStack(localStackOptions: localStackOptions);
+        var localStackBuilder = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
         var result = builder.AddAWSCDKBootstrapCloudFormationTemplateForLocalStack(localStackBuilder);
 

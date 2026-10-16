@@ -9,23 +9,24 @@ We welcome contributions of all kinds - from bug reports and feature requests to
 - 🐛 **Found a bug?** → [Create an Issue](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/issues/new)
 - 💡 **Have an idea?** → [Start a Discussion](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/discussions)
 - ❓ **Need help?** → [Q&A Discussions](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/discussions/categories/q-a)
-- 🚨 **Security issue?** → See our [Security Policy](.github/SECURITY.md)
+- 🚨 **Security issue?** → See our [Security Policy](SECURITY.md)
 - 🔧 **Ready to code?** → [Submit a Pull Request](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/compare)
 
 ## 🤝 Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](.github/CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code. Please report unacceptable behavior to [localstack.dotnet@gmail.com](mailto:localstack.dotnet@gmail.com).
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code. Please report unacceptable behavior to [localstack.dotnet@gmail.com](mailto:localstack.dotnet@gmail.com).
 
-## 📝 Contributor License Agreement (CLA)
+## 📝 Contribution Licensing
 
-**Important**: By submitting a pull request, you agree to license your contribution under the MIT license.
+**Important**: There is no separate CLA to sign. This project is inbound=outbound: by submitting a pull request, you agree to license your contribution under the same [MIT License](../LICENSE) that covers the project.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- [.NET SDK 10.0](https://dotnet.microsoft.com/download) (for development)
-- [Docker](https://docs.docker.com/get-docker/) (for LocalStack testing)
+- [.NET SDK 10.0.402 or a newer 10.0.x SDK](https://dotnet.microsoft.com/download) - pinned in `global.json` (`rollForward: latestFeature`, prereleases disallowed)
+- The .NET 8.0 and .NET 9.0 runtimes - the projects multi-target `net8.0`, `net9.0` and `net10.0`, and the unit tests execute on all three (CI installs the `8.0.x`, `9.0.x` and `10.0.x` SDKs)
+- For the integration tests only: [Docker](https://docs.docker.com/get-docker/) (LocalStack container), plus [Node.js](https://nodejs.org/) and the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) (`npm install -g aws-cdk@2`) for the CDK playground AppHost
 - [Git](https://git-scm.com/downloads)
 - IDE: [Visual Studio](https://visualstudio.microsoft.com/), [Rider](https://www.jetbrains.com/rider/), or [VS Code](https://code.visualstudio.com/)
 
@@ -40,6 +41,8 @@ This project follows the [Contributor Covenant Code of Conduct](.github/CODE_OF_
 
    # Add upstream remote
    git remote add upstream https://github.com/localstack-dotnet/dotnet-aspire-for-localstack.git
+   ```
+
 2. **Build the Project**
 
    ```bash
@@ -52,17 +55,17 @@ This project follows the [Contributor Covenant Code of Conduct](.github/CODE_OF_
 
 3. **Run Tests**
 
-   This project uses [TUnit](https://tunit.dev/) as its testing framework.
+   This project uses [TUnit](https://tunit.dev/) on Microsoft.Testing.Platform as its testing framework, so test options go after a `--` separator and the VSTest `--filter` option is not available.
 
    ```bash
-   # Run all tests
-   dotnet test
-
-   # Run tests for a specific project
+   # Run the unit tests - the default for contributors, no Docker required
    dotnet test --project tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj
 
-   # Run specific tests (using standard filter syntax)
-   dotnet test --filter "FullyQualifiedName~HealthCheck"
+   # Run a single test class
+   dotnet test --project tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj -- --treenode-filter "/*/*/LocalStackHealthCheckTests/*"
+
+   # Run every test project, including the integration tests (needs Docker and the AWS CDK CLI)
+   dotnet test
    ```
 
 ## 🐛 Reporting Issues
@@ -118,7 +121,10 @@ We love new ideas! Here's how to suggest features:
 3. **Test thoroughly**
 
    ```bash
-   # Run all tests
+   # Unit tests - no Docker required
+   dotnet test --project tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj
+
+   # Every test project, including the integration tests (needs Docker and the AWS CDK CLI)
    dotnet test
    ```
 
@@ -190,6 +196,6 @@ Contributors are recognized in:
 
 ---
 
-**By contributing to this project, you agree to abide by our [Code of Conduct](.github/CODE_OF_CONDUCT.md) and understand that your contributions will be licensed under the MIT License.**
+**By contributing to this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md) and understand that your contributions will be licensed under the MIT License.**
 
 Thank you for making .NET Aspire LocalStack integration better! 🚀

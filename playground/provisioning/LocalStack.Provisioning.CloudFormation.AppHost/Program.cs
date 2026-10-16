@@ -13,7 +13,7 @@ var awsConfig = builder.AddAWSSDKConfig().WithProfile("default").WithRegion(regi
 
 // Bootstrap the localstack container with enhanced configuration
 var localstack = builder
-    .AddLocalStack(awsConfig: awsConfig, configureContainer: container =>
+    .AddLocalStack("localstack", awsConfig, configureContainer: container =>
     {
         container.Lifetime = ContainerLifetime.Session;
         container.DebugLevel = 1;

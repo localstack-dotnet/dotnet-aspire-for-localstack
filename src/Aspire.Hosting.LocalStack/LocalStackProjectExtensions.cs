@@ -3,6 +3,7 @@
 
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.LocalStack.Annotations;
+using Aspire.Hosting.LocalStack.Internal;
 
 namespace Aspire.Hosting;
 
@@ -24,7 +25,7 @@ public static class LocalStackProjectExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        if (localStackBuilder?.Resource.Options.UseLocalStack != true)
+        if (localStackBuilder is null || !localStackBuilder.Resource.GetHostingState().Enabled)
         {
             return builder;
         }
