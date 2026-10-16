@@ -15,6 +15,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS | Title | Priority | Status | Plan doc |
 |----|-------|----------|--------|----------|
 | WS0 | Analyzer & .editorconfig modernization | P0 | ✅ | — |
+| WS0.5 | Analyzer policy rebase on the arbitration model | P0 | 🔬 | — research required before planning |
 | WS1 | Full package update (foundation) | P0 | ✅ | — |
 | WS1.5 | CDK routing evidence pass | P0 | ✅ | — |
 | WS2 | Aspire/AWS modernization & feature adaptation | P1 | ✅ | — implemented + runtime-verified 2026-07-04 with integration coverage on the pinned token-free `4.12.0` image; WS7 tracks the future auth-token image decision |
@@ -27,6 +28,7 @@ Status: 🔜 Not started · 🔬 Researching · 📐 Planned · 🔨 In progress
 | WS8 | Observability / UX features | P3 | 🔜 | — |
 | WS9 | Docs & internal-docs consolidation | P0 | ✅ | — |
 | WS10 | Aspire ecosystem integration (CLI/catalog/polyglot) | P1 | 📐 | [research](plans/ws10-aspire-ecosystem-integration-research.md) |
+| WS11 | Upstream reports to file | P1 | 🔬 | — evidence gathered, reports drafted |
 
 ## Release Philosophy
 
@@ -53,6 +55,30 @@ Everything here ships in **one release**, governed by:
 ---
 
 ## Workstreams
+
+### WS0.5 — Analyzer policy rebase on the arbitration model · P0
+
+WS0 modernized the analyzer configuration by *enumerating* rules: `.editorconfig` lists hundreds of `dotnet_diagnostic.*.severity` entries explicitly. That approach rots silently, and the rot is measurable. On 2026-10-16 the file still carried a section headed "Deprecated/Removed Rules" whose two entries were both wrong: `CA1801` is not shipped by NetAnalyzers 10.0.402 at all, so `= error` was a no-op, while `CA1031` is a live rule deliberately set to `none` and sat under a header claiming the opposite. Nothing in the build can report a configured rule that no longer exists.
+
+Adopt the model used by [`Blind-Striker/opencode-sdk-dotnet`](https://github.com/Blind-Striker/opencode-sdk-dotnet), then specialize it here. The parts worth taking:
+
+- **Arbitration instead of enumeration.** Default-on analyzer rules ride their shipped defaults, which warnings-as-errors escalates; `.editorconfig` lists only the rules deliberately overridden, each with a comment naming the winning rule or contract. A list of exceptions cannot go stale the way a list of everything can, because each entry exists to defeat something that fires. Policy text: `docs/engineering/quality-gates.md`; worked examples throughout that repository's `.editorconfig`.
+- **A root `.globalconfig` for rules that must stop running, not just stop reporting.** Roslyn skips an analyzer only when every diagnostic it reports is off for the whole compilation; a file-scoped `.editorconfig` severity hides the diagnostic while the analyzer still runs. The reference repository's single entry records a measured 40-44 s cold-CI saving, with a removal trigger naming what would make the rule relevant again.
+- **Scoped test overrides with stated reasons**, including the `ConfigureAwait` triple as a named set rather than three unrelated lines.
+- **Removal triggers.** Each arbitration says what must change for the entry to come out. This is what the current file lacks, and why dead entries survived.
+
+Analyzer packages to evaluate adding — this repository has none of them:
+
+| Package | What it buys |
+| --- | --- |
+| `Meziantou.Analyzer` | the `MA*` set, including `MA0004` for `ConfigureAwait` in `Always` mode |
+| `Microsoft.CodeAnalysis.BannedApiAnalyzers` + `BannedSymbols.txt` | a compile-time ban list; the obvious candidates here are the AWS SDK's mutually exclusive `ServiceURL`/`RegionEndpoint` setters and `DateTime.Now` |
+| `Microsoft.VisualStudio.Threading.Analyzers` | `VSTHRD*`, relevant because this package runs work inside Aspire's eventing callbacks |
+| `NSubstitute.Analyzers.CSharp` | test-side misuse of the substitute API |
+
+Shared analyzer package versions are **already identical** across the two repositories as of the 2026-10-16 bump — NetAnalyzers `10.0.402`, Roslynator `5.0.1`, SonarAnalyzer `10.35.0.4138`. The gap is the policy shape and the missing packages, not currency.
+
+**Do not import wholesale.** That repository targets `netstandard2.0`/`net472` with source polyfills and pins `LangVersion=14.0`; this one targets `net8.0`–`net10.0` and its public overload set is constrained by SDK 8's C# 12 compiler (see [`architecture/hosting-model.md`](architecture/hosting-model.md)). Rules that are free there can be wrong here. Budget a pass that re-derives each arbitration against this repository's own build rather than copying the file.
 
 ### WS1 — Full package update (foundation) · P0
 
@@ -164,6 +190,13 @@ Sequencing: WS2 has landed; coordinate the ATS-export surface with WS3A's API sh
 - ✅ Consolidated `internal-docs/` into this roadmap and deleted the folder (gitignored/historical; all live items captured in the triage table and workstreams). Raw notes now go to the Inbox section below instead of `internal-docs/todo.md`.
 - Remaining: fix doc drift surfaced in WS4 and `KNOWN_ISSUES.md`.
 
+### WS11 — Upstream reports to file · P1
+
+Defects measured here that belong upstream. Each one needs the report filed, then the issue link folded into the matching [`upstream-watch.md`](upstream-watch.md) trigger so the closing condition points at something trackable.
+
+- **`aws/aws-lambda-dotnet` — the Lambda Test Tool bundles an `AWSSDK.Core` that signs custom-endpoint requests for `us-east-1`.** Report drafted 2026-10-16, not yet filed; no duplicate found in that repository. The measurement: tool `0.14.1` bundles Core `4.0.6.1` and tool `0.16.1` bundles `4.0.7.3`, both below the `4.0.7.5` that fixed the `ServiceURL`-read defect and far below the `4.0.102.11` where the signing fix re-landed. Because the tool is a global `dotnet` tool running in its own process, a consumer cannot fix this by upgrading its own Core. The ask is either a bundled-Core bump past `4.0.100.2` or `AuthenticationRegion` on the tool's event-source clients; the second is preferable because the signer honors it ahead of `RegionFinder` on every Core version tested, which makes it immune to another flip-flop. The report also notes that `Aspire.Hosting.AWS` installs from a `DefaultLambdaTestToolVersion` floor of `0.14.1`, so a fixed tool will not reach Aspire users until that constant moves or they set `OverrideMinimumInstallVersion`.
+- **`aws/integrations-on-dotnet-aspire-for-aws` — API Gateway emulator route configuration is one-per-Lambda-resource**, so a second `WithReference` silently overwrites the first. Observed during WS2 runtime verification on 2026-07-04; evidence is in the WS2 design doc. Needs a minimal reproduction before filing.
+
 ## todo.md Triage
 
 Status: ✅ understood · ⚠️ partial · ❓ unclear
@@ -225,6 +258,5 @@ Drop raw, unsorted ideas here as they come up, then triage them into a workstrea
 - Hybrid real-AWS mode idea (WS10 sweep): model real AWS endpoints as `AddExternalService()` resources so playgrounds can flip LocalStack ↔ real AWS per resource.
 - Watch LocalStack platform for an MCP endpoint in the container image; if it ships, annotate with `WithMcpServer(path)` (13.2) so agents auto-discover it.
 - Optional deliberate opt-in: `PublishAsDockerComposeService()` passthrough for teams that want LocalStack in generated compose for CI (docker.sock + privileged); default stays `ExcludeFromManifest`.
-- Upstream issue candidates from WS2 runtime verification (2026-07-04, evidence in the WS2 design doc): (a) aws-lambda-dotnet — Lambda Test Tool's bundled AWSSDK.Core 4.0.7.x loses the signing region when `AWS_ENDPOINT_URL*` is set (empirical matrix captured; breaks non-us-east-1 LocalStack); (b) aws integrations — API Gateway emulator route config is one-per-Lambda-resource, second `WithReference` silently overwrites the first.
 - Consumer guidance to document (WS3A/WS9): LocalStack.Client's default proxy-mode registration leaks the AWS regional host into generated URL strings (e.g. presigned URLs). Either build browser-facing URLs with an S3UrlService-style LocalStack-aware helper (the playground's approach) or register the client with `AddAwsService<T>(useServiceUrl: true)` when genuine presigning is required.
 - CodeQL C# analysis quality (2026-07-09): GitHub default setup currently scans C# with `build-mode: none`, producing a low analysis-quality warning (`call target` coverage 81%, threshold 85%). Evaluate advanced CodeQL setup with manual .NET restore/build so generated code, dependencies, and call targets are represented more accurately; do not block the current CI hardening work on this.
