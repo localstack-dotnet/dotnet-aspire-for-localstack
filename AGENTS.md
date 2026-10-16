@@ -38,7 +38,7 @@ Before a commit, present the change summary and the proposed Conventional Commit
 | Why a piece of the wiring is shaped the way it is, before changing it | `docs/architecture/hosting-model.md` |
 | Running, filtering, or debugging tests | Quality Gates below |
 | Backlog, workstream status, open questions | `docs/ROADMAP.md` |
-| A failure that smells like an upstream defect | `docs/upstream-watch.md` for the tracked ones and their closing triggers; `docs/agents/KNOWN_ISSUES.md` for shorter triage hints. Neither is licence to refactor nearby code. |
+| A failure that smells like an upstream defect | `docs/upstream-watch.md` for upstream defects and closing triggers; `docs/ROADMAP.md` for package defects and test gaps. Neither is licence to refactor nearby code. |
 | Consumer-facing configuration behavior | `docs/CONFIGURATION.md` |
 | A C# symbol's declaration or meaning | Rider MCP semantic tools while Rider is running, then the harness's headless LSP. Text search is for docs, manifests, comments, and literal strings. |
 

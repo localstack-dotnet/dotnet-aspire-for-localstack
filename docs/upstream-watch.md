@@ -29,7 +29,7 @@ Measured with a signing-region oracle (a listener that parses the region out of 
 | 4.0.21.6 | **4.0.102.11** | **`eu-central-1` — correct** |
 | 4.0.107.3 | **4.0.102.11** | **`eu-central-1` — correct** |
 
-Same oracle, same `AWS_REGION=eu-central-1`, custom `ServiceURL` pointing at a local listener. The third row holds DynamoDBv2 constant against the second, so the variable is Core — which is where `RegionFinder` lives. The fix re-landed somewhere between 4.0.100.2 and 4.0.102.11. That matches both the maintainer's report that the AWS .NET team said they would address it and an assembly review noting the custom-endpoint fallback now resolves environment and profile while excluding instance metadata, which is the shape that avoids the IMDS hang (#4444) that forced the first revert.
+Same oracle, same `AWS_REGION=eu-central-1`, custom `ServiceURL` pointing at a local listener. The first two rows hold DynamoDBv2 constant, isolating Core — which is where `RegionFinder` lives. The third row confirms correct signing with this repository's current DynamoDBv2 pin. The fix re-landed somewhere between 4.0.100.2 and 4.0.102.11. That matches both the maintainer's report that the AWS .NET team said they would address it and an assembly review noting the custom-endpoint fallback now resolves environment and profile while excluding instance metadata, which is the shape that avoids the IMDS hang (#4444) that forced the first revert.
 
 When writing such a probe: set `RegionEndpoint` **after** `ServiceURL` and the latter is silently cleared — the setters are mutually exclusive, and the request then goes to real AWS instead of the local listener. Drive the region from `AWS_REGION` and set only `ServiceURL`.
 
@@ -67,7 +67,7 @@ The reason for the `us-east-1` pin has therefore narrowed from "the AWS SDK sign
 
 ## Live: LocalStack requires an auth token on current images
 
-The package pins `localstack/localstack:4.12.0`, the last image that starts without `LOCALSTACK_AUTH_TOKEN`. Upstream left semantic versioning after `4.14.0` and now publishes calendar versions; the current tag is `2026.10.0`. Consumers who need a newer image pass the token through `AdditionalEnvironmentVariables`.
+The package pins `localstack/localstack:4.12.0`, verified to start without `LOCALSTACK_AUTH_TOKEN`. That measurement does not establish that it is the newest token-free image. Upstream left semantic versioning after `4.14.0` and now publishes calendar versions; the current tag is `2026.10.0` as of this document's date. Consumers who need an image requiring a token pass it through `AdditionalEnvironmentVariables`.
 
 Whether `4.13.x` or `4.14.0` still start without a token is **unverified**: upstream's own documentation contradicts itself, with the auth-token page calling the token mandatory to start the container and the docker-images page describing only a warning and disabled Pro features. The repository's own runtime verification establishes only that `4.12.0` works token-free.
 

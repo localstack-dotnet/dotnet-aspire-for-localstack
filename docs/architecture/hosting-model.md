@@ -2,7 +2,7 @@
 
 Date: 2026-10-16
 
-How this package attaches itself to an Aspire application, and why the four load-bearing pieces are shaped the way they are. Everything here is current behavior. It exists because these four decisions left no readable record: their reasoning lived in a pull-request comment, a deleted branch, or commit archaeology, while the decisions the changelog and the XML docs already carry are not repeated here.
+How this package attaches itself to an Aspire application, and why its runtime and API boundaries are shaped the way they are. Everything here describes current behavior. It records constraints whose reasoning would otherwise require pull-request comments or commit archaeology; the changelog's API inventory and the XML documentation remain separate.
 
 ## Wiring is deferred to the connection-string callback
 
@@ -49,3 +49,11 @@ It was named `WithLocalStack` first. The rename to `WithReference` was declared 
 Exact forwarding overloads protect the parameterless, name-only, and explicit name/AWS-config/container call paths. The residual gap is deliberate: a named `awsConfig:` or `configureContainer:` call that omits `name` still binds the released overload and receives CS0618.
 
 An argumentless `UseLocalStack()` was considered and rejected. The explicit `UseLocalStack(localStack)` selector keeps the enable/disable decision visible at the call site, and adding the argumentless form later stays purely additive if that judgement changes.
+
+## The endpoint-conflict warning reads an ordered environment snapshot
+
+`UseLocalStack()` registers the warning during `BeforeStartEvent`. For each LocalStack-enabled workload, `LocalStackEndpointConflictWarning` appends an environment callback that inspects the shared dictionary when that callback runs. It only logs: it adds, removes, and overwrites no environment values. The upstream signing limitation and its version-dependent evidence live in [Upstream Watch](../upstream-watch.md).
+
+The callback captures a logger from `ResourceLoggerService` instead of using `EnvironmentCallbackContext.Logger`, because Aspire's container dependency discovery can evaluate environment callbacks with `NullLogger`. A warning that depends on the context logger can disappear during that evaluation.
+
+Ordering bounds detection. Environment callbacks appended by another `BeforeStartEvent` subscriber, a later lifecycle hook, or a pipeline step after this package registers its warning can add conflicting values too late for the detector to observe. `LocalStackEndpointConflictWarningTests` pins both read-only behavior and this late-callback blind spot; absence of a warning is not proof that the final environment is conflict-free.

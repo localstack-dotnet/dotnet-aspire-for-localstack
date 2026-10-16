@@ -248,7 +248,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 - `ContainerRegistry`: `docker.io` (Docker Hub)
 - `ContainerImage`: `localstack/localstack`
-- `ContainerImageTag`: `4.12.0` - a fixed pin, not a floating "current" tag. The pin is deliberate: `4.12.0` is the last LocalStack image that runs without an auth token. Upstream left semver after `4.14.0` and now publishes calendar versions, so newer tags look like `2026.10.0`.
+- `ContainerImageTag`: `4.12.0` - a fixed pin, not a floating "current" tag. The pin is deliberate: `4.12.0` is verified to run without an auth token; whether a newer token-free image exists remains unverified. Upstream left semver after `4.14.0` and now publishes calendar versions, so newer tags look like `2026.10.0`.
 
 ### Common Scenarios
 

@@ -170,7 +170,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 - **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
 - **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
 - **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
-- **`ContainerImageTag`** - Custom image tag/version (default: a fixed `4.12.0` pin, kept deliberately because it is the last LocalStack image that needs no auth token). Use to move to a different LocalStack version - newer images may require `LOCALSTACK_AUTH_TOKEN`
+- **`ContainerImageTag`** - Custom image tag/version (default: a fixed `4.12.0` pin, verified to run without an auth token). Use to move to a different LocalStack version - newer images may require `LOCALSTACK_AUTH_TOKEN`
 - **`EnableDockerSocket`** - Mounts `/var/run/docker.sock` so LocalStack can start its own containers (required for LocalStack Lambda support; default: `false`, and it carries security implications)
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 

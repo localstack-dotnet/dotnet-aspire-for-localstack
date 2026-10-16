@@ -2,6 +2,8 @@
 
 Date: 2026-07-04 (initial pass); implementation status rechecked 2026-07-08
 
+> **Historical research — refresh required.** This document describes the July baseline, not the current package pins. The 2026-10-16 roadmap groom did not re-run this research. Version-specific findings and the recommendation below to mark WS10 `Planned` need revalidation; [the roadmap](../ROADMAP.md#ws10--aspire-ecosystem-integration--p1) owns current status.
+
 ## Question
 
 Since this project started, Aspire has grown enormously: a CLI-first workflow, TypeScript/polyglot AppHosts, an integration catalog (`aspire add` / `aspire integration list` / MCP `list_integrations`), an agent-tooling story, and a much richer hosting toolbox (dashboard commands/URLs/icons, container files/volumes, parameters + interaction service, eventing, MCP hooks). The question is the full opportunity sweep: **what has changed in the Aspire world, and what new support can this package add?** TypeScript AppHost compatibility and CLI friendliness are two instances of that question, not its boundary.
