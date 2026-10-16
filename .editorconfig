@@ -348,6 +348,8 @@ dotnet_diagnostic.CA1012.severity = error
 dotnet_diagnostic.CA1018.severity = error
 # Mark enums with FlagsAttribute [opinionated]
 dotnet_diagnostic.CA1027.severity = none
+# Do not catch general exception types [the hosting callbacks must not fault the AppHost]
+dotnet_diagnostic.CA1031.severity = none
 dotnet_diagnostic.CA1032.severity = error
 dotnet_diagnostic.CA1040.severity = suggestion
 dotnet_diagnostic.CA1047.severity = error
@@ -500,12 +502,6 @@ dotnet_diagnostic.CA2248.severity = error
 dotnet_diagnostic.CA2249.severity = error
 dotnet_diagnostic.CA2250.severity = error
 dotnet_diagnostic.CA2251.severity = error
-
-# -----------------------------------------------------------------------------
-# 7.4 Deprecated/Removed Rules
-# -----------------------------------------------------------------------------
-dotnet_diagnostic.CA1031.severity = none
-dotnet_diagnostic.CA1801.severity = error
 
 # =============================================================================
 # SECTION 8: SECURITY RULES (CA3xxx, CA5xxx)

@@ -1,0 +1,170 @@
+name: Bug report
+description: Report a defect in the .NET Aspire LocalStack integration
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Version numbers decide most of these reports, so please fill the version fields exactly rather than approximately.
+
+        If the behavior involves a region other than `us-east-1`, or a Lambda event source, read
+        [`docs/upstream-watch.md`](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/blob/master/docs/upstream-watch.md)
+        first — some of those are known upstream defects with a tracked trigger.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: The observed behavior.
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-expected
+    attributes:
+      label: What you expected
+      description: The behavior you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro-apphost
+    attributes:
+      label: Minimal AppHost that reproduces it
+      render: csharp
+      value: |
+        var builder = DistributedApplication.CreateBuilder(args);
+
+        var localstack = builder.AddLocalStack();
+
+        // the code that reproduces the issue
+
+        builder.Build().Run();
+    validations:
+      required: true
+
+  - type: input
+    id: package-version
+    attributes:
+      label: LocalStack.Aspire.Hosting version
+      placeholder: 13.6.0
+    validations:
+      required: true
+
+  - type: input
+    id: aspire-version
+    attributes:
+      label: Aspire.Hosting version
+      placeholder: 13.6.1
+    validations:
+      required: true
+
+  - type: input
+    id: aws-integration-version
+    attributes:
+      label: Aspire.Hosting.AWS version
+      placeholder: 13.7.2
+    validations:
+      required: true
+
+  - type: input
+    id: localstack-image
+    attributes:
+      label: LocalStack image
+      description: The full tag, because behavior differs across LocalStack versions.
+      placeholder: localstack/localstack:4.12.0
+    validations:
+      required: true
+
+  - type: input
+    id: localstack-services
+    attributes:
+      label: LocalStack services involved
+      placeholder: S3, DynamoDB, SNS, CloudFormation
+    validations:
+      required: false
+
+  - type: dropdown
+    id: dotnet-version
+    attributes:
+      label: Target framework
+      multiple: true
+      options:
+        - net8.0
+        - net9.0
+        - net10.0
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Ubuntu 24.04, Windows 11, macOS 15
+    validations:
+      required: true
+
+  - type: textarea
+    id: region
+    attributes:
+      label: Region and endpoint configuration
+      description: >-
+        The region in use, and whether the workload reaches LocalStack through LocalStack.Client proxy
+        mode or through native AWS_ENDPOINT_URL* variables. Combining both is a known limitation.
+    validations:
+      required: false
+
+  - type: textarea
+    id: container-config
+    attributes:
+      label: Container configuration
+      render: csharp
+    validations:
+      required: false
+
+  - type: textarea
+    id: app-config
+    attributes:
+      label: Configuration section
+      description: The Aspire:Hosting:LocalStack or legacy LocalStack section in use.
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error messages, stack traces, or resource logs
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I reproduced this on the latest release of this package
+          required: true
+        - label: I confirmed the same code works against real AWS, or stated that I did not check
+          required: false
