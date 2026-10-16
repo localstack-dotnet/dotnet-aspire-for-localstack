@@ -40,6 +40,7 @@ This package follows Aspire's **major.minor** versioning but releases **patch ve
 - `9.5.x` works with Aspire 9.5.x
 - `13.1.x` works with Aspire 13.1.x
 - `13.4.x` works with Aspire 13.4.x
+- `13.6.x` works with Aspire 13.6.x
 
 We may ship features and fixes between Aspire releases. When upgrading Aspire's minor version, upgrade this package to match.
 

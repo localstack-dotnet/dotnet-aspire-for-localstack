@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [13.4.1] - Unreleased
+## [13.6.0] - Unreleased
 
 ### Added
 
@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependencies**: Updated `Aspire.Hosting` to `13.6.1` and `Aspire.Hosting.AWS` to `13.7.2`
   - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, `LocalStack.Client.Extensions` (`2.0.1`), and the analyzer set to their latest stable versions
   - Moved the `global.json` SDK pin to `10.0.402`
+- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.1. No `13.4.1` was ever published; the entry was renumbered in place.
 
 ### Deprecated
 

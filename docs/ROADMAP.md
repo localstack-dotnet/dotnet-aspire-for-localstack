@@ -80,14 +80,14 @@ Mission: make new `Aspire.Hosting.AWS` capabilities work under LocalStack.
 
 **Scope: the hosting package owns its recommended AppHost configuration contract. `LocalStack.Client` remains an internal runtime dependency, and workload compatibility with `LocalStack.Client.Extensions` is preserved.**
 
-**Shipped.** The durable decisions and the compiler constraints behind the public overload set are recorded in [`docs/architecture/hosting-model.md`](architecture/hosting-model.md); the API surface itself is in the `13.4.1` changelog entry.
+**Shipped.** The durable decisions and the compiler constraints behind the public overload set are recorded in [`docs/architecture/hosting-model.md`](architecture/hosting-model.md); the API surface itself is in the `13.6.0` changelog entry.
 
 - Add package-owned `LocalStackHostingOptions`, canonical `Aspire:Hosting:LocalStack` configuration, validation, and source/binary-compatible `AddLocalStack` overloads.
 - Keep the released Client-owned options surface in 13.x as non-error `[Obsolete]` compatibility adapters; remove it only in the next major version.
 - Keep emitting `LocalStack__*` environment variables unchanged for workloads using `LocalStack.Client.Extensions`.
 - Keep Client models behind an internal immutable hosting-state boundary and translate to `SessionStandalone` only at the runtime seam.
 - Emit a read-only best-effort warning when this package can observe Client proxy configuration and native `AWS_ENDPOINT_URL*` configuration on the same workload.
-- Record the proxy/native-endpoint signing limitation in `README.md` Known Limitations, `docs/agents/KNOWN_ISSUES.md`, and the draft `13.4.1` changelog. Do not add a native endpoint feature or mutate workload configuration.
+- Record the proxy/native-endpoint signing limitation in `README.md` Known Limitations, `docs/agents/KNOWN_ISSUES.md`, and the draft `13.6.0` changelog. Do not add a native endpoint feature or mutate workload configuration.
 
 **Superseded original direction:** the deep-dive rejected complete removal of the `LocalStack.Client` package, direct construction of the CloudFormation client, and automatic native endpoint emission. `SessionStandalone` preserves proxy-mode behavior, LocalStack.Client owns the canonical service metadata, and the custom-`ServiceURL` spike exposed version-sensitive signing-region behavior. Automatic endpoint emission would also risk overriding explicit user or upstream emulator configuration.
 
