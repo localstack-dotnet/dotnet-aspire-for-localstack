@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **LocalStack.Client-shaped hosting API.** The released all-optional `AddLocalStack(name, localStackOptions, awsConfig, configureContainer)` overload and `AddLocalStackOptions()` are retained as `[Obsolete]` compatibility adapters (warning, not error) and will be removed in the next major version. `ILocalStackResource.Options`, the `LocalStackResource(string, ILocalStackOptions)` constructor, and the `ILocalStackOptions` helpers in `LocalStackConfigurationExtensions` are deprecated alongside them. Migrate to the package-owned `AddLocalStack` overloads and `Aspire:Hosting:LocalStack` configuration.
 
+### Fixed
+
+- **MessagePack security dependency.** Require MessagePack `2.5.303` or later so this package and its consumers do not resolve the vulnerable transitive `2.5.302` version ([GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h)).
+
 ### Known Issues
 
 - **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).

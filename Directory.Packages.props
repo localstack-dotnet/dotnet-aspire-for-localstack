@@ -43,6 +43,7 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.0"/>
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.0"/>
     <!-- third-party packages -->
+    <PackageVersion Include="MessagePack" Version="2.5.303"/>
     <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
     <PackageVersion Include="SkiaSharp" Version="4.153.1"/>
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1"/>
