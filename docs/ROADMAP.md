@@ -92,7 +92,7 @@ The annotation-collection startup race is closed in [Upstream Watch](upstream-wa
 - **Health checks:** evaluate standard health/probe APIs only if eager-service fidelity is retained.
 - **Client warning noise:** investigate the `"Failed to connect to AWS using AWS SDK config..."` warning before choosing suppression or another fix.
 - **Eager-service error wording:** a missing LocalStack.Client CLI-name mapping currently reports that the service is unsupported by LocalStack. Correct the diagnostic when that work is approved.
-- **Package identity:** published builds supply `PackageId=LocalStack.Aspire.Hosting` in CI, but the project file does not own that ID. Align local pack and published identity; any project/CI change needs approval.
+- **Package identity:** published builds supply `PackageId=LocalStack.Aspire.Hosting` in CI, but the project file does not own that ID. Align local pack and published identity.
 - **Parked:** exposing Client session/configuration helpers publicly has no established hosting-API requirement. Revisit only with a concrete consumer case.
 
 ### WS7 — LocalStack Platform Tracking · P2
@@ -176,4 +176,4 @@ Capture new ideas here, then move them to an owning workstream during grooming. 
 - Watch for a LocalStack-container MCP endpoint; evaluate discovery annotations only if one becomes available.
 - Optional opt-in Compose publishing for CI while keeping the default dev-only manifest exclusion; feasibility and docker.sock/security implications need research.
 - Consumer URL guidance: distinguish proxy-routed API requests from browser-facing/presigned URL generation. The playground uses a LocalStack-aware helper; validate any alternative registration advice before documenting it.
-- CodeQL analysis quality: a July run reported low call-target coverage under default C# `build-mode: none`. Re-check the warning before proposing advanced setup; no current quality measurement was made during this groom, and CI changes need approval.
+- CodeQL analysis quality: a July run reported low call-target coverage under default C# `build-mode: none`. Re-check the warning before proposing advanced setup; no current quality measurement was made during this groom.

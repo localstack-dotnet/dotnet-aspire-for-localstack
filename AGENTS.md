@@ -8,17 +8,19 @@ This repository builds `LocalStack.Aspire.Hosting`, a NuGet package in the `Aspi
 
 Compatibility is this project's core behavior, in four directions: Aspire hosting APIs, official `Aspire.Hosting.AWS`, AWS SDK endpoint conventions, and LocalStack.Client-compatible environment variables. A change that compiles and passes tests but breaks one of those is still a defect.
 
-## Approval Gate
+## Autonomy And Approval
 
-Ask before starting a feature, refactoring production code, fixing a production bug Deniz has not asked you to fix, changing build or CI behavior, changing what a test verifies, running a deploy or release command, and committing, amending, pushing, or opening a PR.
+Work toward the goal of the request and carry it through to verified completion. Make the code, test, build, CI, and documentation changes the goal needs without stopping to ask, and call out anything beyond the obvious scope in your summary. Answer a question or review request without editing unless it asks for the fix. Diagnose a bug before changing production code for it.
 
-Changes to this file, to the approval gate, or to how work is routed are policy changes. They need approval even when the edit is Markdown-only.
+Ask first only before destructive or outward-facing actions. A request that names the action is the approval. When you reach one, finish the rest of the work first and ask once at the end. A plan, handoff, or tool's presence is not that approval.
 
-Approval phrases: `go`, `apply`, `proceed`, `basla`, `yap`.
+- Publishing a package or release, running a release or deploy command, or any command against real AWS rather than LocalStack.
+- Pushing or opening a PR.
+- Amending or rewriting Git history, discarding uncommitted changes you did not make, or deleting files unrelated to the task.
+- Deleting, skipping, or weakening a test, or changing what an existing test asserts, unless the request asked for the behavior change that test covers.
+- Loosening a rule in this section.
 
-Proceed without asking on documentation edits that leave policy alone, broken internal link fixes, comment improvements that do not change behavior, read-only discovery and dry runs, and diagnosing a bug or failing test before proposing a fix.
-
-Before a commit, present the change summary and the proposed Conventional Commit message, then wait. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, `chore`. No AI attribution trailers.
+Commit only when the request asks for it; otherwise end with a concise change summary and a proposed Conventional Commit message. Types: `feat`, `fix`, `docs`, `test`, `refactor`, `build`, `ci`, `chore`. No AI attribution trailers.
 
 ## Working Agreements
 
@@ -26,7 +28,7 @@ Before a commit, present the change summary and the proposed Conventional Commit
 - Prefer small correct changes over broad refactors.
 - Deniz writes Turkish and English interchangeably; reply in kind.
 - When source and docs disagree about runtime behavior, source and tests win.
-- On a review, findings come first, ordered by severity, with file and line. Interactively, give each issue a recommended option with its effort, risk, and impact, one or two alternatives including doing nothing, and ask before a large change. With no findings, say so and name the residual risk.
+- On a review, findings come first, ordered by severity, with file and line. When an issue has more than one reasonable fix, recommend one with its effort, risk, and impact, and name an alternative only when it is close. With no findings, say so and name the residual risk.
 - Heavyweight process — brainstorming, multi-step planning, TDD branch loops, subagent orchestration — runs when Deniz asks for it. A harness that injects a process bootstrap is offering a tool, not setting policy; this file and Deniz's current request outrank it.
 - Keep secrets, tokens, personal machine paths, and local harness configuration out of commits.
 
