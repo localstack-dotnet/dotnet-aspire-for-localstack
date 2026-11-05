@@ -14,6 +14,39 @@ That property is the cost as well as the benefit. Annotations added after a targ
 
 Origin: PR #2 (`e1537db`, `82a9d33`).
 
+## Activation uses container-only sources and a run-only metadata guard
+
+Container activation is separate from the immutable AWS/Client hosting state.
+After enablement and the container callback, the integration selects the winning
+fluent/extra-env/host source. Nonblank scalar inputs become private secret
+parameters without published defaults; caller-owned secret parameter objects go
+through Core's stock environment/reference binding. Disabled/publish paths do not
+read an ambient activation source or create automatic activation resources.
+Consumer-facing precedence and runtime choices live in
+[Configuration](../CONFIGURATION.md#runtime-selection-and-container-activation).
+
+The per-resource `BeforeStartEvent` subscriber appends an environment guard after
+ordinary model construction. It checks the last effective image annotation and
+the accumulated binding metadata, never a preset-intent flag or a secret value.
+Only a qualified current identity requires a binding. The guard does not await
+parameters, stringify them, probe licensing or move the connection event/SDK hooks.
+
+Core's cached dependency-discovery path can reuse earlier callback snapshots
+without repopulating a newly appended callback's context dictionary. To avoid a
+false missing binding, finalization gives only this container's existing
+environment callbacks a fresh annotation generation, retaining the same delegates
+at the same positions, then appends the guard. No private Core cache is inspected
+and no secret object is mutated. Callbacks cached before finalization can therefore
+execute again; callbacks should assemble deferred parameters/reference metadata
+rather than wait for secret values or depend on exactly-once side effects.
+Cached and uncached dependency discovery, including genuinely missing and late
+blank bindings, are covered independently.
+
+This is not a global last-subscriber guarantee. Environment/image edits by later
+lifecycle hooks may fall outside the guard's observed prefix; normal before/after
+Add model-construction changes are supported. Actual provider failure, container
+activation, persistent reuse and credential rotation remain runtime concerns.
+
 ## The CDK asset uploader is redirected through AWS SDK hooks, not process environment
 
 With `Aspire.Hosting.AWS` 13.x, CDK file-asset upload runs before CloudFormation and constructs its own STS and S3 clients, separate from the CloudFormation client this package already routes. Those clients resolved real AWS credentials — an expired SSO profile, typically — and broke provisioning.
@@ -24,11 +57,11 @@ Origin: `8fd8c99`, closing issues #29 and #30.
 
 ## Healthy means the edge responds, unless eager loading narrows it
 
-By default the health check asks LocalStack's edge endpoint whether it is up, and nothing more. Setting `EagerLoadedServices` changes what health *means*: the package emits `EAGER_SERVICE_LOADING=1` and `SERVICES=<list>`, then passes the same list into the health check (`LocalStackResourceBuilderExtensions.cs:319-322`). Both consequences follow from that one list — the container is restricted to those services, and the check does not pass until each of them reports ready.
+By default the health check asks LocalStack's edge endpoint whether it is up. With `EagerLoadedServices`, the package emits `EAGER_SERVICE_LOADING=1` and `SERVICES=<list>` and requires each requested service to report running. Enabled, preloaded and health-required services need not be identical: backend provider filtering, dependency expansion and strict-loading policy affect the enabled set.
 
 This shape arrived through an outside contribution and was reworked rather than merged as proposed. The alternatives on record in the review of [PR #8](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pull/8) were a second, separate health check for eager services, Aspire's `WithHttpHealthCheck`, and a hand-rolled `HttpClient` probe; the single-check-with-a-service-list design replaced them so that one resource has one health contract. Original work by Stuart Lang, credited in `42fe397`.
 
-One consequence is worth stating plainly because the naming hides it: `EagerLoadedServices` is an allow-list, not a warm-up hint. A workload that sets it and then calls an unlisted service fails against LocalStack.
+Do not interpret the requested list as an exact cross-image allow-list. It remains the health-required set, so adding names makes health stricter. Each resource now registers and attaches the same literal `localstack_health_{resourceName}` key; two resources cannot collide on a shared health-registration name. This fixes health registration, not multi-backend CDK isolation.
 
 ## `WithReference` deliberately overloads Aspire's own extension
 

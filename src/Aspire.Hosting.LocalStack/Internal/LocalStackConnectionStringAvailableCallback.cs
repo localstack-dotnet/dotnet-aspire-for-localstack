@@ -44,7 +44,8 @@ internal static class LocalStackConnectionStringAvailableCallback
 
             foreach (var resource in referencedResources.Select(annotation => annotation.Resource))
             {
-                var hasLocalStackEnabledAnnotation = resource.HasAnnotationOfType<LocalStackEnabledAnnotation>();
+                var hasLocalStackEnabledAnnotation = resource.Annotations.OfType<LocalStackEnabledAnnotation>()
+                    .Any(annotation => ReferenceEquals(annotation.LocalStackResource, localStackResource));
 
                 if (!hasLocalStackEnabledAnnotation)
                 {
@@ -57,7 +58,7 @@ internal static class LocalStackConnectionStringAvailableCallback
                     LocalStackResourceConfigurator.ConfigureStackResource(stackResource, hostingState);
                     hasCdkStackResources = true;
                 }
-                else if (resource is ICloudFormationTemplateResource cft)
+                else if (resource is ICloudFormationResource cft)
                 {
                     LocalStackResourceConfigurator.ConfigureCloudFormationResource(cft, localStackUrl, hostingState);
                 }
@@ -72,14 +73,13 @@ internal static class LocalStackConnectionStringAvailableCallback
                     var executableResourceBuilder = builder.CreateResourceBuilder(dynamoDbStreamsResource);
                     LocalStackResourceConfigurator.ConfigureDynamoDbStreamsEventSourceResource(executableResourceBuilder, localStackUrl, hostingState);
                 }
-                else if (resource.Annotations.Any(a =>
-                             a is ResourceRelationshipAnnotation { Resource: ICloudFormationTemplateResource } rra
-                             && rra.Resource.Annotations.Any(ra => string.Equals(ra.GetType().FullName, Constants.CloudFormationReferenceAnnotation, StringComparison.Ordinal)))
-                         && resource is IResourceWithEnvironment resourceWithEnvironment and IResourceWithWaitSupport)
+                else if (resource is IResourceWithEnvironment resourceWithEnvironment and IResourceWithWaitSupport)
                 {
                     var projectResourceBuilder = builder.CreateResourceBuilder(resourceWithEnvironment);
-
-                    LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder, localStackUrl, hostingState);
+                    var source = localStackResource as IResourceWithEndpoints
+                        ?? throw new DistributedApplicationException("The LocalStack source has no workload endpoint.");
+                    LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder,
+                        new EndpointReference(source, LocalStackResource.PrimaryEndpointName), hostingState);
                 }
             }
 

@@ -18,5 +18,10 @@ internal static class LocalStackContainerImageTags
     /// <summary>
     /// The default LocalStack container image tag.
     /// </summary>
-    internal const string Tag = "4.12.0";
+    internal const string Tag = "2026.10.0";
+
+    /// <summary>
+    /// The explicitly selected, token-free compatibility image tag.
+    /// </summary>
+    internal const string LegacyTag = "4.14.0";
 }

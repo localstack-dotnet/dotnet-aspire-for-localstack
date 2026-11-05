@@ -175,12 +175,8 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         await Assert.That(createResult).IsNotNull();
         await Assert.That(createResult.Id).IsNotNull();
 
-        // Wait for SQS Event Source to trigger Analyzer Lambda and process the event
-        await TestOutputHelper.WriteLineAsync("Waiting for Analyzer Lambda to process event...");
-        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-
         // Assert: Verify event was written to AnalyticsTable by Analyzer Lambda
-        var scanResponse = await dynamoDbClient.ScanAsync(new Amazon.DynamoDBv2.Model.ScanRequest
+        var scanResponse = await WaitForAnalyticsAsync(dynamoDbClient, new Amazon.DynamoDBv2.Model.ScanRequest
         {
             TableName = analyticsTableName,
             FilterExpression = "Slug = :slug AND EventType = :eventType",
@@ -196,7 +192,7 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
                     S = "url_created",
                 },
             },
-        }, cancellationToken);
+        }, 1, cancellationToken);
 
         await Assert.That(scanResponse.Items).IsNotEmpty();
         await Assert.That(scanResponse.Items).HasSingleItem();
@@ -232,8 +228,17 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         await Assert.That(createResult).IsNotNull();
         await Assert.That(createResult.Id).IsNotNull();
 
-        // Wait for creation analytics to be processed
-        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
+        var scanRequest = new Amazon.DynamoDBv2.Model.ScanRequest
+        {
+            TableName = analyticsTableName,
+            FilterExpression = "Slug = :slug",
+            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>(StringComparer.OrdinalIgnoreCase)
+            {
+                [":slug"] = new() { S = createResult.Id },
+            },
+        };
+        // Observe creation before triggering access; elapsed time is not evidence of processing.
+        await WaitForAnalyticsAsync(dynamoDbClient, scanRequest, 1, cancellationToken);
 
         // Act: Access the redirect endpoint
         using var handler = new HttpClientHandler();
@@ -245,24 +250,8 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         var redirectResponse = await redirectClient.GetAsync(new Uri($"/{createResult.Id}", UriKind.Relative), cancellationToken);
         await Assert.That(redirectResponse.StatusCode).IsEqualTo(HttpStatusCode.Found);
 
-        // Wait for Analyzer Lambda to process the url_accessed event
-        await TestOutputHelper.WriteLineAsync("Waiting for Analyzer Lambda to process url_accessed event...");
-        await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken);
-
         // Assert: Verify both url_created and url_accessed events are in AnalyticsTable
-        var scanResponse = await dynamoDbClient.ScanAsync(new Amazon.DynamoDBv2.Model.ScanRequest
-        {
-            TableName = analyticsTableName,
-            FilterExpression = "Slug = :slug",
-            ExpressionAttributeValues = new Dictionary<string, Amazon.DynamoDBv2.Model.AttributeValue>(
-                StringComparer.OrdinalIgnoreCase)
-            {
-                [":slug"] = new()
-                {
-                    S = createResult.Id,
-                },
-            },
-        }, cancellationToken);
+        var scanResponse = await WaitForAnalyticsAsync(dynamoDbClient, scanRequest, 2, cancellationToken);
 
         await Assert.That(scanResponse.Items).IsNotEmpty();
         await Assert.That(scanResponse.Items.Count).IsEqualTo(2); // Both url_created and url_accessed
@@ -272,6 +261,25 @@ public class LocalStackLambdaFunctionalTests(LocalStackLambdaFixture fixture)
         await Assert.That(eventTypes).Contains("url_accessed");
 
         await TestOutputHelper.WriteLineAsync($"Successfully verified both url_created and url_accessed events for slug: {createResult.Id}");
+    }
+
+    private static async Task<Amazon.DynamoDBv2.Model.ScanResponse> WaitForAnalyticsAsync(
+        IAmazonDynamoDB client, Amazon.DynamoDBv2.Model.ScanRequest request, int expectedCount,
+        CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromSeconds(60));
+        using var poll = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        while (true)
+        {
+            var response = await client.ScanAsync(request, timeout.Token);
+            if (response.Items.Count >= expectedCount)
+            {
+                return response;
+            }
+
+            await poll.WaitForNextTickAsync(timeout.Token);
+        }
     }
 
     /// <summary>

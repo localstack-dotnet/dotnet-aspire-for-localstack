@@ -3,6 +3,56 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 public class LocalStackResourceConfiguratorTests
 {
     [Test]
+    public async Task Client_Host_And_Port_Use_Consumer_Network_Context()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var source = new ContainerResource("localstack-test");
+        var url = new Uri("http://localhost:12345");
+        var endpoint = LocalStackEndpointEnvironmentEvaluator.AddEndpoint(source, url);
+        var host = builder.AddResource(new ExecutableResource("host", "not-run", "."));
+        var container = builder.AddResource(new ContainerResource("consumer"));
+        var state = TestDataBuilders.CreateHostingState(regionName: "eu-central-1");
+        LocalStackResourceConfigurator.ConfigureProjectResource(host, endpoint, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(container, endpoint, state);
+
+        var hostEnvironment = await LocalStackEndpointEnvironmentEvaluator.EvaluateAsync(host.Resource, builder.ExecutionContext,
+            host.Resource, KnownNetworkIdentifiers.LocalhostNetwork);
+        var containerEnvironment = await LocalStackEndpointEnvironmentEvaluator.EvaluateAsync(container.Resource, builder.ExecutionContext,
+            container.Resource, KnownNetworkIdentifiers.DefaultAspireContainerNetwork);
+
+        await Assert.That(hostEnvironment["LocalStack__Config__LocalStackHost"]).IsEqualTo("localhost");
+        await Assert.That(hostEnvironment["LocalStack__Config__EdgePort"]).IsEqualTo("12345");
+        await Assert.That(containerEnvironment["LocalStack__Config__LocalStackHost"]).IsEqualTo("localstack-test");
+        await Assert.That(containerEnvironment["LocalStack__Config__EdgePort"]).IsEqualTo("4566");
+        foreach (var key in hostEnvironment.Keys.Where(key => key is not "LocalStack__Config__LocalStackHost" and not "LocalStack__Config__EdgePort"))
+        {
+            await Assert.That(containerEnvironment[key]).IsEqualTo(hostEnvironment[key]);
+        }
+    }
+
+    [Test]
+    public async Task AppHost_CF_Client_Still_Uses_Allocated_Uri()
+    {
+        var builder = DistributedApplication.CreateBuilder([]);
+        var source = new ContainerResource("localstack-test");
+        var url = new Uri("http://localhost:12345");
+        var endpoint = LocalStackEndpointEnvironmentEvaluator.AddEndpoint(source, url);
+        var consumer = builder.AddResource(new ContainerResource("consumer"));
+        var imported = builder.AddAWSCloudFormationStack("imported", "existing-stack");
+        var state = TestDataBuilders.CreateHostingState(regionName: "eu-central-1");
+        LocalStackResourceConfigurator.ConfigureCloudFormationResource(imported.Resource, url, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(consumer, endpoint, state);
+
+        var environment = await LocalStackEndpointEnvironmentEvaluator.EvaluateAsync(consumer.Resource,
+            builder.ExecutionContext, consumer.Resource, KnownNetworkIdentifiers.DefaultAspireContainerNetwork);
+
+        await Assert.That(environment["LocalStack__Config__EdgePort"]).IsEqualTo("4566");
+        await Assert.That(imported.Resource.CloudFormationClient!.Config.ProxyHost).IsEqualTo("localhost");
+        await Assert.That(imported.Resource.CloudFormationClient.Config.ProxyPort).IsEqualTo(12345);
+        await Assert.That(imported.Resource.CloudFormationClient.Config.RegionEndpoint.SystemName).IsEqualTo("eu-central-1");
+    }
+
+    [Test]
     public async Task ConfigureCloudFormationResource_Should_Set_CloudFormation_Client()
     {
         var cfResource = Substitute.For<ICloudFormationTemplateResource>();
@@ -86,7 +136,7 @@ public class LocalStackResourceConfiguratorTests
             regionName: "us-west-2",
             useSsl: false);
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, CreateEndpoint(localStackUrl), state);
 
         await Assert.That(mockBuilder).IsNotNull();
         await Assert.That(state).IsNotNull();
@@ -102,7 +152,7 @@ public class LocalStackResourceConfiguratorTests
         var localStackUrl = new Uri("https://custom-host:9999");
         var state = TestDataBuilders.CreateHostingState(useSsl: true);
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, CreateEndpoint(localStackUrl), state);
         await Assert.That(mockBuilder).IsNotNull();
     }
 
@@ -123,12 +173,11 @@ public class LocalStackResourceConfiguratorTests
             awsSessionToken: "state-token");
         var allocatedEndpoint = new Uri("http://allocated-host:12345");
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(builder, allocatedEndpoint, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(builder, CreateEndpoint(allocatedEndpoint), state);
 
-        var envAnnotation = projectResource.Annotations.OfType<EnvironmentCallbackAnnotation>().Single();
-        var env = new Dictionary<string, object>(StringComparer.Ordinal);
-        var context = new EnvironmentCallbackContext(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), projectResource, env);
-        await envAnnotation.Callback(context);
+        var env = await LocalStackEndpointEnvironmentEvaluator.EvaluateAsync(projectResource,
+            new DistributedApplicationExecutionContext(DistributedApplicationOperation.Run), projectResource,
+            KnownNetworkIdentifiers.LocalhostNetwork);
 
         await Assert.That(env["LocalStack__UseLocalStack"]).IsEqualTo("True");
         await Assert.That(env["LocalStack__Session__AwsAccessKeyId"]).IsEqualTo("state-key");
@@ -151,7 +200,7 @@ public class LocalStackResourceConfiguratorTests
         var localStackUrl = new Uri("http://localhost:4566");
         var state = TestDataBuilders.CreateHostingState();
 
-        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, localStackUrl, state);
+        LocalStackResourceConfigurator.ConfigureProjectResource(mockBuilder, CreateEndpoint(localStackUrl), state);
 
         await Assert.That(state.Enabled || !state.Enabled).IsTrue(); // Verifies bool is accessible
         await Assert.That(state.Region).IsNotNull();
@@ -317,4 +366,7 @@ public class LocalStackResourceConfiguratorTests
         await Assert.That(assigned).IsNotNull();
         await Assert.That(assigned!.Region).IsEqualTo(Amazon.RegionEndpoint.USEast1);
     }
+
+    private static EndpointReference CreateEndpoint(Uri localhost)
+        => LocalStackEndpointEnvironmentEvaluator.AddEndpoint(new ContainerResource("localstack-test"), localhost);
 }

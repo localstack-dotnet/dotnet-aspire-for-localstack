@@ -11,7 +11,7 @@ This guide covers configuration options for customizing LocalStack container beh
 | `Port` | `int?` | `null` | Static port mapping for LocalStack container |
 | `ContainerRegistry` | `string?` | `null` (`docker.io`) | Custom container registry |
 | `ContainerImage` | `string?` | `null` (`localstack/localstack`) | Custom container image name |
-| `ContainerImageTag` | `string?` | `null` (pinned `4.12.0`) | Custom container image tag/version |
+| `ContainerImageTag` | `string?` | `null` (selected runtime preset) | Custom container image tag/version |
 | `EnableDockerSocket` | `bool` | `false` | Mount Docker socket for Lambda support |
 | `DebugLevel` | `int` | `0` | LocalStack DEBUG flag (0 or 1) |
 | `LogLevel` | `LocalStackLogLevel` | `Error` | LocalStack LS_LOG level |
@@ -70,6 +70,140 @@ var localStack = builder.AddLocalStack(
 
 Options are resolved from lowest to highest precedence: built-in defaults, the legacy `LocalStack:*` section, the canonical `Aspire:Hosting:LocalStack:*` section, the `configureOptions` callback, and finally `IAWSSDKConfig.Region`. The callback therefore overrides configuration file values, but an `awsConfig` that carries a region overrides the callback's region.
 
+## Runtime Selection and Container Activation
+
+These runtime/onboarding APIs are part of the unreleased baseline work. Final
+shared runtime acceptance remains required before release.
+
+The current preset selects `docker.io/localstack/localstack:2026.10.0`.
+`container.WithLegacy()` selects the explicitly supported token-free compatibility
+candidate `4.14.0`; `WithLegacy(false)` restores the current preference. Legacy
+describes a runtime choice, not an integration edition or the obsolete
+Client-shaped API. It does not promise every new capability or vendor backports.
+
+```csharp
+var localStack = builder.AddLocalStack(
+    "localstack", awsConfig: null,
+    options => options.WithEnabled(true),
+    container => container.WithLegacy());
+```
+
+Explicit non-null `ContainerRegistry`, `ContainerImage` and `ContainerImageTag`
+values override the selected preset independently, regardless of assignment order.
+A different mirror, image or floating tag is custom, not a verified legacy/current
+identity. There is no runtime registry lookup, automatic downgrade or real-AWS
+fallback. An explicit override that exactly matches the qualified current image
+still has the current image's activation requirement.
+
+### Activation Is Not AWS Identity
+
+Current LocalStack images require a LocalStack activation token and appropriate
+account entitlement. Obtain/manage it in the
+[LocalStack Web App](https://app.localstack.cloud/workspace/auth-tokens).
+The package does not log in, manage accounts/licenses, install a CLI, or turn
+that token into AWS access keys, session credentials or Client workload settings.
+
+Provide `LOCALSTACK_AUTH_TOKEN` through the AppHost's secure configuration or
+environment, or pass an explicit source in the container callback:
+
+```csharp
+var activation = builder.AddParameter("localstack-activation", secret: true);
+var localStack = builder.AddLocalStack(
+    "localstack", awsConfig: null,
+    options => options.WithEnabled(true),
+    container => container.WithAuthToken(activation));
+```
+
+`WithAuthToken(string)` also accepts a value already obtained from secure
+configuration. Do not hardcode tokens or commit them to configuration files.
+The parameter overload requires `Secret == true` and retains the original
+resource without reading its value.
+
+Package-owned source precedence is:
+
+1. Last explicit `WithAuthToken` call, including a blank string.
+2. Exact `AdditionalEnvironmentVariables["LOCALSTACK_AUTH_TOKEN"]` entry.
+3. `builder.Configuration["LOCALSTACK_AUTH_TOKEN"]`, normally supplied by the
+   standard host environment/configuration providers.
+4. No binding.
+
+An explicit empty/whitespace value suppresses lower-priority fallback. A failed
+explicit parameter never switches to an ambient token. Winning nonblank scalar
+inputs become private secret parameters with no published default; caller-owned
+secret parameters stay deferred. The package creates no automatic activation
+parameter/binding/guard when disabled or publishing, and does not remove
+caller-owned parameters used elsewhere. LocalStack itself remains excluded from
+the deployment manifest.
+
+The exact known-current image gets a safe missing-binding error before container
+launch. Deferred bindings are left to Core's resolution/cancellation behavior;
+LocalStack validates actual token/license/entitlement validity. Legacy/custom
+images do not acquire an inferred token requirement, and supplied values are
+not stripped from them.
+
+Configure image/binding changes during ordinary model construction. Later generic
+Core environment calls retain their normal precedence, but deliberately injecting
+a raw string through `WithEnvironment` does not retroactively gain secret
+protection. Prefer a secret parameter. Hooks appended after this integration's
+finalization are outside the guard's ordering guarantee.
+
+Secret flags protect normal framework presentation, not host/container
+administrators, arbitrary object serialization or vendor logs. Scalar selection
+is snapshotted while building the AppHost; it is not hot credential rotation.
+Persistent-container reuse/recreation and rotation still need runtime acceptance;
+the package does not delete user data or license caches to make them work.
+
+### Shared Runtime Validation and Trusted CI
+
+The C# entry point runs the full integration project for either `current` or
+`legacy`, using standard `dotnet test`. This includes the common runtime scenarios
+and the configuration/manifest tests; it does not filter the project to the common
+manifest. Native HTML, JSON and TRX reports remain enabled. Error messages, stack
+traces and live command output are retained, with activation tokens masked rather
+than entire diagnostic sections removed.
+
+```sh
+dotnet tools/localstack-tool.cs -- run-runtime legacy artifacts/runtime/legacy
+dotnet tools/localstack-tool.cs -- run-runtime current artifacts/runtime/current
+dotnet tools/localstack-tool.cs -- validate-runtime artifacts/runtime/current artifacts/runtime/legacy
+```
+
+Use new or empty output directories. Current requires `LOCALSTACK_AUTH_TOKEN` in
+the process environment, never in command arguments. Credential-bearing reports
+are generated in private scratch space and masked before being copied to the
+artifact directory. An immediate authenticated HTML uploader cannot bypass that
+boundary: the command fails before starting rather than disabling reporting or
+uploading an unmasked report. The existing secret-free/unit upload path is retained.
+
+Each run records its execution-time revision and source cleanliness, plus native
+outcomes and independent host image receipts. Receipts show model selection, not
+successful startup by themselves. The validator requires both complete passing
+profiles, matching clean revision/configuration, the same executed test identities
+and all fixture/direct-host receipts. Dirty development runs and missing
+credentials cannot certify a release.
+
+PR validation uses only secret-free legacy checks. Authenticated current checks
+use `LOCALSTACK_CI_AUTH_TOKEN` in trusted CI, never a personal-token fallback or an
+unreviewed PR checkout. A canonical master push or a manual run approving the
+exact selected SHA can run the trusted pair. Feature-package publication now
+requires that explicit trusted manual path and its publication flag; all package
+publication depends on the passing pair. The secret and hosted workflow behavior
+still need owner-approved repository configuration and an actual authorized run.
+
+The independent SDK8/C#12 packed-consumer check is:
+
+```sh
+dotnet tools/localstack-tool.cs -- verify-consumer artifacts/runtime-baseline-pack artifacts/compatibility/consumer
+```
+
+It needs one locally packed `LocalStack.Aspire.Hosting` archive and an already
+installed SDK8. It checks the archive's actual SHA512, builds against published
+13.4.0 and the candidate separately, then executes the old binary with the
+candidate's verified assembly/dependency graph. It neither installs an SDK nor
+starts services. Restore caches and staged binaries are temporary; logs and hash
+evidence remain in the output directory. A compatibility pass does not replace
+runtime acceptance.
+
 ## Service Loading Strategy
 
 LocalStack supports two service loading strategies via the [`EAGER_SERVICE_LOADING`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) configuration.
@@ -101,7 +235,7 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 This sets the [`EAGER_SERVICE_LOADING=1`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) and [`SERVICES`](https://docs.localstack.cloud/aws/capabilities/config/configuration/#core) environment variables automatically.
 
-> **Eager loading is also an allow-list.** Because `SERVICES` is emitted alongside `EAGER_SERVICE_LOADING=1`, the container is **restricted to exactly the services you list** - every other AWS service becomes unavailable in that container. The list is also the health check's required set, so each listed service must report `running` before the resource turns healthy; that makes the check harder to pass, not easier. Use eager loading only when you know the complete set of services your app touches, and list all of them.
+> **Enabled, preloaded and health-required sets differ.** The package emits `SERVICES` and requests eager loading, but the selected backend applies its available-provider filtering, mandatory dependencies and strict-loading policy. Do not assume the list is an exact final allow-list across images. Package health still requires every requested service to report `running`; relaxing backend restrictions does not preload or health-check everything.
 
 **When to use:**
 
@@ -533,7 +667,7 @@ If health checks fail after container starts:
 
 2. **Check Aspire Dashboard:** Look at health check details for specific failing services
 
-3. **Review `EagerLoadedServices`:** Eager loading does not help a failing health check - it makes the check stricter, because every listed service must report `running`, and `SERVICES` restricts the container to that list. If the check names services that are not running, shorten the list or clear it rather than extending it:
+3. **Review `EagerLoadedServices`:** The check requires every requested service to report `running`. Backend-enabled services can also include dependencies; this is not an exact cross-image allow-list. Correct the required list to match the workload rather than hiding a service failure merely to obtain a green check:
 
    ```csharp
    // With no services listed the check only requires the container to report healthy
@@ -558,7 +692,7 @@ If you expect data to persist between runs:
 3. **Keep logging minimal in CI** - Use `LogLevel.Error` for cleaner output
 4. **Use Persistent lifetime for development** - Faster iteration with container reuse
 5. **Start with lazy loading** - Only use eager loading when you have a specific need
-6. **Limit eager loaded services** - The list is both an allow-list (`SERVICES`) and the health check's required set, so list every service you use and nothing more
+6. **Choose eager services deliberately** - Requested services add preload work and health requirements; backend dependencies and strict-loading policy govern the final enabled set
 7. **Document your configuration** - Add comments explaining configuration choices
 
 ## Related Documentation

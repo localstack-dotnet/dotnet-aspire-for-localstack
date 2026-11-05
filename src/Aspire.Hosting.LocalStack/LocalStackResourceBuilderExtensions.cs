@@ -270,9 +270,7 @@ public static class LocalStackResourceBuilderExtensions
         var resource = new LocalStackResource(name, state);
 
         var resourceBuilder = builder.AddResource(resource)
-            .WithImage(containerOptions.ContainerImage ?? LocalStackContainerImageTags.Image)
-            .WithImageRegistry(containerOptions.ContainerRegistry ?? LocalStackContainerImageTags.Registry)
-            .WithImageTag(containerOptions.ContainerImageTag ?? LocalStackContainerImageTags.Tag)
+            .ConfigureRuntimeImage(containerOptions)
             .WithHttpEndpoint( // Map to a static port if specified or if using a persistent lifetime; otherwise, use dynamic port mapping
                 port: containerOptions.Port ?? (containerOptions.Lifetime == ContainerLifetime.Persistent ? Constants.DefaultContainerPort : null),
                 targetPort: Constants.DefaultContainerPort,
@@ -291,10 +289,7 @@ public static class LocalStackResourceBuilderExtensions
         }
 
         // Add any additional environment variables
-        foreach (var (key, value) in containerOptions.AdditionalEnvironmentVariables)
-        {
-            resourceBuilder = resourceBuilder.WithEnvironment(key, value);
-        }
+        LocalStackActivationSetup.ApplyAdditionalEnvironment(resourceBuilder, containerOptions);
 
         List<string> serviceNames = [];
 
@@ -325,7 +320,23 @@ public static class LocalStackResourceBuilderExtensions
         var callback = LocalStackConnectionStringAvailableCallback.CreateCallback(builder);
         resourceBuilder.OnConnectionStringAvailable(callback);
 
+        LocalStackActivationSetup.ConfigureActivation(builder, resourceBuilder, containerOptions);
+
         return resourceBuilder;
+    }
+
+    private static IResourceBuilder<LocalStackResource> ConfigureRuntimeImage(
+        this IResourceBuilder<LocalStackResource> builder,
+        LocalStackContainerOptions options)
+    {
+        var image = LocalStackRuntimeResolver.Resolve(options, LocalStackRuntimeCatalog.Production).Image;
+        builder.WithImage(image.Image).WithImageRegistry(image.Registry);
+        if (image.Digest is { } digest)
+        {
+            return builder.WithImageSHA256(digest);
+        }
+
+        return image.Tag is { } tag ? builder.WithImageTag(tag) : builder;
     }
 
     /// <summary>
@@ -456,6 +467,7 @@ public static class LocalStackResourceBuilderExtensions
         IDistributedApplicationBuilder builder,
         ImmutableArray<string> serviceNames)
     {
+        var healthCheckName = GetHealthCheckName(resourceBuilder.Resource.Name);
         builder.Services.AddHttpClient(Constants.LocalStackHealthClientName, client => client.Timeout = TimeSpan.FromSeconds(5));
 
         // Suppress noisy logs from the health check client during startup
@@ -468,7 +480,7 @@ public static class LocalStackResourceBuilderExtensions
         var endpoint = resourceBuilder.Resource.GetEndpoint(LocalStackResource.PrimaryEndpointName);
 
         builder.Services.AddHealthChecks().Add(new HealthCheckRegistration(
-            Constants.LocalStackHealthCheckName,
+            healthCheckName,
             sp =>
             {
                 if (!endpoint.IsAllocated)
@@ -486,6 +498,8 @@ public static class LocalStackResourceBuilderExtensions
             tags: ["localstack", serviceNames.Length > 0 ? "eager" : "lazy"]));
 
         // Associate the health check with the resource
-        resourceBuilder.WithHealthCheck(Constants.LocalStackHealthCheckName);
+        resourceBuilder.WithHealthCheck(healthCheckName);
     }
+
+    internal static string GetHealthCheckName(string resourceName) => Constants.LocalStackHealthCheckName + "_" + resourceName;
 }

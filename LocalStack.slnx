@@ -25,4 +25,7 @@
     <Project Path="tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj" />
     <Project Path="tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj" />
   </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/LocalStack.Tools/LocalStack.Tools.csproj" />
+  </Folder>
 </Solution>

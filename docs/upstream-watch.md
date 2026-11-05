@@ -1,6 +1,6 @@
 # Upstream Watch
 
-Date: 2026-10-16
+Date: 2026-10-17
 
 Defects that live in upstream code, not in this package. Each entry records the evidence, what this repository does in the meantime, and the trigger that closes it. A workaround here is a holding position with an exit, never a design.
 
@@ -65,13 +65,77 @@ The reason for the `us-east-1` pin has therefore narrowed from "the AWS SDK sign
 1. **Amazon.Lambda.TestTool bumps its bundled `AWSSDK.Core` past 4.0.100.2, or sets `AuthenticationRegion` on its event-source clients** → pick the fixed tool up through `OverrideMinimumInstallVersion`, lift the playground's `us-east-1` pin, and drop the limitation from `README.md` and `CHANGELOG.md`. This is the only thing left in the way, and it is worth reporting to the AWS .NET team as a follow-up to the Core fix: that fix does not reach Aspire's DynamoDB Streams path while the tool carries its own copy of the SDK, and Aspire's install floor of 0.14.1 means a clean machine gets an even older one than the newest tool offers.
 2. **A consumer reports wrong-region behavior from a bare SDK client** → check their resolved `AWSSDK.Core` against the tables above before assuming this package is at fault.
 
-## Live: LocalStack requires an auth token on current images
+## Live: AWS Lambda wrapper projects accumulate in the system temp directory
 
-The package pins `localstack/localstack:4.12.0`, verified to start without `LOCALSTACK_AUTH_TOKEN`. That measurement does not establish that it is the newest token-free image. Upstream left semantic versioning after `4.14.0` and now publishes calendar versions; the current tag is `2026.10.0` as of this document's date. Consumers who need an image requiring a token pass it through `AdditionalEnvironmentVariables`.
+**Effect.** Repeated Lambda integration runs can exhaust a user's temporary-file
+quota before the filesystem itself is full. On a quota-limited tmpfs this first
+appeared as an Aspire DCP initialization timeout: DCP could not write its
+kubeconfig. A later reproduction exposed `IOException: Disk quota exceeded`
+while writing a Lambda wrapper project. A storage differential reproduced DCP's
+quota error with no kubeconfig on tmpfs and successful kubeconfig creation on
+disk; this establishes the mechanism, not the unrecorded native error of every
+earlier timeout.
 
-Whether `4.13.x` or `4.14.0` still start without a token is **unverified**: upstream's own documentation contradicts itself, with the auth-token page calling the token mandatory to start the container and the docker-images page describing only a warning and disabled Pro features. The repository's own runtime verification establishes only that `4.12.0` works token-free.
+**Owner and root cause.** In `Aspire.Hosting.AWS` 13.7.2, verified at
+`653c103df4e342a927f7ac0fd533b350ef772c34`,
+`ProjectUtilities.CreateExecutableWrapperProject` creates a GUID directory under
+`Path.GetTempPath()` and writes the wrapper project. `LambdaBeforeStartEventHandler`
+assigns that path to the Lambda project metadata and builds Debug and Release
+outputs. These generated directories retained large output trees after the runs;
+the creation path does not expose an owning temporary-directory lease.
+This is upstream AWS-hosting behavior, not LocalStack container data.
 
-**Trigger.** Pull `4.14.0` and start it with no token. That settles whether a newer token-free pin exists before any decision about moving to calendar versions or modelling the token as a secret parameter.
+**Repository mitigation.** The integration project's native TUnit session hooks
+create a private temporary directory and set `TMPDIR`, `TMP` and `TEMP` before
+fixtures initialize. The session-end hook restores the environment and removes
+that directory after shared AppHosts have been disposed. The directory is outside
+the checkout, so generated wrappers do not inherit repository MSBuild policy.
+Aspire.Hosting.Testing 13.6.1 already defaults resource-cleanup waiting to true;
+the fixtures dispose the testing builder that owns the AppHost.
+
+The C# runtime command uses standard `dotnet test` and private build processes,
+without a Linux subreaper, `/proc` report files or cache-directory IPC aliases.
+It retains incomplete scratch rather than treating interrupted cleanup as a pass.
+Use a short OS temp parent outside the checkout; on a quota-limited machine,
+select an appropriate disk-backed parent through the process temp environment.
+The implementation uses portable .NET APIs, but native Windows/macOS resource and
+cancellation behavior still requires validation; Linux results are not OS parity.
+Linux success, initialization failure and native-platform timeout probes left no
+wrapper directories. External Ctrl+C remains unverified: the headless readiness
+probe did not deliver SIGINT to the managed handler, and forced termination is
+not cleanup acceptance. No alternate signal path is claimed as a fix.
+
+For a manual legacy integration run:
+
+```sh
+dotnet tools/localstack-tool.cs -- run-runtime legacy artifacts/runtime/legacy
+```
+
+The command preserves native reporting and failure status. Runtime selection and
+activation requirements are described in [Configuration](CONFIGURATION.md#shared-runtime-validation-and-trusted-ci).
+
+Deleting a wrapper immediately after compilation is not safe: the running Lambda
+still needs its generated executable and dependencies. Cleanup must follow the
+AppHost and its children, including startup failure and cancellation. Uncatchable
+termination, such as `SIGKILL` or a machine crash, cannot run session hooks; any
+later cleanup still needs ownership and in-use checks.
+
+**Trigger.** Adopt an upstream version that provides an owned wrapper-project
+lifetime and/or a caller-selected build directory. Verify pass, failure and
+cancellation cleanup before removing this mitigation. No upstream fix or package
+upgrade is claimed here.
+
+## Closed: token-free legacy candidate was unverified
+
+On 2026-10-17, `4.14.0` started without activation and passed the shared scenarios;
+current `2026.10.0` was exercised with the supplied valid entitlement. The
+unreleased integration now has an explicit legacy preset and deferred secret
+activation inputs. [Configuration](CONFIGURATION.md#runtime-selection-and-container-activation)
+owns their precedence and migration guidance. This closes the candidate-selection
+question, not vendor account/license management or the release gate. The newest
+full current run has an unexplained intermittent Lambda redirect timeout; a
+passing diagnostic replay is not a fix. That package/test acceptance blocker stays
+in the [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md), not labelled an upstream defect without evidence.
 
 ## Closed: Aspire annotation-collection race on Linux CI
 

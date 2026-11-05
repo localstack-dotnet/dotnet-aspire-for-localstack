@@ -8,18 +8,21 @@ public class EagerLoadedServicesTests
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
 #pragma warning disable CA1849
-        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+        await using var builder = DistributedApplicationTestingBuilder.Create(runtime.CreateAppHostArguments());
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
+        var localStack = builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
+            runtime.ConfigureContainer(container);
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
             container.LogLevel = LocalStackLogLevel.Debug;
         });
+        await runtime.WriteImageReceiptAsync(localStack!.Resource, "eager-lazy", runtime.OutputDirectory, cts.Token);
 
         await using var app = await builder.BuildAsync(cts.Token);
         await app.StartAsync(cts.Token);
@@ -66,19 +69,22 @@ public class EagerLoadedServicesTests
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
 #pragma warning disable CA1849
-        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+        await using var builder = DistributedApplicationTestingBuilder.Create(runtime.CreateAppHostArguments());
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
+        var localStack = builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
+            runtime.ConfigureContainer(container);
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
             container.LogLevel = LocalStackLogLevel.Debug;
             container.EagerLoadedServices = [AwsService.Sqs];
         });
+        await runtime.WriteImageReceiptAsync(localStack!.Resource, "eager-single", runtime.OutputDirectory, cts.Token);
 
         await using var app = await builder.BuildAsync(cts.Token);
         await app.StartAsync(cts.Token);
@@ -103,19 +109,22 @@ public class EagerLoadedServicesTests
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
 #pragma warning disable CA1849
-        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+        await using var builder = DistributedApplicationTestingBuilder.Create(runtime.CreateAppHostArguments());
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
+        var localStack = builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
+            runtime.ConfigureContainer(container);
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
             container.LogLevel = LocalStackLogLevel.Debug;
             container.EagerLoadedServices = [AwsService.Sqs, AwsService.DynamoDb, AwsService.S3];
         });
+        await runtime.WriteImageReceiptAsync(localStack!.Resource, "eager-multiple", runtime.OutputDirectory, cts.Token);
 
         await using var app = await builder.BuildAsync(cts.Token);
         await app.StartAsync(cts.Token);
@@ -145,19 +154,22 @@ public class EagerLoadedServicesTests
     {
         using var parentCts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(parentCts.Token, cancellationToken);
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
 #pragma warning disable CA1849
-        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+        await using var builder = DistributedApplicationTestingBuilder.Create(runtime.CreateAppHostArguments());
 #pragma warning restore CA1849
 
         var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.EUCentral1);
-        builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
+        var localStack = builder.AddLocalStack("localstack", awsConfig, configureContainer: container =>
         {
+            runtime.ConfigureContainer(container);
             container.Lifetime = ContainerLifetime.Session;
             container.DebugLevel = 1;
             container.LogLevel = LocalStackLogLevel.Debug;
             container.EagerLoadedServices = []; // Explicitly empty
         });
+        await runtime.WriteImageReceiptAsync(localStack!.Resource, "eager-empty", runtime.OutputDirectory, cts.Token);
 
         await using var app = await builder.BuildAsync(cts.Token);
         await app.StartAsync(cts.Token);

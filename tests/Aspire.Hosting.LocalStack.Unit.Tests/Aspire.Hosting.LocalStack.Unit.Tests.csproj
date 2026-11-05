@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Aspire.Hosting.LocalStack\Aspire.Hosting.LocalStack.csproj"/>
+    <ProjectReference Include="../../tools/LocalStack.Tools/LocalStack.Tools.csproj"/>
   </ItemGroup>
 
 </Project>

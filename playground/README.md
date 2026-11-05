@@ -40,6 +40,13 @@ Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for se
 - .NET 10.0 or later
 - Docker Desktop (for LocalStack containers)
 - Node.js 18+ and AWS CDK v2 (needed by both examples: the Lambda example and the provisioning CDK AppHost deploy CDK stacks)
+- Current-runtime activation through secure AppHost configuration, or the explicit
+  `Playground__LocalStack__UseLegacy=true` sample setting for the compatibility
+  preset. See [runtime selection and activation](../docs/CONFIGURATION.md#runtime-selection-and-container-activation).
+
+`LocalStack.EndpointProbe` is a test-only consumer, built by the integration test
+project. It performs a real Client-configured request from host/container contexts
+and checks a seeded bucket; it is not another interactive AppHost example.
 
 ---
 

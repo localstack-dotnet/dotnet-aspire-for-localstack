@@ -12,7 +12,7 @@ This repository must explain current behavior and accepted decisions without acc
 | Why is the hosting wiring shaped the way it is? | [Hosting model](../architecture/hosting-model.md) |
 | How does a consumer configure the package? | [Configuration](../CONFIGURATION.md) and the [root README](../../README.md) |
 | Which upstream defects affect this package, and what closes them? | [Upstream Watch](../upstream-watch.md) |
-| Which words mean what? | `GLOSSARY.md` at the repository root, once it lands |
+| Which words mean what? | [Glossary](../../GLOSSARY.md) |
 | What changed in a release? | [Changelog](../../CHANGELOG.md) |
 | Which package, SDK, framework, image, and CI values apply now? | `global.json`, `Directory.Build.props`, `Directory.Packages.props`, project files, `LocalStackContainerImageTags.cs`, and workflows. Prose does not copy these values. |
 | What is in progress, next, deferred, or undecided? | The [Aspire Hosting roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) in `localstack-dotnet/.github` |

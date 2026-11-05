@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Explicit runtime and activation options.** `WithLegacy(bool enabled = true)` selects the qualified token-free compatibility preset; current runtime activation accepts an explicit scalar or a caller-owned secret parameter through `WithAuthToken`. Input precedence is fluent → exact extra-env key → host configuration. Explicit blanks suppress fallback; deferred values are not resolved during dependency discovery.
+- **Shared runtime acceptance infrastructure.** The same declared scenarios run in separate current/legacy and class processes, with independent image receipts and execution-bound clean-source/TRX validation. PR checks are secret-free; authenticated runtime validation and publication use trusted revision scheduling. Hosted execution remains unvalidated until an authorized workflow run.
 - **Package-owned AppHost configuration.** `LocalStackHostingOptions` (`Enabled`, `Region`, `AccessKeyId`, `SecretAccessKey`, `SessionToken`) now owns host-level LocalStack settings, with `WithEnabled(...)`, `WithRegion(...)`, and `WithCredentials(...)` fluent extensions in the `Aspire.Hosting` namespace — configuring an AppHost no longer requires LocalStack.Client types.
 - **Canonical `Aspire:Hosting:LocalStack` configuration section.** Host settings bind from `Aspire:Hosting:LocalStack` (`Aspire__Hosting__LocalStack__*` as environment variables). The legacy `LocalStack:*` section remains honored at lower precedence; resolution runs defaults → legacy `LocalStack:*` → canonical `Aspire:Hosting:LocalStack:*` → the `configureOptions` callback → `IAWSSDKConfig.Region`.
 - **New `AddLocalStack` overloads.** `AddLocalStack()`, `AddLocalStack(name)`, `AddLocalStack(name, awsConfig, configureContainer)`, and `AddLocalStack(name, awsConfig, configureOptions, configureContainer)` replace the previous all-optional signature. `Enabled` defaults to `false`, so each overload still returns `null` — and starts no container — until LocalStack is enabled through configuration or the `configureOptions` callback.
@@ -17,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Current runtime default.** The unreleased default moves from `4.12.0` to `2026.10.0`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
 - **Internal hosting-state boundary.** Resolved configuration is frozen into an immutable internal snapshot, so LocalStack.Client models are translated only at the runtime seam instead of flowing through the hosting API. Workload `LocalStack__*` environment emission is unchanged.
 - **Dependencies**: Updated `Aspire.Hosting` to `13.6.1` and `Aspire.Hosting.AWS` to `13.7.2`
   - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, `LocalStack.Client.Extensions` (`2.0.1`), and the analyzer set to their latest stable versions
@@ -29,11 +32,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Bare explicit workload references receive all nine Client settings without requiring an unrelated CloudFormation template relationship; explicitly imported stacks receive the selected LocalStack CF client and retain read-only import semantics.
+- Workload Host/Port values preserve Core consumer-network context; CF, health and CDK asset clients retain AppHost-side allocated URIs. Health check names are qualified per resource.
+- Linux integration runners own per-run disk-backed Lambda wrapper storage and clean it after AppHost/child shutdown, including failure and cancellation. The upstream wrapper lifetime issue remains tracked in [Upstream Watch](docs/upstream-watch.md).
 - **MessagePack security dependency.** Require MessagePack `2.5.303` or later so this package and its consumers do not resolve the vulnerable transitive `2.5.302` version ([GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h)).
 
 ### Known Issues
 
-- **LocalStack.Client proxy mode and `AWS_ENDPOINT_URL*` must not be combined.** Native endpoint variables populate the AWS SDK `ServiceURL` even when LocalStack.Client has configured a different proxy endpoint. Traffic follows the proxy, but affected AWSSDK.Core versions can silently sign non-default-region requests for `us-east-1`. This package does not automatically emit, remove, or overwrite `AWS_ENDPOINT_URL*` values. Bare AWS SDK clients using custom endpoint variables are also affected by the upstream signing defect. The verified two-container matrix and Client-side fix candidates are recorded in [LocalStack.Client #27](https://github.com/localstack-dotnet/localstack-dotnet-client/issues/27#issuecomment-4937111791).
+- **Avoid combining Client proxy mode and native `AWS_ENDPOINT_URL*` settings.** These configure different routing layers. The pinned AppHost SDK graph contains the custom-endpoint signing correction; the Lambda Test Tool bundles its own older SDK and still requires `us-east-1` for its stream poller. The conflict warning stays read-only and does not select or rewrite a routing lane. See [Upstream Watch](docs/upstream-watch.md).
+- **Current runtime acceptance is not yet complete.** A latest full-run Lambda analytics redirect request timed out; an isolated diagnostic pass did not establish a fix. Release remains blocked pending the [runtime acceptance work](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md#ws5--test-integrity--shared-runtime-matrix-first), trusted clean-source evidence and final review.
 - **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values and cannot observe callbacks appended after its `BeforeStartEvent` registration.
 
 ## [13.4.0] - 2026-07-09

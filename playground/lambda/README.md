@@ -94,6 +94,11 @@ The sample runs **4 Lambda functions as 5 Lambda resources** (the `Redirector` p
 
 ## Quick Demo
 
+Supply `LOCALSTACK_AUTH_TOKEN` securely to the AppHost for the current runtime,
+or select the compatibility preset with `Playground__LocalStack__UseLegacy=true`.
+These settings do not replace AWS credentials or lift the Lambda Test Tool's
+`us-east-1` signing restriction. See [configuration](../../docs/CONFIGURATION.md#runtime-selection-and-container-activation).
+
 ```bash
 # 1. Start the application (Docker must be running)
 aspire run --apphost LocalStack.Lambda.AppHost

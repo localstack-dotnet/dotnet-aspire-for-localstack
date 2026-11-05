@@ -2,6 +2,7 @@ using Amazon;
 using Aspire.Hosting.AWS.Lambda;
 using Aspire.Hosting.LocalStack.Container;
 using AWSCDK.AppHost;
+using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
@@ -16,6 +17,7 @@ var awsConfig = builder.AddAWSSDKConfig().WithRegion(RegionEndpoint.USEast1);
 var localstack = builder
     .AddLocalStack("localstack", awsConfig, configureContainer: container =>
     {
+        container.WithLegacy(builder.Configuration.GetValue<bool>("Playground:LocalStack:UseLegacy"));
         container.Lifetime = ContainerLifetime.Session;
         container.DebugLevel = 1;
         container.LogLevel = LocalStackLogLevel.Debug;
