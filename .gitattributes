@@ -1,0 +1,13 @@
+# Check text files out with LF on every OS, whatever core.autocrlf says.
+# .editorconfig sets end_of_line = lf, and the Release build enforces it
+# through IDE0055, so a CRLF checkout would fail to build.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.snk binary
+*.pfx binary
+*.zip binary
+*.nupkg binary

@@ -3,6 +3,9 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>$(DefaultTargetFramework)</TargetFramework>
     <IsPackable>false</IsPackable>
+    <!-- The probe also runs inside a digest-pinned .NET runtime image. Asking for the
+         building SDK's latest patch would make it refuse that image's older patch. -->
+    <TargetLatestRuntimePatch>false</TargetLatestRuntimePatch>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Aspire.Hosting.LocalStack/Aspire.Hosting.LocalStack.csproj"/>

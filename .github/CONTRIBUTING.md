@@ -53,6 +53,8 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
    dotnet build --configuration Release
    ```
 
+   The repository uses LF line endings on every OS: `.gitattributes` checks text files out with LF and `.editorconfig` sets `end_of_line = lf`. The Release build enforces formatting, so a file with CRLF endings fails with `IDE0055`. If a clone made before `.gitattributes` existed still has CRLF files, commit or stash your work, then run `git rm --cached -r . -q && git reset --hard` once to check everything out again with LF.
+
 3. **Run Tests**
 
    This project uses [TUnit](https://tunit.dev/) on Microsoft.Testing.Platform as its testing framework, so test options go after a `--` separator and the VSTest `--filter` option is not available.
@@ -163,6 +165,7 @@ When adding tests:
 - Follow existing naming conventions
 - Test both success and error scenarios
 - Include tests for edge cases
+- Keep unit tests independent of the machine's environment: `DistributedApplication.CreateBuilder` reads environment variables, so a test that asserts a missing `LOCALSTACK_AUTH_TOKEN` must mask the ambient value (set the configuration key to `null`, not to an empty string)
 
 ## 📚 Documentation
 

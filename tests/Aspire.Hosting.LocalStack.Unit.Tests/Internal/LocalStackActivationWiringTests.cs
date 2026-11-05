@@ -463,6 +463,10 @@ public class LocalStackActivationWiringTests
         // The model-only event needs DCP option metadata, but never launches either executable.
         builder.Configuration["DcpPublisher:CliPath"] = "model-only-dcp";
         builder.Configuration["DcpPublisher:DashboardPath"] = "model-only-dashboard";
+        // Mask an ambient LOCALSTACK_AUTH_TOKEN from the machine running the tests. The indexer writes
+        // null into every provider, including the environment one, so the resolver sees no token.
+        // An empty string would not do: the resolver treats it as an explicit blank token.
+        builder.Configuration[LocalStackAuthTokenResolver.EnvironmentVariableName] = null;
         return builder;
     }
 
