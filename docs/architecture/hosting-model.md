@@ -10,7 +10,7 @@ How this package attaches itself to an Aspire application, and why its runtime a
 
 The endpoint is the reason. Aspire assigns the host port late, and under the default session lifetime it is dynamic, so nothing downstream can be computed at model-construction time. Registering at event time also gives this package a property it quietly depends on: **its environment callbacks always run last**, because they are added after everything else has registered its own.
 
-That property is the cost as well as the benefit. Annotations added after a target's environment has already been computed are silently ignored, which makes event-time model mutation fragile beyond the obvious. Moving registration to construction time — using deferred `WithEnvironment(context => ...)` callbacks that resolve the endpoint lazily, and leaving only non-annotation side effects in the event — is tracked as a design-quality item in `docs/ROADMAP.md`. It requires an explicit precedence policy first, because it gives up the run-last property.
+That property is the cost as well as the benefit. Annotations added after a target's environment has already been computed are silently ignored, which makes event-time model mutation fragile beyond the obvious. Moving registration to construction time — using deferred `WithEnvironment(context => ...)` callbacks that resolve the endpoint lazily, and leaving only non-annotation side effects in the event — is tracked as a design-quality item in the [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) (WS6). It requires an explicit precedence policy first, because it gives up the run-last property.
 
 Origin: PR #2 (`e1537db`, `82a9d33`).
 

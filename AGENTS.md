@@ -39,8 +39,10 @@ Commit only when the request asks for it; otherwise end with a concise change su
 | Upstream Aspire, `Aspire.Hosting.AWS`, or LocalStack.Client behavior; package-version alignment; any compatibility conclusion | `.agents/skills/aspire-source-navigation/SKILL.md`. Resolve versions from `Directory.Packages.props` and verify the pinned ref; a default branch is not evidence. Narrow by design — a task merely mentioning Aspire does not qualify. |
 | Why a piece of the wiring is shaped the way it is, before changing it | `docs/architecture/hosting-model.md` |
 | Running, filtering, or debugging tests | Quality Gates below |
-| Backlog, workstream status, open questions | `docs/ROADMAP.md` |
-| A failure that smells like an upstream defect | `docs/upstream-watch.md` for upstream defects and closing triggers; `docs/ROADMAP.md` for package defects and test gaps. Neither is licence to refactor nearby code. |
+| Backlog, workstream status, open questions | [Aspire Hosting roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) in `localstack-dotnet/.github` |
+| Dated research, design or implementation plans, handoffs | `products/aspire-hosting/` in the private `localstack-dotnet/localstack-internal`; see [companion repositories](docs/engineering/documentation.md#companion-repositories) |
+| Where a fact belongs, or moving documentation | [Documentation ownership](docs/engineering/documentation.md) |
+| A failure that smells like an upstream defect | `docs/upstream-watch.md` for upstream defects and closing triggers; the [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) for package defects and test gaps. Neither is licence to refactor nearby code. |
 | Consumer-facing configuration behavior | `docs/CONFIGURATION.md` |
 | A C# symbol's declaration or meaning | Rider MCP semantic tools while Rider is running, then the harness's headless LSP. Text search is for docs, manifests, comments, and literal strings. |
 
@@ -52,10 +54,10 @@ Read change-prone facts from the file that owns them instead of from a copy:
 - Target frameworks, analyzers, warnings-as-errors, Central Package Management: `Directory.Build.props`
 - Package versions: `Directory.Packages.props`
 - Package metadata and project references: the project files under `src/`, `tests/`, `playground/`
-- Backlog and progress: `docs/ROADMAP.md`
+- Backlog and progress: the [Aspire Hosting roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) in `localstack-dotnet/.github`
 - Runtime behavior: source and tests
 
-Layout: `src/` package source, `tests/` unit and integration tests, `playground/` sample AppHosts and workloads, `docs/` project documentation, `docs/agents/` agent-facing notes.
+Layout: `src/` package source, `tests/` unit and integration tests, `playground/` sample AppHosts and workloads, `docs/` current project documentation.
 
 ## Quality Gates
 
@@ -68,11 +70,12 @@ Layout: `src/` package source, `tests/` unit and integration tests, `playground/
 
 ## Documentation
 
-- Update docs when behavior, topology, package support, or agent expectations change.
-- Give a fact one home and point at it from anywhere else that needs it.
-- Prefer the existing natural home over a new document.
-- Date a research document.
-- Keep `docs/ROADMAP.md` current as the backlog and progress source, and link detailed workstream plans from `docs/plans/` when they land.
+Docs are first-class: a change is not complete until its documentation is. In the same change, update the owner of every fact the change alters, here or in a companion repository. [Documentation ownership](docs/engineering/documentation.md) owns the details.
+
+- Current behavior, configuration, upstream defects, and agent expectations: this repository. Give a fact one home and point at it from anywhere else that needs it.
+- Dated research, design and implementation plans, and handoffs: the private `localstack-dotnet/localstack-internal` archive under `products/aspire-hosting/`, never `docs/` here.
+- Status, backlog, and open decisions: the [Aspire Hosting roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md) in `localstack-dotnet/.github`.
+- This repository stays complete without the private archive. Pushing to or opening a pull request in a companion repository follows the same approval rule as this one.
 - Code comments and XML docs stand on their own, without reaching for a spec, plan, phase, or file path.
 
 ## Authority
