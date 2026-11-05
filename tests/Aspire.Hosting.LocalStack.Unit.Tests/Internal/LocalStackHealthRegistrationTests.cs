@@ -21,7 +21,7 @@ public class LocalStackHealthRegistrationTests
     [Test]
     public async Task Two_Resources_Resolve_HealthCheckService_And_Probe_Independent_Endpoints()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var first = builder.AddLocalStack("first", awsConfig: null, options => options.WithEnabled(true));
         var second = builder.AddLocalStack("second", awsConfig: null, options => options.WithEnabled(true));
         await Assert.That(first).IsNotNull();

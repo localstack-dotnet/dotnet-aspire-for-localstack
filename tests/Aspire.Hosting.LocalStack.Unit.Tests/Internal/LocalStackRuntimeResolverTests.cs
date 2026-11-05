@@ -165,7 +165,7 @@ public class LocalStackRuntimeResolverTests
     [Test]
     public async Task Default_Container_Uses_Qualified_Current_Image()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var resource = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
         await Assert.That(resource).IsNotNull();
         var image = resource!.Resource.Annotations.OfType<ContainerImageAnnotation>().Single();

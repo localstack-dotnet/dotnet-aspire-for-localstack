@@ -5,7 +5,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_ApprovedOverloads_Should_Compile_Without_Ambiguity()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var awsConfig = TestDataBuilders.CreateMockAWSConfig("us-west-2");
         Action<LocalStackContainerOptions> configureContainer = _ => { };
 
@@ -27,7 +27,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Invoke_ConfigureOptions_After_CanonicalBinding()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         AddCanonicalLocalStackConfiguration(builder, enabled: true, region: "canonical-region");
         var callbackObservedCanonicalValues = false;
 
@@ -56,7 +56,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Return_Null_And_Not_Invoke_ConfigureContainer_When_HostingOptions_Disabled()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var configureContainerCalled = false;
 
         var result = builder.AddLocalStack(
@@ -72,16 +72,16 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_ApprovedOverloads_Should_Produce_Equivalent_State_When_Configured_Equivalently()
     {
-        var defaultBuilder = DistributedApplication.CreateBuilder([]);
+        var defaultBuilder = TestApplicationBuilder.CreateBuilder([]);
         AddCanonicalLocalStackConfiguration(defaultBuilder, enabled: true, region: "equivalent-region");
 
-        var nameBuilder = DistributedApplication.CreateBuilder([]);
+        var nameBuilder = TestApplicationBuilder.CreateBuilder([]);
         AddCanonicalLocalStackConfiguration(nameBuilder, enabled: true, region: "equivalent-region");
 
-        var awsContainerBuilder = DistributedApplication.CreateBuilder([]);
+        var awsContainerBuilder = TestApplicationBuilder.CreateBuilder([]);
         AddCanonicalLocalStackConfiguration(awsContainerBuilder, enabled: true, region: "canonical-region");
 
-        var explicitBuilder = DistributedApplication.CreateBuilder([]);
+        var explicitBuilder = TestApplicationBuilder.CreateBuilder([]);
         AddCanonicalLocalStackConfiguration(explicitBuilder, enabled: false, region: "disabled-region");
 
         var awsConfig = TestDataBuilders.CreateMockAWSConfig("equivalent-region");
@@ -112,7 +112,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Return_Null_When_UseLocalStack_Is_False()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(false));
 
@@ -122,7 +122,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Create_LocalStack_Resource_When_UseLocalStack_Is_True()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
@@ -134,7 +134,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Default_Name_When_Not_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
@@ -145,7 +145,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Custom_Name_When_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         const string customName = "my-localstack";
 
         var result = builder.AddLocalStack(customName, awsConfig: null, options => options.WithEnabled(true));
@@ -157,7 +157,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Configure_Container_Options_When_Action_Provided()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var configureContainerCalled = false;
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true), ConfigureContainer);
@@ -177,7 +177,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Inherit_Region_From_AWS_Config()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var awsConfig = TestDataBuilders.CreateMockAWSConfig("us-west-2");
 
         var result = builder.AddLocalStack("localstack", awsConfig, options => options.WithEnabled(true));
@@ -199,7 +199,7 @@ public class AddLocalStackTests
     [Arguments("   ")]
     public async Task AddLocalStack_Should_Throw_ArgumentException_When_Name_Is_Invalid(string invalidName)
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         await Assert.That(() => builder.AddLocalStack(invalidName, awsConfig: null, options => options.WithEnabled(true))).ThrowsExactly<ArgumentException>();
     }
@@ -207,7 +207,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Configured()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -231,7 +231,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Set_SERVICES_Environment_Variable_With_Comma_Separated_Services()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -253,7 +253,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Not_Set_EAGER_SERVICE_LOADING_When_EagerLoadedServices_Empty()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -271,7 +271,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_SERVICES()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var exception = await Assert.That(() =>
             builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true), configureContainer: container =>
@@ -287,7 +287,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Throw_When_EagerLoadedServices_Conflicts_With_AdditionalEnvVars_EAGER_SERVICE_LOADING()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var exception = await Assert.That(() =>
             builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true), configureContainer: container =>
@@ -303,7 +303,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Throw_When_Unsupported_Service_In_EagerLoadedServices()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         // Note: This test assumes there might be an AwsService enum value with no CliName
         // If all current services are supported, this validates the error handling mechanism
@@ -321,7 +321,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Mount_Docker_Socket_When_EnableDockerSocket_Is_True()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -346,7 +346,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Not_Mount_Docker_Socket_When_EnableDockerSocket_Is_False()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -371,7 +371,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Not_Mount_Docker_Socket_By_Default()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
@@ -394,7 +394,7 @@ public class AddLocalStackTests
     [Arguments(ContainerLifetime.Persistent, 1234, 1234)]
     public async Task AddLocalStack_Should_Set_Endpoint_Port(ContainerLifetime lifetime, int? port, int? expectedPort)
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack
         (
@@ -422,7 +422,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Default_Container_Image_Values_When_Not_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var result = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
@@ -440,7 +440,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Custom_Container_Registry_When_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         const string customRegistry = "artifactory.company.com";
 
         var result = builder.AddLocalStack(
@@ -462,7 +462,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Custom_Container_Image_When_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         const string customImage = "custom/localstack";
 
         var result = builder.AddLocalStack(
@@ -484,7 +484,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_Custom_Container_ImageTag_When_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         const string customTag = "4.9.2";
 
         var result = builder.AddLocalStack(
@@ -506,7 +506,7 @@ public class AddLocalStackTests
     [Test]
     public async Task AddLocalStack_Should_Use_All_Custom_Container_Image_Values_When_Specified()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         const string customRegistry = "artifactory.company.com";
         const string customImage = "docker-mirrors/localstack/localstack";
         const string customTag = "4.9.2";

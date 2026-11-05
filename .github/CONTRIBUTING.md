@@ -165,7 +165,7 @@ When adding tests:
 - Follow existing naming conventions
 - Test both success and error scenarios
 - Include tests for edge cases
-- Keep unit tests independent of the machine's environment: `DistributedApplication.CreateBuilder` reads environment variables, so a test that asserts a missing `LOCALSTACK_AUTH_TOKEN` must mask the ambient value (set the configuration key to `null`, not to an empty string)
+- Create unit-test AppHost builders with `TestApplicationBuilder.CreateBuilder`, never `DistributedApplication.CreateBuilder` (the analyzer bans it in the unit test project). The helper drops environment-variable configuration, so a developer's `LOCALSTACK_AUTH_TOKEN` or `LocalStack__*` values cannot change a test's outcome
 
 ## 📚 Documentation
 

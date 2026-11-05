@@ -8,7 +8,7 @@ public class LocalStackActivationWiringTests
     [Test]
     public async Task Scalar_Becomes_Secret_Without_Published_Default()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
 
         var localStack = builder.AddLocalStack("localstack", awsConfig: null,
             options => options.WithEnabled(true),
@@ -25,7 +25,7 @@ public class LocalStackActivationWiringTests
     [Test]
     public async Task Caller_Parameter_Is_Bound_As_The_Original_Deferred_Resource()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var getterCalls = 0;
         var parameter = builder.AddParameter("caller-activation", () =>
         {
@@ -47,7 +47,7 @@ public class LocalStackActivationWiringTests
     [Test]
     public async Task Disabled_Does_Not_Read_Token_Or_Create_Parameter()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var trap = new TokenReadTrapProvider();
         builder.Configuration.Sources.Add(new TokenReadTrapSource(trap));
         var containerCalled = false;
@@ -68,7 +68,7 @@ public class LocalStackActivationWiringTests
     [Test]
     public async Task Publish_Does_Not_Create_Activation_State()
     {
-        var builder = DistributedApplication.CreateBuilder(["--publisher", "manifest"]);
+        var builder = TestApplicationBuilder.CreateBuilder(["--publisher", "manifest"]);
         await Assert.That(builder.ExecutionContext.IsPublishMode).IsTrue();
         var trap = new TokenReadTrapProvider();
         builder.Configuration.Sources.Add(new TokenReadTrapSource(trap));
@@ -264,7 +264,7 @@ public class LocalStackActivationWiringTests
     [Test]
     public async Task Private_Parameter_Name_Is_Bounded_And_Does_Not_Reuse_Caller_Collision()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var resourceName = "localstack-" + new string('x', 50);
         var baseName = "ls-" + resourceName[..40] + "-auth";
         var caller = builder.AddParameter(baseName.ToUpperInvariant(), () => "probe-caller", secret: true);
@@ -351,7 +351,7 @@ public class LocalStackActivationWiringTests
     [Arguments("host")]
     public async Task Scalar_Sources_Stay_Secret_And_Separate_From_Aws_And_Workload_State(string source)
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         builder.Configuration["LOCALSTACK_AUTH_TOKEN"] = "probe-host";
         var localStack = builder.AddLocalStack("localstack", awsConfig: null,
             options => options.WithEnabled(true).WithCredentials("aws-id", "aws-secret", "aws-session"),
@@ -459,14 +459,10 @@ public class LocalStackActivationWiringTests
 
     private static IDistributedApplicationBuilder CreateRunBuilder()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         // The model-only event needs DCP option metadata, but never launches either executable.
         builder.Configuration["DcpPublisher:CliPath"] = "model-only-dcp";
         builder.Configuration["DcpPublisher:DashboardPath"] = "model-only-dashboard";
-        // Mask an ambient LOCALSTACK_AUTH_TOKEN from the machine running the tests. The indexer writes
-        // null into every provider, including the environment one, so the resolver sees no token.
-        // An empty string would not do: the resolver treats it as an explicit blank token.
-        builder.Configuration[LocalStackAuthTokenResolver.EnvironmentVariableName] = null;
         return builder;
     }
 

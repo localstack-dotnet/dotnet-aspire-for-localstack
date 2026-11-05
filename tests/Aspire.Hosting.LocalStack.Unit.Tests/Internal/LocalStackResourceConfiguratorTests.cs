@@ -5,7 +5,7 @@ public class LocalStackResourceConfiguratorTests
     [Test]
     public async Task Client_Host_And_Port_Use_Consumer_Network_Context()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var source = new ContainerResource("localstack-test");
         var url = new Uri("http://localhost:12345");
         var endpoint = LocalStackEndpointEnvironmentEvaluator.AddEndpoint(source, url);
@@ -33,7 +33,7 @@ public class LocalStackResourceConfiguratorTests
     [Test]
     public async Task AppHost_CF_Client_Still_Uses_Allocated_Uri()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var source = new ContainerResource("localstack-test");
         var url = new Uri("http://localhost:12345");
         var endpoint = LocalStackEndpointEnvironmentEvaluator.AddEndpoint(source, url);

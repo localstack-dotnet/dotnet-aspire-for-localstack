@@ -55,7 +55,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
 
         try
         {
-            var builder = DistributedApplication.CreateBuilder([]);
+            var builder = TestApplicationBuilder.CreateBuilder([]);
             var stackAnnotations = new ResourceAnnotationCollection();
             var connectionString = "http://localhost:4566";
             var localStackResource = new TestLocalStackResource(
@@ -99,7 +99,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Test]
     public async Task Callback_Should_Configure_DynamoDb_Streams_Event_Source_Resource()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var helperResource = TestResourceFactory.CreateExecutableResourceByTypeName(Constants.DynamoDbStreamsEventSourceResource, "ddb-streams-helper");
         var connectionString = "http://localhost:4566";
 
@@ -128,7 +128,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Test]
     public async Task Bare_Explicit_Reference_Emits_Client9()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var localStack = new TestLocalStackResource("localstack",
             TestDataBuilders.CreateHostingState(regionName: "eu-central-1"), "http://localhost:12345");
         var worker = builder.AddResource(new ExecutableResource("worker", "not-run", "."))
@@ -159,7 +159,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Test]
     public async Task Explicit_Imported_Stack_Receives_Selected_CF_Client()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var localStack = new TestLocalStackResource("localstack",
             TestDataBuilders.CreateHostingState(regionName: "eu-central-1"), "http://localhost:12345");
         var imported = builder.AddAWSCloudFormationStack("imported", "existing-stack")
@@ -179,7 +179,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Arguments(true)]
     public async Task Unrelated_Or_OtherSource_Destination_Is_Untouched(bool staleReverseReference)
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var first = new TestLocalStackResource("first", TestDataBuilders.CreateHostingState(), "http://localhost:12345");
         var other = new TestLocalStackResource("other", TestDataBuilders.CreateHostingState(), "http://localhost:12346");
         var worker = builder.AddResource(new ExecutableResource("worker", "not-run", "."))
@@ -200,7 +200,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Test]
     public async Task Whole_Template_And_Sqs_Tool_Keep_Their_Specialized_Configuration()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var source = new TestLocalStackResource("localstack", TestDataBuilders.CreateHostingState(), "http://localhost:12345");
         var template = builder.AddAWSCloudFormationTemplate("template", "not-read.json")
             .WithReference(builder.CreateResourceBuilder(source));
@@ -219,7 +219,7 @@ public class LocalStackConnectionStringAvailableCallbackTests
     [Test]
     public async Task Manual_Environment_Added_After_Adaptation_Retains_Core_Precedence()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var source = new TestLocalStackResource("localstack", TestDataBuilders.CreateHostingState(), "http://localhost:12345");
         var worker = builder.AddResource(new ExecutableResource("worker", "not-run", "."))
             .WithReference(builder.CreateResourceBuilder(source));

@@ -60,7 +60,7 @@ public class LocalStackAuthTokenResolverTests
     [Test]
     public async Task Parameter_Is_Retained_Without_Resolution()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var getterCalls = 0;
         var parameter = builder.AddParameter("activation", () =>
         {
@@ -86,7 +86,7 @@ public class LocalStackAuthTokenResolverTests
     [Test]
     public async Task NonSecret_Parameter_Is_Rejected()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var getterCalls = 0;
         var parameter = builder.AddParameter("activation", () =>
         {
@@ -140,7 +140,7 @@ public class LocalStackAuthTokenResolverTests
     [Test]
     public async Task Repeated_Fluent_Input_Uses_Last_Call_Including_Blank()
     {
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = TestApplicationBuilder.CreateBuilder([]);
         var parameter = builder.AddParameter("activation", () =>
             throw new InvalidOperationException("The earlier source must not be resolved."), secret: true);
         var options = new LocalStackContainerOptions();
