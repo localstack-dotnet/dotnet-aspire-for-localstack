@@ -24,7 +24,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### Prerequisites
 
-- [.NET SDK 10.0.402 or a newer 10.0.x SDK](https://dotnet.microsoft.com/download) - pinned in `global.json` (`rollForward: latestFeature`, prereleases disallowed)
+- [.NET SDK 10.0.403 or a newer 10.0.x SDK](https://dotnet.microsoft.com/download) - pinned in `global.json` (`rollForward: latestFeature`, prereleases disallowed)
 - The .NET 8.0 and .NET 9.0 runtimes - the projects multi-target `net8.0`, `net9.0` and `net10.0`, and the unit tests execute on all three (CI installs the `8.0.x`, `9.0.x` and `10.0.x` SDKs)
 - For the integration tests only: [Docker](https://docs.docker.com/get-docker/) (LocalStack container), plus [Node.js](https://nodejs.org/) and the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) (`npm install -g aws-cdk@2`) for the CDK playground AppHost
 - [Git](https://git-scm.com/downloads)

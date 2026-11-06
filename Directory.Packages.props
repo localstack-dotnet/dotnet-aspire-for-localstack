@@ -1,25 +1,25 @@
 <Project>
   <ItemGroup>
     <!-- third-party analyzers -->
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.303"/>
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.321"/>
     <PackageVersion Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="5.6.0"/>
-    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.402"/>
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.403"/>
     <PackageVersion Include="Microsoft.VisualStudio.Threading.Analyzers" Version="18.12.1"/>
     <PackageVersion Include="Roslynator.Analyzers" Version="5.0.1"/>
     <PackageVersion Include="Roslynator.Formatting.Analyzers" Version="5.0.1"/>
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138"/>
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17"/>
     <!-- aspire packages -->
-    <PackageVersion Include="Aspire.Hosting" Version="13.6.1"/>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.6.1"/>
-    <PackageVersion Include="Aspire.Hosting.AWS" Version="13.7.2"/>
+    <PackageVersion Include="Aspire.Hosting" Version="13.6.4"/>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.6.4"/>
+    <PackageVersion Include="Aspire.Hosting.AWS" Version="13.7.3"/>
     <!-- aws packages -->
-    <PackageVersion Include="AWSSDK.Core" Version="4.0.102.11"/>
-    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.107.3"/>
-    <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.18"/>
-    <PackageVersion Include="AWSSDK.SimpleNotificationService" Version="4.0.100.19"/>
-    <PackageVersion Include="AWSSDK.S3" Version="4.0.104.4"/>
-    <PackageVersion Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.102.4"/>
+    <PackageVersion Include="AWSSDK.Core" Version="4.0.102.18"/>
+    <PackageVersion Include="AWSSDK.DynamoDBv2" Version="4.0.110.1"/>
+    <PackageVersion Include="AWSSDK.SQS" Version="4.0.100.24"/>
+    <PackageVersion Include="AWSSDK.SimpleNotificationService" Version="4.0.100.24"/>
+    <PackageVersion Include="AWSSDK.S3" Version="4.0.104.10"/>
+    <PackageVersion Include="AWSSDK.Extensions.NETCore.Setup" Version="4.0.102.9"/>
     <PackageVersion Include="AWS.Messaging" Version="1.6.0"/>
     <PackageVersion Include="AWS.Messaging.Telemetry.OpenTelemetry" Version="1.0.1"/>
     <PackageVersion Include="Amazon.Lambda.Core" Version="3.4.0"/>
@@ -28,28 +28,27 @@
     <PackageVersion Include="Amazon.Lambda.Serialization.SystemTextJson" Version="3.0.1"/>
     <PackageVersion Include="Amazon.Lambda.DynamoDBEvents" Version="4.0.0"/>
     <!-- localstack packages -->
-    <PackageVersion Include="LocalStack.Client" Version="2.0.0"/>
-    <PackageVersion Include="LocalStack.Client.Extensions" Version="2.0.1"/>
+    <PackageVersion Include="LocalStack.Client" Version="3.0.0"/>
+    <PackageVersion Include="LocalStack.Client.Extensions" Version="3.0.0"/>
     <!-- microsoft packages -->
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.402"/>
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.403"/>
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.11.0"/>
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Dns" Version="10.11.0"/>
     <!-- opentelemetry packages -->
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AWS" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AWSLambda" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.0"/>
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.0"/>
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.20.1"/>
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1"/>
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.20.1"/>
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AWS" Version="1.20.3"/>
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AWSLambda" Version="1.20.3"/>
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.20.2"/>
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.20.1"/>
     <!-- third-party packages -->
-    <PackageVersion Include="MessagePack" Version="2.5.303"/>
     <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
-    <PackageVersion Include="SkiaSharp" Version="4.153.1"/>
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.153.1"/>
+    <PackageVersion Include="SkiaSharp" Version="4.154.0"/>
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0"/>
     <!-- test packages -->
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.1"/>
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.4"/>
     <PackageVersion Include="NSubstitute" Version="6.2.0"/>
-    <PackageVersion Include="TUnit" Version="1.75.0"/>
+    <PackageVersion Include="TUnit" Version="1.81.0"/>
   </ItemGroup>
 </Project>
