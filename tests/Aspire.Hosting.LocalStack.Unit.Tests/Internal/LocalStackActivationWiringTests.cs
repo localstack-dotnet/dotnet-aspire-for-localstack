@@ -6,6 +6,20 @@ namespace Aspire.Hosting.LocalStack.Unit.Tests.Internal;
 public class LocalStackActivationWiringTests
 {
     [Test]
+    public async Task Truncated_Name_With_Trailing_Hyphen_Creates_One_Secret_Parameter()
+    {
+        var builder = TestApplicationBuilder.CreateBuilder([]);
+        var localStack = builder.AddLocalStack("a" + new string('b', 38) + "-c", awsConfig: null,
+            options => options.WithEnabled(true), container => container.WithAuthToken("probe-long"));
+
+        await Assert.That(localStack).IsNotNull();
+        var parameters = builder.Resources.OfType<ParameterResource>().ToArray();
+        await Assert.That(parameters.Length).IsEqualTo(1);
+        await Assert.That(parameters[0].Name).IsEqualTo("ls-a" + new string('b', 38) + "-auth");
+        await Assert.That(parameters[0].Secret).IsTrue();
+    }
+
+    [Test]
     public async Task Scalar_Becomes_Secret_Without_Published_Default()
     {
         var builder = TestApplicationBuilder.CreateBuilder([]);
@@ -354,7 +368,7 @@ public class LocalStackActivationWiringTests
         var builder = TestApplicationBuilder.CreateBuilder([]);
         builder.Configuration["LOCALSTACK_AUTH_TOKEN"] = "probe-host";
         var localStack = builder.AddLocalStack("localstack", awsConfig: null,
-            options => options.WithEnabled(true).WithCredentials("aws-id", "aws-secret", "aws-session"),
+            options => options.WithEnabled(true).WithRegion("eu-central-1").WithCredentials("aws-id", "aws-secret", "aws-session"),
             container =>
             {
                 if (source == "fluent")
@@ -369,17 +383,33 @@ public class LocalStackActivationWiringTests
         await Assert.That(localStack).IsNotNull();
         var worker = builder.AddResource(new ExecutableResource("worker", "not-run", "."))
             .WithReference(localStack);
+        var endpoint = localStack!.Resource.Annotations.OfType<EndpointAnnotation>().Single(annotation => annotation.Name == "http");
+        endpoint.AllAllocatedEndpoints.AddOrUpdateAllocatedEndpoint(KnownNetworkIdentifiers.LocalhostNetwork,
+            new AllocatedEndpoint(endpoint, "localhost", 12345, EndpointBindingMode.SingleAddress,
+                targetPortExpression: null, networkId: KnownNetworkIdentifiers.LocalhostNetwork));
 
-        var containerEnvironment = await EvaluateEnvironment(builder, localStack!.Resource);
-        var workerEnvironment = await EvaluateEnvironment(builder, worker.Resource);
+        await LocalStackConnectionStringAvailableCallback.CreateCallback(builder)(localStack.Resource, null!, CancellationToken.None);
+        var containerEnvironment = await EvaluateEnvironment(builder, localStack.Resource);
+        var workerEnvironment = await LocalStackEndpointEnvironmentEvaluator.EvaluateAsync(worker.Resource,
+            builder.ExecutionContext, worker.Resource, KnownNetworkIdentifiers.LocalhostNetwork);
         var parameter = builder.Resources.OfType<ParameterResource>().Single();
         var state = localStack.Resource.GetHostingState();
 
         await Assert.That(containerEnvironment.EnvironmentVariables["LOCALSTACK_AUTH_TOKEN"]).IsSameReferenceAs(parameter);
         await Assert.That(parameter.Secret).IsTrue();
         await Assert.That(parameter.Default).IsNull();
-        await Assert.That(workerEnvironment.EnvironmentVariables).ContainsKey("ConnectionStrings__localstack");
-        await Assert.That(workerEnvironment.EnvironmentVariables.ContainsKey("LOCALSTACK_AUTH_TOKEN")).IsFalse();
+        await Assert.That(workerEnvironment).ContainsKey("ConnectionStrings__localstack");
+        await Assert.That(workerEnvironment.Keys.Count(key => key.StartsWith("LocalStack__", StringComparison.Ordinal))).IsEqualTo(9);
+        await Assert.That(workerEnvironment["LocalStack__UseLocalStack"]).IsEqualTo("True");
+        await Assert.That(workerEnvironment["LocalStack__Session__AwsAccessKeyId"]).IsEqualTo("aws-id");
+        await Assert.That(workerEnvironment["LocalStack__Session__AwsAccessKey"]).IsEqualTo("aws-secret");
+        await Assert.That(workerEnvironment["LocalStack__Session__AwsSessionToken"]).IsEqualTo("aws-session");
+        await Assert.That(workerEnvironment["LocalStack__Session__RegionName"]).IsEqualTo("eu-central-1");
+        await Assert.That(workerEnvironment["LocalStack__Config__LocalStackHost"]).IsEqualTo("localhost");
+        await Assert.That(workerEnvironment["LocalStack__Config__UseSsl"]).IsEqualTo("False");
+        await Assert.That(workerEnvironment["LocalStack__Config__UseLegacyPorts"]).IsEqualTo("False");
+        await Assert.That(workerEnvironment["LocalStack__Config__EdgePort"]).IsEqualTo("12345");
+        await Assert.That(workerEnvironment.ContainsKey("LOCALSTACK_AUTH_TOKEN")).IsFalse();
         await Assert.That(state.AccessKeyId).IsEqualTo("aws-id");
         await Assert.That(state.SecretAccessKey).IsEqualTo("aws-secret");
         await Assert.That(state.SessionToken).IsEqualTo("aws-session");

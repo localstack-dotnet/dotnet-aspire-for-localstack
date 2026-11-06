@@ -150,7 +150,7 @@ internal static class LocalStackActivationSetup
 
     private static string GetParameterName(IDistributedApplicationBuilder builder, string resourceName)
     {
-        var baseName = "ls-" + resourceName[..Math.Min(40, resourceName.Length)] + "-auth";
+        var baseName = "ls-" + resourceName[..Math.Min(40, resourceName.Length)].TrimEnd('-') + "-auth";
         var candidate = baseName;
         var suffix = 1;
         while (builder.Resources.Any(resource => string.Equals(resource.Name, candidate, StringComparison.OrdinalIgnoreCase)))
