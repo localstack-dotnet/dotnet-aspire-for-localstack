@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Explicit runtime and activation options.** `WithLegacy(bool enabled = true)` selects the qualified token-free compatibility preset; current runtime activation accepts an explicit scalar or a caller-owned secret parameter through `WithAuthToken`. Input precedence is fluent → exact extra-env key → host configuration. Explicit blanks suppress fallback; deferred values are not resolved during dependency discovery.
-- **Shared runtime acceptance infrastructure.** The same declared scenarios run in separate current/legacy and class processes, with independent image receipts and execution-bound clean-source/TRX validation. PR checks are secret-free; authenticated runtime validation and publication use trusted revision scheduling. Hosted execution remains unvalidated until an authorized workflow run.
+- **Shared runtime acceptance infrastructure.** The same declared scenarios run against the current and the legacy image, one test process per profile.
+  - Each run's record (`schema_version` 2) binds the TRX and every image receipt to its `execution_id` by SHA-256. `validate-runtime` rejects stale, dirty, incomplete or mismatched evidence.
+  - Reports are masked and checked for the activation token before publication, and the check fails closed.
+  - PR checks are secret-free. The authenticated pair runs in the `localstack-current` GitHub environment. Every publication path, CI deployment and the manual workflow alike, requires the passing pair and a packed-consumer `verify-consumer` pass for the same SHA.
+  - Hosted execution remains unvalidated until an authorized workflow run.
 - **Package-owned AppHost configuration.** `LocalStackHostingOptions` (`Enabled`, `Region`, `AccessKeyId`, `SecretAccessKey`, `SessionToken`) now owns host-level LocalStack settings, with `WithEnabled(...)`, `WithRegion(...)`, and `WithCredentials(...)` fluent extensions in the `Aspire.Hosting` namespace — configuring an AppHost no longer requires LocalStack.Client types.
 - **Canonical `Aspire:Hosting:LocalStack` configuration section.** Host settings bind from `Aspire:Hosting:LocalStack` (`Aspire__Hosting__LocalStack__*` as environment variables). The legacy `LocalStack:*` section remains honored at lower precedence; resolution runs defaults → legacy `LocalStack:*` → canonical `Aspire:Hosting:LocalStack:*` → the `configureOptions` callback → `IAWSSDKConfig.Region`.
 - **New `AddLocalStack` overloads.** `AddLocalStack()`, `AddLocalStack(name)`, `AddLocalStack(name, awsConfig, configureContainer)`, and `AddLocalStack(name, awsConfig, configureOptions, configureContainer)` replace the previous all-optional signature. `Enabled` defaults to `false`, so each overload still returns `null` — and starts no container — until LocalStack is enabled through configuration or the `configureOptions` callback.
@@ -19,12 +23,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Current runtime default.** The unreleased default moves from `4.12.0` to `2026.10.0`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
+- **Current runtime default.** The unreleased default moves from `4.12.0` to `2026.10.6`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
 - **Internal hosting-state boundary.** Resolved configuration is frozen into an immutable internal snapshot, so LocalStack.Client models are translated only at the runtime seam instead of flowing through the hosting API. Workload `LocalStack__*` environment emission is unchanged.
-- **Dependencies**: Updated `Aspire.Hosting` to `13.6.1` and `Aspire.Hosting.AWS` to `13.7.2`
-  - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, `LocalStack.Client.Extensions` (`2.0.1`), and the analyzer set to their latest stable versions
-  - Moved the `global.json` SDK pin to `10.0.402`
-- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.1. No `13.4.1` was ever published; the entry was renumbered in place.
+- **Dependencies**: Updated `Aspire.Hosting` to `13.6.4` and `Aspire.Hosting.AWS` to `13.7.3`
+  - **`LocalStack.Client` and `LocalStack.Client.Extensions` 3.0.0.**
+    - The public surface is unchanged: upstream package validation runs against 2.0.0, and a 13.4.0-compiled caller still runs on the new graph.
+    - On net8.0 and net9.0 the package resolves the client's `netstandard2.0` asset.
+    - Consumers that pin `LocalStack.Client(.Extensions)` below 3.0.0, or `AWSSDK.Core` below 4.0.102.6, now get NU1605 on restore and must raise those pins.
+    - On net10.0 the client's registry source generator flows to consuming projects. It adds about 12–20 ms per compilation (measured with `ReportAnalyzer`).
+  - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, and the analyzer set to their latest stable versions
+  - Moved the `global.json` SDK pin to `10.0.403`
+- **CDK bootstrap template**: Refreshed the embedded template to the one `aws-cdk` 2.1148.0 ships (`BootstrapVersion` `33`), which adds the `ApplyPermissionsBoundaryToAllRoles` parameter
+- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.4. No `13.4.1` was ever published; the entry was renumbered in place.
 
 ### Deprecated
 
@@ -34,13 +44,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Bare explicit workload references receive all nine Client settings without requiring an unrelated CloudFormation template relationship; explicitly imported stacks receive the selected LocalStack CF client and retain read-only import semantics.
 - Workload Host/Port values preserve Core consumer-network context; CF, health and CDK asset clients retain AppHost-side allocated URIs. Health check names are qualified per resource.
-- Linux integration runners own per-run disk-backed Lambda wrapper storage and clean it after AppHost/child shutdown, including failure and cancellation. The upstream wrapper lifetime issue remains tracked in [Upstream Watch](docs/upstream-watch.md).
-- **MessagePack security dependency.** Require MessagePack `2.5.303` or later so this package and its consumers do not resolve the vulnerable transitive `2.5.302` version ([GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h)).
+- Linux integration runners own per-run disk-backed Lambda wrapper storage and clean it after AppHost/child shutdown, on success and on test failure. A cancelled or interrupted run keeps its scratch folder for inspection. The upstream wrapper lifetime issue remains tracked in [Upstream Watch](docs/upstream-watch.md).
+- **MessagePack security dependency.** Aspire.Hosting 13.6.4 depends on MessagePack `2.5.307`, which fixes [GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h), GHSA-fx6j-x9m5-vmrf and GHSA-7rj2-5w9w-r9jx. This package and its consumers no longer resolve a vulnerable version, and the package's own direct MessagePack floor is removed.
+- A resource name longer than 40 characters whose 40th character is `-` no longer produces an invalid private activation-parameter name.
 
 ### Known Issues
 
 - **Avoid combining Client proxy mode and native `AWS_ENDPOINT_URL*` settings.** These configure different routing layers. The pinned AppHost SDK graph contains the custom-endpoint signing correction; the Lambda Test Tool bundles its own older SDK and still requires `us-east-1` for its stream poller. The conflict warning stays read-only and does not select or rewrite a routing lane. See [Upstream Watch](docs/upstream-watch.md).
-- **Current runtime acceptance is not yet complete.** A latest full-run Lambda analytics redirect request timed out; an isolated diagnostic pass did not establish a fix. Release remains blocked pending the [runtime acceptance work](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md#ws5--test-integrity--shared-runtime-matrix-first), trusted clean-source evidence and final review.
+- **Intermittent current-runtime Lambda redirect timeout, cause unknown.** One October full run timed out on the analytics redirect request; isolated replays passed, and no cause has been established. Two clean-source current+legacy pairs passed on 2026-11-06: 30/30 on `2026.10.0`, then 32/32 on `2026.10.6` with `4.14.0`. That does not explain the earlier failure. Trusted hosted execution has not run yet. The [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md#ws5--test-integrity--shared-runtime-matrix-first) tracks the remaining acceptance work.
 - **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values and cannot observe callbacks appended after its `BeforeStartEvent` registration.
 
 ## [13.4.0] - 2026-07-09

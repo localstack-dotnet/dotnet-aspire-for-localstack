@@ -75,7 +75,7 @@ Options are resolved from lowest to highest precedence: built-in defaults, the l
 These runtime/onboarding APIs are part of the unreleased baseline work. Final
 shared runtime acceptance remains required before release.
 
-The current preset selects `docker.io/localstack/localstack:2026.10.0`.
+The current preset selects `docker.io/localstack/localstack:2026.10.6`.
 `container.WithLegacy()` selects the explicitly supported token-free compatibility
 candidate `4.14.0`; `WithLegacy(false)` restores the current preference. Legacy
 describes a runtime choice, not an integration edition or the obsolete
@@ -135,8 +135,10 @@ parameter/binding/guard when disabled or publishing, and does not remove
 caller-owned parameters used elsewhere. LocalStack itself remains excluded from
 the deployment manifest.
 
-The exact known-current image gets a safe missing-binding error before container
-launch. Deferred bindings are left to Core's resolution/cancellation behavior;
+The exact known-current image gets a safe missing-binding error before any container
+is created: the resource reaches `FailedToStart`, and its log names the resource and
+`LOCALSTACK_AUTH_TOKEN`. `StartAsync` does not throw for it.
+Deferred bindings are left to Core's resolution/cancellation behavior;
 LocalStack validates actual token/license/entitlement validity. Legacy/custom
 images do not acquire an inferred token requirement, and supplied values are
 not stripped from them.
@@ -175,20 +177,42 @@ artifact directory. An immediate authenticated HTML uploader cannot bypass that
 boundary: the command fails before starting rather than disabling reporting or
 uploading an unmasked report. The existing secret-free/unit upload path is retained.
 
-Each run records its execution-time revision and source cleanliness, plus native
-outcomes and independent host image receipts. Receipts show model selection, not
-successful startup by themselves. The validator requires both complete passing
-profiles, matching clean revision/configuration, the same executed test identities
-and all fixture/direct-host receipts. Dirty development runs and missing
-credentials cannot certify a release.
+Each run writes `profile-run.json` (`schema_version` 2). It records the execution-time
+revision and source cleanliness, an `execution_id`, and the SHA-256 of `runtime.trx`
+and of every host image receipt. The integration tests receive the same id through
+`LOCALSTACK_TEST_EXECUTION_ID` and write it into each receipt. Receipts show model
+selection, not successful startup by themselves. The validator requires:
+- both complete passing profiles;
+- a matching clean revision and configuration;
+- the same executed test identities;
+- every fixture/direct-host receipt carrying its run's id;
+- an artifact inventory whose hashes match the files exactly.
+Evidence from an older schema, a dirty development run or a missing credential
+cannot certify a release. The hashes prove consistency within one run's folder, not
+authenticity against someone who can rewrite the whole folder.
 
-PR validation uses only secret-free legacy checks. Authenticated current checks
-use `LOCALSTACK_CI_AUTH_TOKEN` in trusted CI, never a personal-token fallback or an
-unreviewed PR checkout. A canonical master push or a manual run approving the
-exact selected SHA can run the trusted pair. Feature-package publication now
-requires that explicit trusted manual path and its publication flag; all package
-publication depends on the passing pair. The secret and hosted workflow behavior
-still need owner-approved repository configuration and an actual authorized run.
+Report publication fails closed when an activation token is present. Every report
+is masked, then checked for the raw, HTML-encoded and URI-escaped token in its
+relative path, its text, its JSON keys and the decoded TUnit HTML payload, before
+anything is copied. An unsupported file type, a malformed known format or an
+unknown HTML payload layout fails the run. Masked reports still reach the output
+when a later validation step fails. A run without a token copies its reports
+unchanged. The child writes the GitHub step summary to private scratch; the runner
+masks and checks it on every exit path before appending it to the real summary.
+
+PR validation uses only secret-free legacy checks. The trusted pair runs in the
+reusable workflow `.github/workflows/runtime-pair.yml`, in the `localstack-current`
+GitHub environment, which holds `LOCALSTACK_CI_AUTH_TOKEN` as an environment secret
+and requires a reviewer's approval. It never uses a personal-token fallback or an
+unreviewed PR checkout. It runs on canonical master pushes and on a manual CI run
+that names the exact selected SHA. Every publication path needs the passing pair
+for the same SHA, plus a `verify-consumer` pass on the packed archive:
+- the CI workflow's continuous deployment;
+- the manual `publish-nuget.yml` workflow, whose trust approval is the environment's
+  reviewer approval.
+A feature-package publication additionally needs the manual run's publication flag.
+The environment, its secret and its protection rules are repository settings the
+owner maintains.
 
 The independent SDK8/C#12 packed-consumer check is:
 
@@ -374,7 +398,8 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 {
     container.ContainerRegistry = "artifactory.company.com";  // Where to pull from
     container.ContainerImage = "docker-mirrors/localstack/localstack";  // Image path
-    container.ContainerImageTag = "4.12.0";  // Pin to a specific LocalStack version
+    container.ContainerImageTag = "2026.10.6";  // Pin to a specific LocalStack version
+    container.WithAuthToken(activation);  // A mirror is a custom identity; the image still needs its token
 });
 ```
 
@@ -382,7 +407,9 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 - `ContainerRegistry`: `docker.io` (Docker Hub)
 - `ContainerImage`: `localstack/localstack`
-- `ContainerImageTag`: `4.12.0` - a fixed pin, not a floating "current" tag. The pin is deliberate: `4.12.0` is verified to run without an auth token; whether a newer token-free image exists remains unverified. Upstream left semver after `4.14.0` and now publishes calendar versions, so newer tags look like `2026.10.0`.
+- `ContainerImageTag`: `2026.10.6`, the qualified current image: a fixed pin, not a floating `latest`. It requires a LocalStack activation token (see [Runtime Selection and Container Activation](#runtime-selection-and-container-activation)). `WithLegacy()` selects the token-free `4.14.0`, the last release before LocalStack moved from semver to calendar versions.
+
+An image whose registry, path or tag differs from the qualified current image is a custom identity. The package does not check activation for custom images, but a current LocalStack image still needs `LOCALSTACK_AUTH_TOKEN`. Pass it with `WithAuthToken`.
 
 ### Common Scenarios
 
@@ -391,8 +418,8 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 ```csharp
 container.ContainerRegistry = "artifactory.company.com";
 container.ContainerImage = "docker-local/localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: artifactory.company.com/docker-local/localstack/localstack:4.12.0
+container.ContainerImageTag = "2026.10.6";
+// Pulls: artifactory.company.com/docker-local/localstack/localstack:2026.10.6
 ```
 
 #### Azure Container Registry (ACR)
@@ -400,8 +427,8 @@ container.ContainerImageTag = "4.12.0";
 ```csharp
 container.ContainerRegistry = "mycompany.azurecr.io";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: mycompany.azurecr.io/localstack/localstack:4.12.0
+container.ContainerImageTag = "2026.10.6";
+// Pulls: mycompany.azurecr.io/localstack/localstack:2026.10.6
 ```
 
 #### AWS Elastic Container Registry (ECR)
@@ -409,8 +436,8 @@ container.ContainerImageTag = "4.12.0";
 ```csharp
 container.ContainerRegistry = "123456789012.dkr.ecr.us-west-2.amazonaws.com";
 container.ContainerImage = "localstack/localstack";
-container.ContainerImageTag = "4.12.0";
-// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:4.12.0
+container.ContainerImageTag = "2026.10.6";
+// Pulls: 123456789012.dkr.ecr.us-west-2.amazonaws.com/localstack/localstack:2026.10.6
 ```
 
 #### GitHub Container Registry (GHCR)
@@ -427,10 +454,11 @@ container.ContainerImageTag = "custom-build-123";
 ```csharp
 // Only override the tag to use a different LocalStack version
 container.ContainerImageTag = "2026.10.0";
+container.WithAuthToken(activation);
 // Pulls: docker.io/localstack/localstack:2026.10.0
 ```
 
-Newer LocalStack images may require `LOCALSTACK_AUTH_TOKEN`. If you override the pinned default image tag, check the LocalStack image's requirements and pass the token through `AdditionalEnvironmentVariables` when needed.
+Any tag other than the qualified current one is a custom identity. The package does not check activation for it, so check the image's own requirements. Every LocalStack image from `2026.03.0` on, `latest` included, requires `LOCALSTACK_AUTH_TOKEN`; pass it with `WithAuthToken`.
 
 ### Authentication
 
@@ -462,9 +490,11 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 {
     container.ContainerRegistry = "docker.io";
     container.ContainerImage = "localstack/localstack";
-    container.ContainerImageTag = "4.12.0"; // Pin to a specific LocalStack version
+    container.ContainerImageTag = "2026.10.6"; // The qualified current image, spelled out
 });
 ```
+
+An explicit override that exactly matches the qualified current image keeps the current image's activation requirement, so both forms need the token.
 
 ## Logging and Debugging
 
@@ -590,7 +620,8 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
     // Pull from private Artifactory
     container.ContainerRegistry = "artifactory.company.com";
     container.ContainerImage = "docker-local/localstack/localstack";
-    container.ContainerImageTag = "4.12.0";
+    container.ContainerImageTag = "2026.10.6";
+    container.WithAuthToken(activation);
 
     container.Lifetime = ContainerLifetime.Persistent;
     container.LogLevel = LocalStackLogLevel.Warn;

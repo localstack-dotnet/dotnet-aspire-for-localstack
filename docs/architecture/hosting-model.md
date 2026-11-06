@@ -31,6 +31,12 @@ the accumulated binding metadata, never a preset-intent flag or a secret value.
 Only a qualified current identity requires a binding. The guard does not await
 parameters, stringify them, probe licensing or move the connection event/SDK hooks.
 
+On a real start (Aspire 13.6.4), the guard's `DistributedApplicationException`
+surfaces during DCP resource creation. `StartAsync` itself returns. The LocalStack
+resource reaches `FailedToStart` before any container is created, and its resource
+log carries the error, which names the resource and `LOCALSTACK_AUTH_TOKEN`.
+`ActivationGuardStartupTests` pins this behaviour.
+
 Core's cached dependency-discovery path can reuse earlier callback snapshots
 without repopulating a newly appended callback's context dictionary. To avoid a
 false missing binding, finalization gives only this container's existing

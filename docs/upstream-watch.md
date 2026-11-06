@@ -37,12 +37,12 @@ When writing such a probe: set `RegionEndpoint` **after** `ServiceURL` and the l
 
 | Tool version | Bundled `AWSSDK.Core` | Carries |
 | --- | --- | --- |
-| 0.14.1 — what `Aspire.Hosting.AWS` 13.7.2 installs | 4.0.6.1 | both bugs |
+| 0.14.1 — what `Aspire.Hosting.AWS` 13.7.2 and 13.7.3 install | 4.0.6.1 | both bugs |
 | 0.16.1 — newest published, 2026-09-23 | 4.0.7.3 | both bugs |
 
 Both sit below 4.0.7.5, so the `ServiceURL`-read bug is present as well as the signing bug. Upgrading the tool by hand therefore does not help today.
 
-`Aspire.Hosting.AWS` does not track the newest tool. `Constants.DefaultLambdaTestToolVersion` is `"0.14.1"`, and `LambdaBeforeStartEventHandler` treats it as a floor: on a machine with nothing installed it runs `dotnet tool install -g Amazon.Lambda.TestTool --version 0.14.1`, and on a machine that already has something newer it leaves it alone. Verified in the shipped assembly rather than the default branch — the UTF-16 string heap of `Aspire.Hosting.AWS.dll` 13.7.2 holds `0.14.1` next to `tool install -g Amazon.Lambda.TestTool --version`. The lever for overriding it is `OverrideMinimumInstallVersion` on the Lambda emulator annotation, which is what lets a consumer adopt a fixed tool without waiting for Aspire to raise the constant.
+`Aspire.Hosting.AWS` does not track the newest tool. `Constants.DefaultLambdaTestToolVersion` is `"0.14.1"`, and `LambdaBeforeStartEventHandler` treats it as a floor: on a machine with nothing installed it runs `dotnet tool install -g Amazon.Lambda.TestTool --version 0.14.1`, and on a machine that already has something newer it leaves it alone. Verified in the shipped assembly rather than the default branch — the UTF-16 string heap of `Aspire.Hosting.AWS.dll` 13.7.2 holds `0.14.1` next to `tool install -g Amazon.Lambda.TestTool --version`. 13.7.3 (`release_2026-10-28`, `cd2d84cc`) changes no file under `src/` except the version line, so the floor is unchanged. The lever for overriding it is `OverrideMinimumInstallVersion` on the Lambda emulator annotation, which is what lets a consumer adopt a fixed tool without waiting for Aspire to raise the constant.
 
 When checking for a fixed tool, `Amazon.Lambda.TestTool 1.0.0` on NuGet is a decoy: it sorts highest but is **unlisted** and is the legacy netcoreapp2.1 library package that depends on `AWSSDK.Core 3.3.104.25`, not the tool at all. The tool line is the `0.x` one.
 
@@ -77,7 +77,7 @@ disk; this establishes the mechanism, not the unrecorded native error of every
 earlier timeout.
 
 **Owner and root cause.** In `Aspire.Hosting.AWS` 13.7.2, verified at
-`653c103df4e342a927f7ac0fd533b350ef772c34`,
+`653c103df4e342a927f7ac0fd533b350ef772c34` and unchanged in 13.7.3,
 `ProjectUtilities.CreateExecutableWrapperProject` creates a GUID directory under
 `Path.GetTempPath()` and writes the wrapper project. `LambdaBeforeStartEventHandler`
 assigns that path to the Lambda project metadata and builds Debug and Release
@@ -90,7 +90,7 @@ create a private temporary directory and set `TMPDIR`, `TMP` and `TEMP` before
 fixtures initialize. The session-end hook restores the environment and removes
 that directory after shared AppHosts have been disposed. The directory is outside
 the checkout, so generated wrappers do not inherit repository MSBuild policy.
-Aspire.Hosting.Testing 13.6.1 already defaults resource-cleanup waiting to true;
+Aspire.Hosting.Testing 13.6.1 already defaults resource-cleanup waiting to true (13.6.4 changes only DCP and CLI code);
 the fixtures dispose the testing builder that owns the AppHost.
 
 The C# runtime command uses standard `dotnet test` and private build processes,
@@ -132,9 +132,11 @@ current `2026.10.0` was exercised with the supplied valid entitlement. The
 unreleased integration now has an explicit legacy preset and deferred secret
 activation inputs. [Configuration](CONFIGURATION.md#runtime-selection-and-container-activation)
 owns their precedence and migration guidance. This closes the candidate-selection
-question, not vendor account/license management or the release gate. The newest
-full current run has an unexplained intermittent Lambda redirect timeout; a
-passing diagnostic replay is not a fix. That package/test acceptance blocker stays
+question, not vendor account/license management or the release gate. An October
+full current run had an unexplained intermittent Lambda redirect timeout; a
+passing diagnostic replay is not a fix. On 2026-11-06, clean-source pairs passed
+twice: `2026.10.0`/`4.14.0` at 30/30 each, then `2026.10.6`/`4.14.0` at 32/32 each,
+both accepted by `validate-runtime`. The earlier timeout's cause remains unknown. That package/test acceptance blocker stays
 in the [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md), not labelled an upstream defect without evidence.
 
 ## Closed: Aspire annotation-collection race on Linux CI
