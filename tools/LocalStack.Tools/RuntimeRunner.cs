@@ -1,13 +1,26 @@
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 
 namespace LocalStack.Tools;
 
 internal static class RuntimeRunner
 {
-    internal static async Task<int> RunAsync(string root, string runtime, string outputPath, CancellationToken cancellationToken)
+    internal static Task<int> RunAsync(string root, string runtime, string outputPath, CancellationToken cancellationToken)
     {
         var secret = GetActivationToken(runtime);
+        return RunAsync(root, runtime, outputPath, secret,
+            Environment.GetEnvironmentVariable("GITHUB_STEP_SUMMARY"),
+            (info, token) => ProcessRunner.RunAsync(info, secret,
+                Path.Combine(info.Environment["LOCALSTACK_TEST_RESULTS_DIRECTORY"]!, "test.log"), echo: true, token),
+            args => ToolApp.GitAsync(root, args), cancellationToken);
+    }
+
+    internal static async Task<int> RunAsync(string root, string runtime, string outputPath,
+        string? secret, string? summaryDestination,
+        Func<ProcessStartInfo, CancellationToken, Task<(int ExitCode, string Output)>> execute,
+        Func<string[], Task<string>> git, CancellationToken cancellationToken)
+    {
         var output = ToolApp.NewOutput(outputPath);
         var manifest = await RuntimeEvidence.ReadAsync(Path.Combine(root, ".github/scripts/common_runtime_tests.json")).ConfigureAwait(false);
         var images = await RuntimeEvidence.ReadAsync(Path.Combine(root, "tests/Aspire.Hosting.LocalStack.Integration.Tests/TestInfrastructure/runtime-images.json")).ConfigureAwait(false);
@@ -18,64 +31,141 @@ internal static class RuntimeRunner
         Directory.CreateDirectory(temp);
         var credentials = Path.Combine(scratch.FullName, "empty-aws");
         await File.WriteAllTextAsync(credentials, string.Empty, cancellationToken).ConfigureAwait(false);
-        var revision = await ToolApp.GitAsync(root, "rev-parse", "HEAD").ConfigureAwait(false);
-        var clean = string.IsNullOrEmpty(await ToolApp.GitAsync(root, "status", "--porcelain", "--untracked-files=all").ConfigureAwait(false));
+        var revision = await git(["rev-parse", "HEAD"]).ConfigureAwait(false);
+        var clean = string.IsNullOrEmpty(await git(["status", "--porcelain", "--untracked-files=all"]).ConfigureAwait(false));
+        var executionId = Guid.NewGuid().ToString();
+        var summary = Path.Combine(scratch.FullName, "summary.md");
         var record = new JsonObject
         {
-            ["schema_version"] = 1,
+            ["schema_version"] = 2,
             ["runtime_id"] = runtime,
             ["revision"] = revision,
             ["source_clean"] = clean,
             ["configuration"] = "Release/net10.0",
             ["status"] = "incomplete",
+            ["execution_id"] = executionId,
+            ["artifact_sha256"] = new JsonObject(),
         };
         await WriteRecordAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Runtime {runtime} started PID={Environment.ProcessId}").ConfigureAwait(false);
         var info = CreateCommand(root, runtime, reports, temp, credentials, secret, manifest["scenarios"]!.AsArray().Count);
+        info.Environment["GITHUB_STEP_SUMMARY"] = summary;
+        info.Environment["LOCALSTACK_TEST_EXECUTION_ID"] = executionId;
         var completed = false;
+        var failed = false;
+        string? summaryFailure;
+        var exitCode = -1;
         try
         {
-            var result = await ProcessRunner.RunAsync(info, secret, Path.Combine(reports, "test.log"), echo: true, cancellationToken).ConfigureAwait(false);
-            await ReportRedaction.RedactDirectoryAsync(reports, secret).ConfigureAwait(false);
-            await ReportRedaction.RedactSummaryAsync(secret).ConfigureAwait(false);
-
-            ProcessRunner.CopyDirectory(reports, output);
-            completed = !Directory.EnumerateDirectories(temp, "localstack-tests-*").Any();
-            if (!completed)
-            {
-                throw new IOException($"Session cleanup did not finish; owned scratch retained: {scratch.FullName}");
-            }
-
-            if (result.ExitCode == 0)
-            {
-                await RuntimeEvidence.ValidateResultsAsync(output, runtime, manifest, images).ConfigureAwait(false);
-            }
-
-            record["source_clean"] = clean && string.IsNullOrEmpty(await ToolApp.GitAsync(root, "status", "--porcelain", "--untracked-files=all").ConfigureAwait(false))
-                && revision == await ToolApp.GitAsync(root, "rev-parse", "HEAD").ConfigureAwait(false);
-            record["status"] = result.ExitCode == 0 ? "passed" : "failed";
-            return result.ExitCode;
+            exitCode = (await execute(info, cancellationToken).ConfigureAwait(false)).ExitCode;
+            await ProcessReportsAsync(reports, output, temp, secret, runtime, manifest, images, record, git, clean, revision, exitCode).ConfigureAwait(false);
+            completed = true;
+        }
+        catch (Exception)
+        {
+            failed = true;
+            record["status"] = "failed";
+            throw;
         }
         finally
         {
-            if (completed)
+            summaryFailure = await ReportRedaction.RedactSummaryAsync(summary, summaryDestination, secret).ConfigureAwait(false);
+            completed &= summaryFailure is null;
+            if (summaryFailure is not null)
             {
-                scratch.Delete(recursive: true);
-            }
-            else
-            {
-                await Console.Error.WriteLineAsync($"Incomplete check scratch retained: {scratch.FullName}").ConfigureAwait(false);
+                record["status"] = "failed";
+                await Console.Error.WriteLineAsync(summaryFailure).ConfigureAwait(false);
             }
 
+            await FinalizeAsync(output, scratch, record, completed, failed, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (summaryFailure is not null)
+        {
+            throw new InvalidDataException(summaryFailure);
+        }
+
+        return exitCode;
+
+        Task WriteRecordAsync() => File.WriteAllTextAsync(Path.Combine(output, "profile-run.json"), record.ToJsonString(), CancellationToken.None);
+    }
+
+    private static async Task ProcessReportsAsync(string reports, string output, string temp, string? secret,
+        string runtime, JsonNode manifest, JsonNode images, JsonObject record, Func<string[], Task<string>> git,
+        bool clean, string revision, int exitCode)
+    {
+        await ReportRedaction.RedactDirectoryAsync(reports, secret).ConfigureAwait(false);
+        var hashes = record["artifact_sha256"]!.AsObject();
+        foreach (var path in Directory.EnumerateFiles(reports, "*-image-*.json", SearchOption.AllDirectories)
+                     .Concat(Directory.EnumerateFiles(reports, "runtime.trx", SearchOption.TopDirectoryOnly)))
+        {
+            hashes[Path.GetRelativePath(reports, path).Replace('\\', '/')] = Convert.ToHexString(
+                SHA256.HashData(await File.ReadAllBytesAsync(path, CancellationToken.None).ConfigureAwait(false)));
+        }
+
+        ProcessRunner.CopyDirectory(reports, output);
+        if (Directory.EnumerateDirectories(temp, "localstack-tests-*").Any())
+        {
+            throw new IOException($"Session cleanup did not finish; owned scratch retained: {Path.GetDirectoryName(temp)}");
+        }
+
+        if (exitCode == 0)
+        {
+            await RuntimeEvidence.ValidateResultsAsync(reports, runtime, manifest, images, record).ConfigureAwait(false);
+        }
+
+        record["source_clean"] = clean && string.IsNullOrEmpty(await git(["status", "--porcelain", "--untracked-files=all"]).ConfigureAwait(false))
+            && revision == await git(["rev-parse", "HEAD"]).ConfigureAwait(false);
+        record["status"] = exitCode == 0 ? "passed" : "failed";
+    }
+
+    private static async Task FinalizeAsync(string output, DirectoryInfo scratch, JsonObject record,
+        bool completed, bool failed, CancellationToken cancellationToken)
+    {
+        Exception? cleanupFailure = null;
+        try
+        {
             if (cancellationToken.IsCancellationRequested)
             {
                 record["status"] = "cancelled";
             }
 
-            await WriteRecordAsync().ConfigureAwait(false);
+            if (completed)
+            {
+                try
+                {
+                    scratch.Delete(recursive: true);
+                }
+                catch (IOException)
+                {
+                    record["status"] = "failed";
+                    cleanupFailure = new IOException("Runtime scratch cleanup failed.");
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    record["status"] = "failed";
+                    cleanupFailure = new IOException("Runtime scratch cleanup failed.");
+                }
+            }
+
+            await File.WriteAllTextAsync(Path.Combine(output, "profile-run.json"), record.ToJsonString(), CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (Exception) when (failed)
+        {
+            await Console.Error.WriteLineAsync("Runtime execution record finalization failed.").ConfigureAwait(false);
+        }
+        finally
+        {
+            if (!completed || cleanupFailure is not null)
+            {
+                await Console.Error.WriteLineAsync($"Incomplete check scratch retained: {scratch.FullName}").ConfigureAwait(false);
+            }
         }
 
-        Task WriteRecordAsync() => File.WriteAllTextAsync(Path.Combine(output, "profile-run.json"), record.ToJsonString(), CancellationToken.None);
+        if (cleanupFailure is not null)
+        {
+            throw cleanupFailure;
+        }
     }
 
     private static string? GetActivationToken(string runtime)

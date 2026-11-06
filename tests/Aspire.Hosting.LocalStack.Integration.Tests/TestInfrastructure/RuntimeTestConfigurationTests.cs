@@ -106,4 +106,40 @@ public class RuntimeTestConfigurationTests
         await Assert.That(second).IsSameReferenceAs(first);
         await Assert.That(Path.IsPathFullyQualified(first.OutputDirectory)).IsTrue();
     }
+
+    [Test]
+    public async Task Receipts_Carry_The_Supplied_Execution_Id()
+    {
+        var directory = Directory.CreateTempSubdirectory("bound-receipts-");
+        try
+        {
+            var configuration = await RuntimeTestConfiguration.ReadAsync("legacy",
+                Path.Combine(AppContext.BaseDirectory, "runtime-images.json"), directory.FullName, executionId: "supplied-execution");
+            var builder = DistributedApplication.CreateBuilder([]);
+            var localStack = builder.AddLocalStack("localstack", awsConfig: null,
+                hosting => hosting.WithEnabled(true), container => configuration.ConfigureContainer(container));
+            var first = await configuration.WriteImageReceiptAsync(localStack!.Resource, "pure-model", directory.FullName);
+            var second = await configuration.WriteImageReceiptAsync(localStack.Resource, "pure-model", directory.FullName);
+            await Assert.That(first).IsNotEqualTo(second);
+            foreach (var path in new[] { first, second })
+            {
+                using var document = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+                var receipt = document.RootElement;
+                await Assert.That(receipt.GetProperty("schema_version").GetInt32()).IsEqualTo(2);
+                await Assert.That(receipt.GetProperty("execution_id").GetString()).IsEqualTo("supplied-execution");
+                await Assert.That(receipt.GetProperty("runtime_id").GetString()).IsEqualTo("legacy");
+                await Assert.That(receipt.GetProperty("scenario_group").GetString()).IsEqualTo("pure-model");
+                var image = receipt.GetProperty("image");
+                await Assert.That(image.GetProperty("registry").GetString()).IsEqualTo(configuration.ExpectedImage.Registry);
+                await Assert.That(image.GetProperty("image").GetString()).IsEqualTo(configuration.ExpectedImage.Image);
+                await Assert.That(image.GetProperty("tag").GetString()).IsEqualTo(configuration.ExpectedImage.Tag);
+                await Assert.That(image.GetProperty("digest").GetString()).IsEqualTo(configuration.ExpectedImage.Digest);
+            }
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
 }

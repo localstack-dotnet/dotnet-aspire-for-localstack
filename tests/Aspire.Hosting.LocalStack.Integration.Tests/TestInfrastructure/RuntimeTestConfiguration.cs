@@ -13,13 +13,15 @@ internal sealed class RuntimeTestConfiguration
     private static readonly Task<RuntimeTestConfiguration> ProcessConfiguration = ReadAsync(
         Environment.GetEnvironmentVariable("LOCALSTACK_TEST_RUNTIME"),
         Path.Combine(AppContext.BaseDirectory, "runtime-images.json"),
-        Environment.GetEnvironmentVariable("LOCALSTACK_TEST_RESULTS_DIRECTORY"));
+        Environment.GetEnvironmentVariable("LOCALSTACK_TEST_RESULTS_DIRECTORY"),
+        executionId: Environment.GetEnvironmentVariable("LOCALSTACK_TEST_EXECUTION_ID"));
 
-    private RuntimeTestConfiguration(RuntimeTestProfile profile, RuntimeTestImage expectedImage, string outputDirectory)
+    private RuntimeTestConfiguration(RuntimeTestProfile profile, RuntimeTestImage expectedImage, string outputDirectory, string? executionId)
     {
         Profile = profile;
         ExpectedImage = expectedImage;
         OutputDirectory = outputDirectory;
+        ExecutionId = executionId;
     }
 
     internal RuntimeTestProfile Profile { get; }
@@ -27,6 +29,8 @@ internal sealed class RuntimeTestConfiguration
     internal RuntimeTestImage ExpectedImage { get; }
 
     internal string OutputDirectory { get; }
+
+    internal string? ExecutionId { get; }
 
     internal static Task<RuntimeTestConfiguration> ForCurrentProcessAsync(CancellationToken cancellationToken = default)
         => ProcessConfiguration.WaitAsync(cancellationToken);
@@ -72,8 +76,9 @@ internal sealed class RuntimeTestConfiguration
         var path = Path.Combine(outputDirectory, $"{id}-image-{Guid.NewGuid():N}.json");
         var receipt = JsonSerializer.Serialize(new
         {
-            schema_version = 1,
+            schema_version = 2,
             runtime_id = id,
+            execution_id = ExecutionId,
             scenario_group = scenarioGroup,
             image = new { registry = image.Registry, image = image.Image, tag = image.Tag, digest = image.Digest },
         });
@@ -83,7 +88,7 @@ internal sealed class RuntimeTestConfiguration
 
     internal static async Task<RuntimeTestConfiguration> ReadAsync(
         string? selector, string qualificationFile, string? resultsDirectory = null,
-        CancellationToken cancellationToken = default)
+        string? executionId = null, CancellationToken cancellationToken = default)
     {
         var profile = selector switch
         {
@@ -110,7 +115,7 @@ internal sealed class RuntimeTestConfiguration
         }
 
         var output = resultsDirectory ?? Path.Combine(AppContext.BaseDirectory, "runtime-results", id);
-        return new RuntimeTestConfiguration(profile, image, Path.GetFullPath(output));
+        return new RuntimeTestConfiguration(profile, image, Path.GetFullPath(output), executionId);
     }
 
     private static string RequiredString(JsonElement row, string field)

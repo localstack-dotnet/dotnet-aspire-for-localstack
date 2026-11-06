@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace LocalStack.Tools;
@@ -38,40 +39,101 @@ internal static class ProcessRunner
     {
         cancellationToken.ThrowIfCancellationRequested();
         using var process = new Process { StartInfo = info };
-        await using var file = logPath is null ? null : new StreamWriter(logPath);
-        var log = file is null ? TextWriter.Null : TextWriter.Synchronized(file);
-        var stdout = new StringBuilder();
-        var stderr = new StringBuilder();
-        process.Start();
-        var output = PumpAsync(process.StandardOutput, stdout);
-        var error = PumpAsync(process.StandardError, stderr);
+        ExceptionDispatchInfo? failure = null;
+        (int ExitCode, string Output) result = default;
         try
         {
-            await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+            await using var writer = logPath is null ? TextWriter.Null : new StreamWriter(logPath);
+            try
+            {
+                result = await RunAsync(() => process.Start(), process.WaitForExitAsync,
+                    () => process.Kill(entireProcessTree: true), () => process.HasExited, () => process.ExitCode,
+                    () => process.StandardOutput.ReadLineAsync(CancellationToken.None).AsTask(),
+                    () => process.StandardError.ReadLineAsync(CancellationToken.None).AsTask(),
+                    writer, secret, echo, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                failure = ExceptionDispatchInfo.Capture(exception);
+            }
         }
-        catch (OperationCanceledException)
+        catch (IOException exception) when (failure is not null)
         {
-            process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
-            await Task.WhenAll(output, error).ConfigureAwait(false);
+            await Console.Error.WriteLineAsync($"Secondary {exception.GetType().Name}: {ReportRedaction.Mask(exception.Message, secret)}").ConfigureAwait(false);
+        }
+
+        failure?.Throw();
+        return result;
+    }
+
+    internal static async Task<(int ExitCode, string Output)> RunAsync(
+        Action start, Func<CancellationToken, Task> wait, Action kill, Func<bool> hasExited, Func<int> exitCode,
+        Func<Task<string?>> readOutput, Func<Task<string?>> readError, TextWriter writer,
+        string? secret, bool echo, CancellationToken cancellationToken)
+    {
+        var log = TextWriter.Synchronized(writer);
+        var stdout = new StringBuilder();
+        var stderr = new StringBuilder();
+        var output = Task.CompletedTask;
+        var error = Task.CompletedTask;
+        var exited = Task.CompletedTask;
+        (int ExitCode, string Output) result;
+        try
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            start();
+            output = PumpAsync(readOutput, stdout, log, secret, echo);
+            error = PumpAsync(readError, stderr, log, secret, echo);
+            exited = wait(cancellationToken);
+            var pending = new List<Task> { output, error, exited };
+            while (pending.Count > 0)
+            {
+                var finished = await Task.WhenAny(pending).ConfigureAwait(false);
+                pending.Remove(finished);
+                await finished.ConfigureAwait(false);
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+            result = (exitCode(), stdout.ToString() + stderr);
+        }
+        catch (Exception)
+        {
+            await CleanupAsync(wait, kill, hasExited, secret).ConfigureAwait(false);
+            await Task.WhenAll(output, error, exited).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+
             throw;
         }
 
-        await Task.WhenAll(output, error).ConfigureAwait(false);
-        cancellationToken.ThrowIfCancellationRequested();
-        return (process.ExitCode, stdout.ToString() + stderr);
+        return result;
+    }
 
-        async Task PumpAsync(StreamReader reader, StringBuilder captured)
+    private static async Task CleanupAsync(Func<CancellationToken, Task> wait, Action kill, Func<bool> hasExited, string? secret)
+    {
+        try
         {
-            while (await reader.ReadLineAsync(CancellationToken.None).ConfigureAwait(false) is { } line)
+            if (!hasExited())
             {
-                var safe = ReportRedaction.Mask(line, secret);
-                captured.AppendLine(safe);
-                await log.WriteLineAsync(safe).ConfigureAwait(false);
-                if (echo)
-                {
-                    await Console.Out.WriteLineAsync(safe).ConfigureAwait(false);
-                }
+                kill();
+            }
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or System.ComponentModel.Win32Exception or NotSupportedException)
+        {
+            await Console.Error.WriteLineAsync($"Secondary {exception.GetType().Name}: {ReportRedaction.Mask(exception.Message, secret)}").ConfigureAwait(false);
+        }
+
+        await wait(CancellationToken.None).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+    }
+
+    private static async Task PumpAsync(Func<Task<string?>> read, StringBuilder captured, TextWriter log, string? secret, bool echo)
+    {
+        while (await read().ConfigureAwait(false) is { } line)
+        {
+            var safe = ReportRedaction.Mask(line, secret);
+            captured.AppendLine(safe);
+            await log.WriteLineAsync(safe).ConfigureAwait(false);
+            if (echo)
+            {
+                await Console.Out.WriteLineAsync(safe).ConfigureAwait(false);
             }
         }
     }

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.Json.Nodes;
 using System.Xml.Linq;
 
@@ -8,8 +9,8 @@ internal static class RuntimeEvidence
 {
     private static readonly string[] CounterNames = ["total", "executed", "passed"];
     private static readonly string[] ImageFields = ["registry", "image", "tag", "digest"];
-    private static readonly string[] RunFields = ["schema_version", "runtime_id", "revision", "source_clean", "configuration", "status"];
-    private static readonly string[] ReceiptFields = ["schema_version", "runtime_id", "scenario_group", "image"];
+    private static readonly string[] RunFields = ["schema_version", "runtime_id", "revision", "source_clean", "configuration", "status", "execution_id", "artifact_sha256"];
+    private static readonly string[] ReceiptFields = ["schema_version", "runtime_id", "scenario_group", "image", "execution_id"];
 
     internal static async Task<HashSet<(string Class, string Method, string? Case)>> ValidateAsync(
         string directory, string runtime, string revision, JsonNode manifest, JsonNode images, bool requireClean = true)
@@ -21,7 +22,7 @@ internal static class RuntimeEvidence
 
         var run = await ReadAsync(Path.Combine(directory, "profile-run.json")).ConfigureAwait(false);
         RequireFields(run, RunFields);
-        if (run["schema_version"]?.GetValue<int>() != 1 || run["runtime_id"]?.GetValue<string>() != runtime
+        if (run["schema_version"]?.GetValue<int>() != 2 || run["runtime_id"]?.GetValue<string>() != runtime
             || run["revision"]?.GetValue<string>() != revision || run["status"]?.GetValue<string>() != "passed"
             || run["configuration"]?.GetValue<string>() != "Release/net10.0"
             || (requireClean && run["source_clean"]?.GetValue<bool>() != true))
@@ -29,12 +30,20 @@ internal static class RuntimeEvidence
             throw new InvalidDataException("A passing, matching runtime execution record is required; release evidence must be clean.");
         }
 
-        return await ValidateResultsAsync(directory, runtime, manifest, images).ConfigureAwait(false);
+        return await ValidateResultsAsync(directory, runtime, manifest, images, run).ConfigureAwait(false);
     }
 
     internal static async Task<HashSet<(string Class, string Method, string? Case)>> ValidateResultsAsync(
-        string directory, string runtime, JsonNode manifest, JsonNode images)
+        string directory, string runtime, JsonNode manifest, JsonNode images, JsonNode run)
     {
+        var executionId = Text(run, "execution_id");
+        if (string.IsNullOrWhiteSpace(executionId))
+        {
+            throw new InvalidDataException("A nonblank runtime execution id is required.");
+        }
+
+        await ValidateHashesAsync(directory, run).ConfigureAwait(false);
+
         if (manifest["schema_version"]?.GetValue<int>() != 1 || images["schema_version"]?.GetValue<int>() != 1)
         {
             throw new InvalidDataException("Unsupported runtime evidence schema.");
@@ -54,8 +63,31 @@ internal static class RuntimeEvidence
             throw new InvalidDataException("Required common scenarios are missing from the native test report.");
         }
 
-        await ValidateImagesAsync(directory, runtime, manifest, images).ConfigureAwait(false);
+        await ValidateImagesAsync(directory, runtime, manifest, images, executionId).ConfigureAwait(false);
         return observed;
+    }
+
+    private static async Task ValidateHashesAsync(string directory, JsonNode run)
+    {
+        RequireRegularFile(Path.Combine(directory, "runtime.trx"));
+        var artifacts = Directory.EnumerateFiles(directory, "*-image-*.json", SearchOption.AllDirectories)
+            .Append(Path.Combine(directory, "runtime.trx")).ToArray();
+        if (run["artifact_sha256"] is not JsonObject hashes || hashes.Count != artifacts.Length
+            || artifacts.Any(path => !hashes.ContainsKey(Path.GetRelativePath(directory, path).Replace('\\', '/'))))
+        {
+            throw new InvalidDataException("Runtime artifact hash inventory does not match the report and receipts.");
+        }
+
+        foreach (var path in artifacts)
+        {
+            RequireRegularFile(path);
+            var relative = Path.GetRelativePath(directory, path).Replace('\\', '/');
+            var digest = Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(path).ConfigureAwait(false)));
+            if (hashes[relative]?.GetValue<string>() != digest)
+            {
+                throw new InvalidDataException($"Runtime artifact hash mismatch: {relative}");
+            }
+        }
     }
 
     internal static async Task<int> ValidatePairAsync(string current, string legacy, string revision, JsonNode manifest, JsonNode images)
@@ -116,16 +148,26 @@ internal static class RuntimeEvidence
         return observed;
     }
 
-    private static async Task ValidateImagesAsync(string directory, string runtime, JsonNode manifest, JsonNode images)
+    private static async Task ValidateImagesAsync(string directory, string runtime, JsonNode manifest, JsonNode images, string executionId)
     {
         var expected = images["images"]?[runtime] ?? throw new InvalidDataException("The qualified runtime image is missing.");
         var groups = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var path in Directory.EnumerateFiles(directory, runtime + "-image-*.json"))
+        foreach (var path in Directory.EnumerateFiles(directory, "*-image-*.json", SearchOption.AllDirectories))
         {
             var receipt = await ReadAsync(path).ConfigureAwait(false);
+            if (receipt["execution_id"] is null)
+            {
+                throw new InvalidDataException($"Runtime receipt execution id is missing: {Path.GetRelativePath(directory, path)}");
+            }
+
             RequireFields(receipt, ReceiptFields);
             RequireFields(receipt["image"], ImageFields);
-            if (receipt["schema_version"]?.GetValue<int>() != 1 || Text(receipt, "runtime_id") != runtime
+            if (Text(receipt, "execution_id") != executionId)
+            {
+                throw new InvalidDataException($"Runtime receipt execution id mismatch: {Path.GetRelativePath(directory, path)}");
+            }
+
+            if (receipt["schema_version"]?.GetValue<int>() != 2 || Text(receipt, "runtime_id") != runtime
                 || !groups.Add(Text(receipt, "scenario_group"))
                 || ImageFields.Any(key => !JsonNode.DeepEquals(receipt["image"]?[key], expected[key])))
             {
