@@ -434,7 +434,7 @@ public class AddLocalStackTests
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
         await Assert.That(imageAnnotation.Registry).IsEqualTo("docker.io");
         await Assert.That(imageAnnotation.Image).IsEqualTo("localstack/localstack");
-        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.0");
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.6");
     }
 
     [Test]
@@ -456,7 +456,7 @@ public class AddLocalStackTests
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
         await Assert.That(imageAnnotation.Registry).IsEqualTo(customRegistry);
         await Assert.That(imageAnnotation.Image).IsEqualTo("localstack/localstack"); // Default image
-        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.0"); // Default tag
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.6"); // Default tag
     }
 
     [Test]
@@ -478,7 +478,7 @@ public class AddLocalStackTests
         var imageAnnotation = resource.Annotations.OfType<ContainerImageAnnotation>().Single();
         await Assert.That(imageAnnotation.Registry).IsEqualTo("docker.io"); // Default registry
         await Assert.That(imageAnnotation.Image).IsEqualTo(customImage);
-        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.0"); // Default tag
+        await Assert.That(imageAnnotation.Tag).IsEqualTo("2026.10.6"); // Default tag
     }
 
     [Test]

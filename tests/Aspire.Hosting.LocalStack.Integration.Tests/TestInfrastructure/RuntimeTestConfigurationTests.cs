@@ -10,7 +10,7 @@ public class RuntimeTestConfigurationTests
         var configuration = await RuntimeTestConfiguration.ReadAsync(null, path);
 
         await Assert.That(configuration.Profile).IsEqualTo(RuntimeTestProfile.Current);
-        await Assert.That(configuration.ExpectedImage.Tag).IsEqualTo("2026.10.0");
+        await Assert.That(configuration.ExpectedImage.Tag).IsEqualTo("2026.10.6");
         foreach (var invalid in new[] { "", " ", "CURRENT", "unknown" })
         {
             await Assert.That(async () => await RuntimeTestConfiguration.ReadAsync(invalid, path)).ThrowsExactly<ArgumentException>();

@@ -172,7 +172,7 @@ public class LocalStackRuntimeResolverTests
 
         await Assert.That(image.Registry).IsEqualTo("docker.io");
         await Assert.That(image.Image).IsEqualTo("localstack/localstack");
-        await Assert.That(image.Tag).IsEqualTo("2026.10.0");
+        await Assert.That(image.Tag).IsEqualTo("2026.10.6");
         await Assert.That(image.SHA256).IsNull();
     }
 

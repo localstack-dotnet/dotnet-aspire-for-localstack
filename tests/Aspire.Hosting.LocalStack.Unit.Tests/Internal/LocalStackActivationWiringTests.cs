@@ -479,7 +479,7 @@ public class LocalStackActivationWiringTests
         var localStack = builder.AddLocalStack("localstack", awsConfig: null,
             options => options.WithEnabled(true), container => container.WithLegacy());
         await Assert.That(localStack).IsNotNull();
-        builder.CreateResourceBuilder((LocalStackResource)localStack!.Resource).WithImageTag("2026.10.0");
+        builder.CreateResourceBuilder((LocalStackResource)localStack!.Resource).WithImageTag(LocalStackContainerImageTags.Tag);
         await using var app = builder.Build();
         await PublishBeforeStart(app);
 
