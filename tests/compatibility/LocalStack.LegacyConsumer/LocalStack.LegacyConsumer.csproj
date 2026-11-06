@@ -8,6 +8,7 @@
     <AssemblyName>LocalStack.LegacyConsumer</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <!-- slopwatch-ignore: SW006 This project simulates an external consumer. verify-consumer builds it with the repository's Directory.* imports and Central Package Management disabled, and passes the package version under test (published 13.4.0 or the local candidate) as ConsumerPackageVersion. A central version would defeat that check. -->
     <PackageReference Include="LocalStack.Aspire.Hosting" Version="$(ConsumerPackageVersion)"/>
   </ItemGroup>
 </Project>
