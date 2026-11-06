@@ -21,9 +21,18 @@ env:
   DOTNET_NOLOGO: true
 
 jobs:
+  runtime-pair:
+    if: github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/runtime-pair.yml
+    secrets:
+      LOCALSTACK_CI_AUTH_TOKEN: ${{ secrets.LOCALSTACK_CI_AUTH_TOKEN }}
+
   publish-manual:
     name: "Publish to ${{ github.event.inputs.package-source }}"
     runs-on: ubuntu-24.04
+    needs: [runtime-pair]
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -91,6 +100,9 @@ jobs:
             --output ./artifacts \
             /p:PackageVersion=${{ github.event.inputs.package-version }} \
             /p:PackageId=LocalStack.Aspire.Hosting
+
+      - name: "Verify packed consumer compatibility"
+        run: dotnet tools/localstack-tool.cs -- verify-consumer "$GITHUB_WORKSPACE/artifacts" "$GITHUB_WORKSPACE/artifacts/compatibility"
 
       - name: "Publish to GitHub Packages"
         if: ${{ github.event.inputs.package-source == 'github' }}

@@ -78,7 +78,7 @@ jobs:
 
       - name: "Install AWS CDK CLI"
         if: runner.os == 'Linux'
-        run: npm install -g aws-cdk@2
+        run: npm install -g aws-cdk@2.1148.0
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v6
@@ -153,7 +153,6 @@ jobs:
 
   runtime-pair:
     name: "Trusted current and legacy runtime evidence"
-    runs-on: ubuntu-24.04
     permissions:
       contents: read
     # A manual run is an explicit approval of this exact revision, not a PR checkout with a secret.
@@ -161,38 +160,9 @@ jobs:
       github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack' &&
       ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
        (github.event_name == 'workflow_dispatch' && inputs.trusted_revision == github.sha))
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: |
-            8.0.x
-            9.0.x
-            10.0.x
-      - uses: actions/setup-node@v6
-        with:
-          node-version: '24'
-      - name: "Install AWS CDK CLI"
-        run: npm install -g aws-cdk@2
-      - name: "Run trusted legacy profile"
-        run: dotnet tools/localstack-tool.cs -- run-runtime legacy "$GITHUB_WORKSPACE/artifacts/runtime/legacy"
-      - name: "Run trusted current profile"
-        if: success() || failure()
-        env:
-          LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_CI_AUTH_TOKEN }}
-          MSBUILDDISABLENODEREUSE: '1'
-          UseSharedCompilation: 'false'
-        run: dotnet tools/localstack-tool.cs -- run-runtime current "$GITHUB_WORKSPACE/artifacts/runtime/current"
-      - name: "Require both passing clean-source runtime records"
-        if: always()
-        run: dotnet tools/localstack-tool.cs -- validate-runtime artifacts/runtime/current artifacts/runtime/legacy
-      - name: "Upload runtime reports and evidence"
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: runtime-evidence-${{ github.sha }}
-          path: artifacts/runtime/
-          retention-days: 7
+    uses: ./.github/workflows/runtime-pair.yml
+    secrets:
+      LOCALSTACK_CI_AUTH_TOKEN: ${{ secrets.LOCALSTACK_CI_AUTH_TOKEN }}
 
   continuous-deployment:
     name: "Continuous Deployment"
@@ -298,6 +268,9 @@ jobs:
             --output ./artifacts \
             /p:PackageVersion=${{ steps.version.outputs.version }} \
             /p:PackageId=LocalStack.Aspire.Hosting
+
+      - name: "Verify packed consumer compatibility"
+        run: dotnet tools/localstack-tool.cs -- verify-consumer "$GITHUB_WORKSPACE/artifacts" "$GITHUB_WORKSPACE/artifacts/compatibility"
 
       - name: "Push to GitHub Packages"
         run: |
