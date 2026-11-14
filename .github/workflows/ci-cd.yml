@@ -65,10 +65,11 @@ jobs:
       - name: "Setup .NET SDK"
         uses: actions/setup-dotnet@v5
         with:
+          global-json-file: global.json
+          # global.json selects the SDK; these only add the net8.0 and net9.0 runtimes.
           dotnet-version: |
             8.0.x
             9.0.x
-            10.0.x
 
       - name: "Setup Node.js"
         if: runner.os == 'Linux'
@@ -188,10 +189,11 @@ jobs:
       - name: "Setup .NET SDK"
         uses: actions/setup-dotnet@v5
         with:
+          global-json-file: global.json
+          # global.json selects the SDK; these only add the net8.0 and net9.0 runtimes.
           dotnet-version: |
             8.0.x
             9.0.x
-            10.0.x
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v6
