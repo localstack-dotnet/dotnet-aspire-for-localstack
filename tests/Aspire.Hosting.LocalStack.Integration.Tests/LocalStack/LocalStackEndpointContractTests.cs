@@ -23,8 +23,7 @@ public class LocalStackEndpointContractTests
           -H "x-amz-security-token: ${LocalStack__Session__AwsSessionToken}" \
           --proxy "http://${LocalStack__Config__LocalStackHost}:${LocalStack__Config__EdgePort}" \
           "http://s3.${LocalStack__Session__RegionName}.amazonaws.com/")
-        case "$response" in *"<Name>${EXPECTED_BUCKET}</Name>"*) exit 0 ;; esac
-        exit 24
+        printf '%s\n' "$response" | grep -F -q "<Name>${EXPECTED_BUCKET}</Name>" || exit 24
         """;
 
     [Test]
@@ -73,15 +72,28 @@ public class LocalStackEndpointContractTests
         await using var app = await builder.BuildAsync(timeout.Token);
         await app.StartAsync(timeout.Token);
         var notifications = app.Services.GetRequiredService<ResourceNotificationService>();
-        foreach (var (name, exitCode) in new[] { ("container-consumer", 0), ("wrong-host", ConnectFailedExitCode), ("wrong-port", ConnectFailedExitCode) })
+        var hostSettings = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, exitCode) in new[] { (host.Resource.Name, 0), ("container-consumer", 0), ("wrong-host", ConnectFailedExitCode), ("wrong-port", ConnectFailedExitCode) })
         {
             var result = await notifications.WaitForResourceAsync(name,
                 update => KnownResourceStates.TerminalStates.Contains(update.Snapshot.State?.Text ?? string.Empty, StringComparer.Ordinal), timeout.Token);
             await Assert.That(result.Snapshot.ExitCode).IsEqualTo(exitCode);
+            if (name == host.Resource.Name)
+            {
+                // The orchestrator reports the environment it actually started the process with.
+                foreach (var variable in result.Snapshot.EnvironmentVariables.Where(entry => entry.Name.StartsWith("LocalStack__", StringComparison.Ordinal)))
+                {
+                    hostSettings[variable.Name] = variable.Value ?? string.Empty;
+                }
+            }
+        }
+
+        if (hostSettings.Count == 0)
+        {
+            throw new InvalidOperationException("The host consumer was started without LocalStack settings.");
         }
 
         var bucket = seed.Resource.Outputs!.Single(output => output.OutputKey == "BucketName").OutputValue;
-        var hostSettings = await LocalStackTestHelpers.GetLocalStackEnvironmentAsync(builder.ExecutionContext, host.Resource, timeout.Token);
         using (var client = LocalStackTestHelpers.CreateConsumerSession(hostSettings).CreateClientByImplementation<AmazonS3Client>())
         {
             ((AmazonS3Config)client.Config).MaxErrorRetry = 0;
@@ -99,6 +111,8 @@ public class LocalStackEndpointContractTests
             await Assert.That(client.Config.ProxyPort.ToString(CultureInfo.InvariantCulture))
                 .IsEqualTo(containerSettings["LocalStack__Config__EdgePort"]);
             await Assert.That(client.Config.UseHttp).IsTrue();
+            await Assert.That(client.Config.ServiceURL).IsNull();
+            await Assert.That(client.Config.RegionEndpoint?.SystemName).IsEqualTo(containerSettings["LocalStack__Session__RegionName"]);
         }
     }
 
@@ -110,7 +124,7 @@ public class LocalStackEndpointContractTests
             .WithEnvironment("EXPECTED_BUCKET", seed.GetOutput("BucketName"));
 
     private static async Task<Dictionary<string, string>> ReadPrintedSettingsAsync(
-        DistributedApplication app, IResource resource, CancellationToken cancellationToken)
+        DistributedApplication app, ContainerResource resource, CancellationToken cancellationToken)
     {
         var settings = new Dictionary<string, string>(StringComparer.Ordinal);
         var logs = app.Services.GetRequiredService<ResourceLoggerService>();
@@ -126,10 +140,17 @@ public class LocalStackEndpointContractTests
 
                 var setting = line.Content[(start + SettingsMarker.Length)..];
                 var separator = setting.IndexOf('=', StringComparison.Ordinal);
+                if (separator <= 0)
+                {
+                    throw new InvalidOperationException($"The container printed a malformed setting: {line.Content}");
+                }
+
                 settings[setting[..separator]] = setting[(separator + 1)..];
             }
         }
 
-        return settings;
+        return settings.Count > 0
+            ? settings
+            : throw new InvalidOperationException($"The container {resource.Name} printed no LocalStack settings.");
     }
 }
