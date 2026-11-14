@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Current runtime default.** The unreleased default moves from `4.12.0` to `2026.10.6`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
 - **Internal hosting-state boundary.** Resolved configuration is frozen into an immutable internal snapshot, so LocalStack.Client models are translated only at the runtime seam instead of flowing through the hosting API. Workload `LocalStack__*` environment emission is unchanged.
-- **Dependencies**: Updated `Aspire.Hosting` to `13.6.4` and `Aspire.Hosting.AWS` to `13.7.3`
+- **Dependencies**: Updated `Aspire.Hosting` to `13.6.5` and `Aspire.Hosting.AWS` to `13.7.3`
   - **`LocalStack.Client` and `LocalStack.Client.Extensions` 3.0.0.**
     - The public surface is unchanged: upstream package validation runs against 2.0.0, and a 13.4.0-compiled caller still runs on the new graph.
     - On net8.0 and net9.0 the package resolves the client's `netstandard2.0` asset.
@@ -34,7 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, and the analyzer set to their latest stable versions
   - Moved the `global.json` SDK pin to `10.0.403`
 - **CDK bootstrap template**: Refreshed the embedded template to the one `aws-cdk` 2.1148.0 ships (`BootstrapVersion` `33`), which adds the `ApplyPermissionsBoundaryToAllRoles` parameter
-- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.4. No `13.4.1` was ever published; the entry was renumbered in place.
+- **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.5. No `13.4.1` was ever published; the entry was renumbered in place.
 
 ### Deprecated
 
@@ -45,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bare explicit workload references receive all nine Client settings without requiring an unrelated CloudFormation template relationship; explicitly imported stacks receive the selected LocalStack CF client and retain read-only import semantics.
 - Workload Host/Port values preserve Core consumer-network context; CF, health and CDK asset clients retain AppHost-side allocated URIs. Health check names are qualified per resource.
 - Linux integration runners own per-run disk-backed Lambda wrapper storage and clean it after AppHost/child shutdown, on success and on test failure. A cancelled or interrupted run keeps its scratch folder for inspection. The upstream wrapper lifetime issue remains tracked in [Upstream Watch](docs/upstream-watch.md).
-- **MessagePack security dependency.** Aspire.Hosting 13.6.4 depends on MessagePack `2.5.307`, which fixes [GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h), GHSA-fx6j-x9m5-vmrf and GHSA-7rj2-5w9w-r9jx. This package and its consumers no longer resolve a vulnerable version, and the package's own direct MessagePack floor is removed.
+- **Aspire security advisories.** Aspire 13.6.5 fixes [GHSA-f7vh-h5g3-7jrh](https://github.com/advisories/GHSA-f7vh-h5g3-7jrh) (`Aspire.Hosting`, `Aspire.Hosting.AppHost`) and [GHSA-4g86-54fm-h9h8](https://github.com/advisories/GHSA-4g86-54fm-h9h8) (`Aspire.Dashboard.Sdk.*`), which affect every version below 13.6.5. This package now depends on `Aspire.Hosting` 13.6.5, so its consumers no longer resolve an affected `Aspire.Hosting`; an AppHost must also move its own `Aspire.AppHost.Sdk` and `Aspire.Hosting.AppHost` references to 13.6.5.
+- **MessagePack security dependency.** Aspire.Hosting 13.6.5 depends on MessagePack `2.5.307`, which fixes [GHSA-qhrr-8q5h-9q3h](https://github.com/advisories/GHSA-qhrr-8q5h-9q3h), GHSA-fx6j-x9m5-vmrf and GHSA-7rj2-5w9w-r9jx. This package and its consumers no longer resolve a vulnerable version, and the package's own direct MessagePack floor is removed.
 - A resource name longer than 40 characters whose 40th character is `-` no longer produces an invalid private activation-parameter name.
 
 ### Known Issues

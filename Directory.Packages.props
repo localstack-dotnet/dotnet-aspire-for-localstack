@@ -10,8 +10,8 @@
     <PackageVersion Include="SonarAnalyzer.CSharp" Version="10.35.0.4138"/>
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17"/>
     <!-- aspire packages -->
-    <PackageVersion Include="Aspire.Hosting" Version="13.6.4"/>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.6.4"/>
+    <PackageVersion Include="Aspire.Hosting" Version="13.6.5"/>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.6.5"/>
     <PackageVersion Include="Aspire.Hosting.AWS" Version="13.7.3"/>
     <!-- aws packages -->
     <PackageVersion Include="AWSSDK.Core" Version="4.0.102.18"/>
@@ -47,7 +47,7 @@
     <PackageVersion Include="SkiaSharp" Version="4.154.0"/>
     <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.154.0"/>
     <!-- test packages -->
-    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.4"/>
+    <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.5"/>
     <PackageVersion Include="NSubstitute" Version="6.2.0"/>
     <PackageVersion Include="TUnit" Version="1.81.0"/>
   </ItemGroup>
