@@ -174,7 +174,10 @@ Use new or empty output directories. Current requires `LOCALSTACK_AUTH_TOKEN` in
 the process environment, never in command arguments. Each profile's test step,
 including its build, has a 30-minute limit. A step that exceeds it, for example one
 blocked in native code that the test platform's own timeout cannot interrupt, has its
-whole process tree stopped and fails with a timeout error; its record says `failed`. Credential-bearing reports
+whole process tree stopped and fails with a timeout error; its record says `failed`.
+Ctrl+C stops the test process tree and exits 130; the record says `cancelled` and
+the incomplete scratch directory is kept for inspection. A cancelled run is never
+acceptance evidence. Credential-bearing reports
 are generated in private scratch space and masked before being copied to the
 artifact directory. An immediate authenticated HTML uploader cannot bypass that
 boundary: the command fails before starting rather than disabling reporting or
