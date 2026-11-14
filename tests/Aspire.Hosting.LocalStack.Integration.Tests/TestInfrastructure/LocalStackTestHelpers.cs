@@ -33,6 +33,57 @@ internal static class LocalStackTestHelpers
     }
 
     /// <summary>
+    /// Evaluates the <c>LocalStack__*</c> settings a resource receives, the way the orchestrator
+    /// resolves them when it starts the resource.
+    /// </summary>
+    public static async Task<Dictionary<string, string>> GetLocalStackEnvironmentAsync(
+        DistributedApplicationExecutionContext executionContext, IResource resource, CancellationToken cancellationToken)
+    {
+        var context = new EnvironmentCallbackContext(executionContext, resource);
+        foreach (var annotation in resource.Annotations.OfType<EnvironmentCallbackAnnotation>())
+        {
+            await annotation.Callback(context);
+        }
+
+        var values = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (key, value) in context.EnvironmentVariables.Where(entry => entry.Key.StartsWith("LocalStack__", StringComparison.Ordinal)))
+        {
+            values[key] = value is IValueProvider provider
+                ? await provider.GetValueAsync(cancellationToken) ?? string.Empty
+                : (string)value;
+        }
+
+        return values;
+    }
+
+    /// <summary>
+    /// Creates a LocalStack session from <c>LocalStack__*</c> settings, reading every key a
+    /// LocalStack.Client consumer binds.
+    /// </summary>
+    public static ISession CreateConsumerSession(IReadOnlyDictionary<string, string> settings)
+    {
+        if (!bool.Parse(Required("LocalStack__UseLocalStack")))
+        {
+            throw new InvalidOperationException("The consumer settings do not select the LocalStack backend.");
+        }
+
+        return SessionStandalone.Init()
+            .WithSessionOptions(new SessionOptions(
+                Required("LocalStack__Session__AwsAccessKeyId"), Required("LocalStack__Session__AwsAccessKey"),
+                Required("LocalStack__Session__AwsSessionToken"), Required("LocalStack__Session__RegionName")))
+            .WithConfigurationOptions(new ConfigOptions(
+                Required("LocalStack__Config__LocalStackHost"),
+                bool.Parse(Required("LocalStack__Config__UseSsl")),
+                bool.Parse(Required("LocalStack__Config__UseLegacyPorts")),
+                int.Parse(Required("LocalStack__Config__EdgePort"), CultureInfo.InvariantCulture)))
+            .Create();
+
+        string Required(string key) => settings.TryGetValue(key, out var value)
+            ? value
+            : throw new InvalidOperationException($"The consumer settings have no {key}.");
+    }
+
+    /// <summary>
     /// Creates an AWS SQS client configured for LocalStack.
     /// </summary>
     public static IAmazonSQS CreateSqsClient(string connectionString, string regionName)

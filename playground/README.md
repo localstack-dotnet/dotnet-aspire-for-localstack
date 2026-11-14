@@ -44,10 +44,6 @@ Shows how LocalStack integrates with AWS Lambda and API Gateway emulators for se
   `Playground__LocalStack__UseLegacy=true` sample setting for the compatibility
   preset. See [runtime selection and activation](../docs/CONFIGURATION.md#runtime-selection-and-container-activation).
 
-`LocalStack.EndpointProbe` is a test-only consumer, built by the integration test
-project. It performs a real Client-configured request from host/container contexts
-and checks a seeded bucket; it is not another interactive AppHost example.
-
 ---
 
 **Next Steps**: Explore the individual README files in each example directory for detailed setup instructions and architectural explanations.

@@ -92,20 +92,7 @@ public class ExplicitReferenceContractTests
     private static async Task VerifyWorkerAsync(
         IDistributedApplicationBuilder builder, ExecutableResource worker, string connection, CancellationToken cancellationToken)
     {
-        var context = new EnvironmentCallbackContext(builder.ExecutionContext, worker);
-        foreach (var annotation in worker.Annotations.OfType<EnvironmentCallbackAnnotation>())
-        {
-            await annotation.Callback(context);
-        }
-
-        var values = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var (key, value) in context.EnvironmentVariables.Where(entry => entry.Key.StartsWith("LocalStack__", StringComparison.Ordinal)))
-        {
-            values[key] = value is IValueProvider provider
-                ? await provider.GetValueAsync(cancellationToken) ?? string.Empty
-                : (string)value;
-        }
-
+        var values = await LocalStackTestHelpers.GetLocalStackEnvironmentAsync(builder.ExecutionContext, worker, cancellationToken);
         var endpoint = new Uri(connection);
         var expected = new Dictionary<string, string>(StringComparer.Ordinal)
         {
