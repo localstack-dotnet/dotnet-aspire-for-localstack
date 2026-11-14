@@ -216,15 +216,6 @@ jobs:
           results-dir: artifacts/publication-unit-results
           configuration: Release
 
-      - name: "Setup GitHub Packages Authentication"
-        run: |
-          echo "🔐 Adding GitHub Packages authentication..."
-          dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
-            --name github-packages \
-            --username ${{ github.actor }} \
-            --password ${{ secrets.GITHUB_TOKEN }} \
-            --store-password-in-clear-text
-
       - name: "Determine Package Version"
         id: version
         run: |
@@ -273,6 +264,17 @@ jobs:
 
       - name: "Verify packed consumer compatibility"
         run: dotnet tools/localstack-tool.cs -- verify-consumer "$GITHUB_WORKSPACE/artifacts" "$GITHUB_WORKSPACE/artifacts/compatibility"
+
+      # Added only for the push: a second package source makes restores under central package
+      # management fail with NU1507, so the consumer check above must run without it.
+      - name: "Setup GitHub Packages Authentication"
+        run: |
+          echo "🔐 Adding GitHub Packages authentication..."
+          dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json \
+            --name github-packages \
+            --username ${{ github.actor }} \
+            --password ${{ secrets.GITHUB_TOKEN }} \
+            --store-password-in-clear-text
 
       - name: "Push to GitHub Packages"
         run: |
