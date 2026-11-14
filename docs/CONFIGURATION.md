@@ -205,14 +205,23 @@ reusable workflow `.github/workflows/runtime-pair.yml`, in the `localstack-curre
 GitHub environment. The calling workflows pass the organization's `LOCALSTACK_AUTH_TOKEN`
 secret, a LocalStack CI token, to the reusable workflow as `LOCALSTACK_CI_AUTH_TOKEN`;
 the job exposes it to the current profile as `LOCALSTACK_AUTH_TOKEN`. It never uses a
-developer's personal token or an unreviewed PR checkout. It runs on canonical master
-pushes and on a manual CI run that names the exact selected SHA. Every publication path needs the passing pair
-for the same SHA, plus a `verify-consumer` pass on the packed archive:
+developer's personal token or a fork PR checkout. It runs on canonical master pushes,
+and on a manual run of the CI workflow or of `publish-nuget.yml` whose
+`trusted_revision` input equals the selected ref's SHA; a manual run on any other ref
+skips the pair, so it neither receives the token nor publishes. Every publication path
+needs the passing pair for the same SHA, plus a `verify-consumer` pass on the packed
+archive:
 - the CI workflow's continuous deployment;
 - the manual `publish-nuget.yml` workflow.
 The trust decision is the owner's: a manual run names the exact SHA, and master
 receives only what the owner merges. The environment's protection rules are not an
 additional approval gate.
+
+The CI token is an organization secret, so GitHub supplies it to every workflow run in
+this repository except fork pull requests. A pull request from a branch of this
+repository runs its own edited workflow files and can therefore read it. The model
+assumes that only the owner has write access; giving others write access requires
+moving the token to an environment-only secret first.
 A feature-package publication additionally needs the manual run's publication flag.
 The environment and its protection rules are repository settings, and the CI token is an
 organization secret; the owner maintains both.
