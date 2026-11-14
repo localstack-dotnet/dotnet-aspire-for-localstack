@@ -37,7 +37,7 @@ public static class ToolApp
             return 130;
         }
         catch (Exception error) when (error is IOException or InvalidDataException or InvalidOperationException or ArgumentException
-            or JsonException or XmlException or System.ComponentModel.Win32Exception)
+            or JsonException or XmlException or System.ComponentModel.Win32Exception or TimeoutException)
         {
             var secret = args is ["run-runtime", "current", ..] ? Environment.GetEnvironmentVariable("LOCALSTACK_AUTH_TOKEN") : null;
             await Console.Error.WriteLineAsync(ReportRedaction.Mask(error.Message, secret)).ConfigureAwait(false);

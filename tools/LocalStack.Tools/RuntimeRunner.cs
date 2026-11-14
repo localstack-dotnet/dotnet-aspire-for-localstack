@@ -6,6 +6,13 @@ namespace LocalStack.Tools;
 
 internal static class RuntimeRunner
 {
+    /// <summary>
+    /// Upper bound for one profile's integration test step, including its build. A healthy run takes
+    /// minutes; a step that blocks in native code (for example a keychain prompt nobody can answer)
+    /// ignores the test platform's own timeout, so the runner stops the whole process tree instead.
+    /// </summary>
+    internal static readonly TimeSpan StepLimit = TimeSpan.FromMinutes(30);
+
     internal static Task<int> RunAsync(string root, string runtime, string outputPath, CancellationToken cancellationToken)
     {
         var secret = GetActivationToken(runtime);
@@ -13,13 +20,13 @@ internal static class RuntimeRunner
             Environment.GetEnvironmentVariable("GITHUB_STEP_SUMMARY"),
             (info, token) => ProcessRunner.RunAsync(info, secret,
                 Path.Combine(info.Environment["LOCALSTACK_TEST_RESULTS_DIRECTORY"]!, "test.log"), echo: true, token),
-            args => ToolApp.GitAsync(root, args), cancellationToken);
+            args => ToolApp.GitAsync(root, args), StepLimit, cancellationToken);
     }
 
     internal static async Task<int> RunAsync(string root, string runtime, string outputPath,
         string? secret, string? summaryDestination,
         Func<ProcessStartInfo, CancellationToken, Task<(int ExitCode, string Output)>> execute,
-        Func<string[], Task<string>> git, CancellationToken cancellationToken)
+        Func<string[], Task<string>> git, TimeSpan stepLimit, CancellationToken cancellationToken)
     {
         var output = ToolApp.NewOutput(outputPath);
         var manifest = await RuntimeEvidence.ReadAsync(Path.Combine(root, ".github/scripts/common_runtime_tests.json")).ConfigureAwait(false);
@@ -57,7 +64,7 @@ internal static class RuntimeRunner
         var exitCode = -1;
         try
         {
-            exitCode = (await execute(info, cancellationToken).ConfigureAwait(false)).ExitCode;
+            exitCode = (await ExecuteWithinLimitAsync(execute, info, stepLimit, cancellationToken).ConfigureAwait(false)).ExitCode;
             await ProcessReportsAsync(reports, output, temp, secret, runtime, manifest, images, record, git, clean, revision, exitCode).ConfigureAwait(false);
             completed = true;
         }
@@ -88,6 +95,24 @@ internal static class RuntimeRunner
         return exitCode;
 
         Task WriteRecordAsync() => File.WriteAllTextAsync(Path.Combine(output, "profile-run.json"), record.ToJsonString(), CancellationToken.None);
+    }
+
+    private static async Task<(int ExitCode, string Output)> ExecuteWithinLimitAsync(
+        Func<ProcessStartInfo, CancellationToken, Task<(int ExitCode, string Output)>> execute,
+        ProcessStartInfo info, TimeSpan stepLimit, CancellationToken cancellationToken)
+    {
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        limit.CancelAfter(stepLimit);
+        try
+        {
+            return await execute(info, limit.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"The integration test step exceeded its {stepLimit:c} limit; its process tree was stopped and no acceptance evidence was produced.",
+                exception);
+        }
     }
 
     private static async Task ProcessReportsAsync(string reports, string output, string temp, string? secret,

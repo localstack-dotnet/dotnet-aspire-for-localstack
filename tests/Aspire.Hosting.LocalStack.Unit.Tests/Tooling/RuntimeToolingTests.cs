@@ -515,6 +515,36 @@ public sealed class RuntimeToolingTests : IDisposable
     }
 
     [Test]
+    public async Task Stops_A_Hung_Test_Step_At_The_Step_Limit()
+    {
+        var stepCancelled = false;
+        var neverFinishes = new TaskCompletionSource();
+        Func<Task<int>> run = () => RunFixtureAsync(async (info, token) =>
+        {
+            try
+            {
+                // Without the limit this ends in WaitAsync's own TimeoutException, whose message the assertion rejects.
+                await neverFinishes.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+            }
+            catch (OperationCanceledException)
+            {
+                stepCancelled = true;
+                throw;
+            }
+
+            await EmitReportsAsync(info);
+            return (0, "");
+        }, stepLimit: TimeSpan.FromMilliseconds(200));
+
+        var failure = await Assert.That(run).ThrowsExactly<TimeoutException>();
+        await Assert.That(failure!.Message).IsEqualTo(
+            "The integration test step exceeded its 00:00:00.2000000 limit; its process tree was stopped and no acceptance evidence was produced.");
+        await Assert.That(stepCancelled).IsTrue();
+        var record = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(Output(), "profile-run.json")))!;
+        await Assert.That(record["status"]!.GetValue<string>()).IsEqualTo("failed");
+    }
+
+    [Test]
     public async Task Runner_Records_Final_Artifact_Hashes_And_Execution_Id()
     {
         string? executionId = null;
@@ -903,7 +933,8 @@ public sealed class RuntimeToolingTests : IDisposable
     }
 
     private async Task<int> RunFixtureAsync(Func<ProcessStartInfo, CancellationToken, Task<(int, string)>> execute,
-        string? destination = null, Func<string[], Task<string>>? git = null, CancellationToken cancellationToken = default)
+        string? destination = null, Func<string[], Task<string>>? git = null, TimeSpan? stepLimit = null,
+        CancellationToken cancellationToken = default)
     {
         var root = _directory.CreateSubdirectory("root").FullName;
         Directory.CreateDirectory(Path.Combine(root, ".github/scripts"));
@@ -914,7 +945,8 @@ public sealed class RuntimeToolingTests : IDisposable
         {
             _scratch.Add(Path.GetDirectoryName(info.Environment["GITHUB_STEP_SUMMARY"]!)!);
             return execute(info, token);
-        }, git ?? (args => Task.FromResult(args[0] == "rev-parse" ? "revision" : "")), cancellationToken);
+        }, git ?? (args => Task.FromResult(args[0] == "rev-parse" ? "revision" : "")),
+            stepLimit ?? RuntimeRunner.StepLimit, cancellationToken);
     }
 
     private static async Task EmitReportsAsync(ProcessStartInfo info)

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shared runtime acceptance infrastructure.** The same declared scenarios run against the current and the legacy image, one test process per profile.
   - Each run's record (`schema_version` 2) binds the TRX and every image receipt to its `execution_id` by SHA-256. `validate-runtime` rejects stale, dirty, incomplete or mismatched evidence.
   - Reports are masked and checked for the activation token before publication, and the check fails closed.
+  - Each profile's test step has a 30-minute limit; a step that hangs, for example on a native prompt nobody can answer, is stopped and fails instead of blocking the run.
   - PR checks are secret-free. The authenticated pair runs in the `localstack-current` GitHub environment. Every publication path, CI deployment and the manual workflow alike, requires the passing pair and a packed-consumer `verify-consumer` pass for the same SHA.
   - Hosted execution remains unvalidated until an authorized workflow run.
 - **Package-owned AppHost configuration.** `LocalStackHostingOptions` (`Enabled`, `Region`, `AccessKeyId`, `SecretAccessKey`, `SessionToken`) now owns host-level LocalStack settings, with `WithEnabled(...)`, `WithRegion(...)`, and `WithCredentials(...)` fluent extensions in the `Aspire.Hosting` namespace — configuring an AppHost no longer requires LocalStack.Client types.
