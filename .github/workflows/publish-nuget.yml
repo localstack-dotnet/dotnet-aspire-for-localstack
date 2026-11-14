@@ -27,7 +27,7 @@ jobs:
       contents: read
     uses: ./.github/workflows/runtime-pair.yml
     secrets:
-      LOCALSTACK_CI_AUTH_TOKEN: ${{ secrets.LOCALSTACK_CI_AUTH_TOKEN }}
+      LOCALSTACK_CI_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
 
   publish-manual:
     name: "Publish to ${{ github.event.inputs.package-source }}"
