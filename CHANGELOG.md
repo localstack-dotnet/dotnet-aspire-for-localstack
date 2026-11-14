@@ -32,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Consumers that pin `LocalStack.Client(.Extensions)` below 3.0.0, or `AWSSDK.Core` below 4.0.102.6, now get NU1605 on restore and must raise those pins.
     - On net10.0 the client's registry source generator flows to consuming projects. It adds about 12–20 ms per compilation (measured with `ReportAnalyzer`).
   - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, Microsoft.Extensions, SkiaSharp, TUnit, NSubstitute, and the analyzer set to their latest stable versions
-  - Moved the `global.json` SDK pin to `10.0.403`
+  - Moved the `global.json` SDK pin to `10.0.404`
 - **CDK bootstrap template**: Refreshed the embedded template to the one `aws-cdk` 2.1148.0 ships (`BootstrapVersion` `33`), which adds the `ApplyPermissionsBoundaryToAllRoles` parameter
 - **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.5. No `13.4.1` was ever published; the entry was renumbered in place.
 
