@@ -44,6 +44,11 @@ Both projects create the same **messaging resources** (SNS topic, SQS queue, sub
 
 ## Configuration Approaches
 
+Both AppHosts use current-runtime activation from secure `LOCALSTACK_AUTH_TOKEN`
+configuration by default. Their explicit `Playground__LocalStack__UseLegacy=true`
+setting selects the token-free compatibility preset without changing the AWS
+identity. See [runtime selection](../../docs/CONFIGURATION.md#runtime-selection-and-container-activation).
+
 This integration provides **two ways** to configure LocalStack with your AWS resources:
 
 ### ⚡ Auto-Configure Approach (Recommended)

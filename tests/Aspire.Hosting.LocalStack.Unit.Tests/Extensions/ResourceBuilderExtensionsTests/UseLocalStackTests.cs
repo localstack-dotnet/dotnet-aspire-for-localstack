@@ -215,7 +215,7 @@ public class UseLocalStackTests
     [Test]
     public async Task UseLocalStack_Should_Throw_Before_Start_When_DynamoDb_Local_Is_Added_After_UseLocalStack()
     {
-        var builder = DistributedApplication.CreateBuilder(["--AppHost:Operation=publish"]);
+        var builder = TestApplicationBuilder.CreateBuilder(["--AppHost:Operation=publish"]);
         var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true));
 
         builder.UseLocalStack(localStack);

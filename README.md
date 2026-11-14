@@ -48,11 +48,19 @@ We may ship features and fixes between Aspire releases. When upgrading Aspire's 
 
 > 💡 **Prefer learning by example?** Check out our [complete working examples](#examples) in the playground (CloudFormation, CDK, Lambda). Clone, run, explore - then come back here for configuration details.
 
-When LocalStack is disabled in configuration, both host and client configurations automatically fall back to real AWS services without requiring code changes. The [LocalStack.NET Client](https://github.com/localstack-dotnet/localstack-dotnet-client) automatically switches to AWS's official client factory when LocalStack is not enabled.
+When explicitly disabled, this integration leaves resources on the official AWS path, which may require real AWS credentials. This is different from an enabled LocalStack runtime missing activation: that is an error, never an automatic switch to AWS or downgrade to an older image.
 
 ### Host Configuration (AppHost)
 
 Configure LocalStack integration in your Aspire AppHost project using the package-owned hosting API:
+
+The unreleased baseline defaults to a qualified current LocalStack image, which
+requires `LOCALSTACK_AUTH_TOKEN` from secure AppHost configuration and suitable
+LocalStack entitlement. AWS access keys in the example are separate from this
+activation token. See [runtime selection and activation](docs/CONFIGURATION.md#runtime-selection-and-container-activation)
+for deferred secret parameters, precedence, custom images and the explicit
+token-free `container.WithLegacy()` compatibility preset. Legacy runtime selection
+is not the obsolete Client-shaped hosting API, and does not promise new-feature parity.
 
 ```csharp
 var builder = DistributedApplication.CreateBuilder(args);
@@ -140,7 +148,7 @@ Aspire__Hosting__LocalStack__Region=us-east-1
 
 #### Container Configuration
 
-The `configureContainer` parameter allows you to customize LocalStack container behavior. By default, LocalStack uses lazy loading - services start only when first accessed. Eager loading starts a chosen set of services up front, which removes cold-start latency but also restricts the container to that set - see the note below the options list before using it:
+The `configureContainer` parameter customizes container behavior. Lazy loading starts services when first accessed; eager loading requests preloading and adds required-service health checks. Backend dependencies and provider policy also affect the enabled set:
 
 ```csharp
 builder.AddLocalStack("localstack", awsConfig: null, configureContainer: container =>
@@ -163,18 +171,18 @@ builder.AddLocalStack("localstack", awsConfig: null, configureContainer: contain
 
 **Available Options:**
 
-- **`EagerLoadedServices`** - Pre-load specific AWS services at startup (reduces cold start latency, and restricts the container to those services - see below)
+- **`EagerLoadedServices`** - Request preloading and require these services to report running before health succeeds
 - **`Lifetime`** - Container lifecycle: `Session` (default - cleaned up on stop) or `Persistent` (survives restarts)
 - **`DebugLevel`** - LocalStack debug verbosity (0 = default, 1 = verbose)
 - **`LogLevel`** - Log level control (Error, Warn, Info, Debug, Trace, etc.)
 - **`Port`** - Static port mapping for LocalStack container. If not set, Session lifetime uses dynamic ports (avoids conflicts) and Persistent lifetime uses port 4566 (default LocalStack port). Set explicitly for predictable endpoint URLs
 - **`ContainerRegistry`** - Custom container registry (default: `docker.io`). Use when pulling from private registries
 - **`ContainerImage`** - Custom image name (default: `localstack/localstack`). Use when image is mirrored with different path
-- **`ContainerImageTag`** - Custom image tag/version (default: a fixed `4.12.0` pin, verified to run without an auth token). Use to move to a different LocalStack version - newer images may require `LOCALSTACK_AUTH_TOKEN`
+- **`ContainerImageTag`** - Override the selected runtime preset's tag; registry/image/tag overrides remain independent and win over preset selection
 - **`EnableDockerSocket`** - Mounts `/var/run/docker.sock` so LocalStack can start its own containers (required for LocalStack Lambda support; default: `false`, and it carries security implications)
 - **`AdditionalEnvironmentVariables`** - Custom environment variables for advanced scenarios
 
-> **`EagerLoadedServices` is an allow-list, not just a warm-up.** Setting it emits both `EAGER_SERVICE_LOADING=1` and `SERVICES=<your services>`, and `SERVICES` restricts the container to exactly those services - every other AWS service becomes unavailable. The same list also becomes the set the health check must see as ready, so the container takes longer to report healthy. Leave it unset unless you know the full set of services your workload needs.
+> **Enabled, preloaded and health-required services are different sets.** The package emits `EAGER_SERVICE_LOADING=1` and `SERVICES=<list>`, and requires every requested service to report `running`. Backend provider availability, mandatory dependencies and strict-loading settings can change the enabled set; this is not a guarantee that every unlisted service is unavailable. See [service loading](docs/CONFIGURATION.md#service-loading-strategy).
 
 For detailed configuration guide and best practices, see [Configuration Documentation](docs/CONFIGURATION.md).
 

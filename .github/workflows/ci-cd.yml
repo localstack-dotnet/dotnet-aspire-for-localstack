@@ -14,6 +14,16 @@ on:
     branches:
       - master
       - "feature/*"
+  workflow_dispatch:
+    inputs:
+      trusted_revision:
+        description: "Full SHA of the reviewed, trusted revision; must match the selected ref"
+        type: string
+        required: true
+      publish_packages:
+        description: "Publish packages only after both trusted runtime profiles pass"
+        type: boolean
+        default: false
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: true
@@ -29,7 +39,7 @@ jobs:
       checks: write
     env:
       NUGET_PACKAGES: ${{ contains(matrix.os, 'windows') && format('{0}\.nuget\packages', github.workspace) || format('{0}/.nuget/packages', github.workspace) }}
-      BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\test-results', github.workspace) || format('{0}/test-results', github.workspace) }}
+      BASE_TEST_RESULTS_DIR: ${{ contains(matrix.os, 'windows') && format('{0}\artifacts\test-results', github.workspace) || format('{0}/artifacts/test-results', github.workspace) }}
       UNIT_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\tests\Aspire.Hosting.LocalStack.Unit.Tests\Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj', github.workspace) }}
       INTEGRATION_TEST_PROJECT_PATH: ${{ contains(matrix.os, 'windows') && format('{0}\tests\Aspire.Hosting.LocalStack.Integration.Tests\Aspire.Hosting.LocalStack.Integration.Tests.csproj', github.workspace) || format('{0}/tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj', github.workspace) }}
       BADGE_API_ENDPOINT: "https://api.localstackfor.net"
@@ -55,10 +65,11 @@ jobs:
       - name: "Setup .NET SDK"
         uses: actions/setup-dotnet@v5
         with:
+          global-json-file: global.json
+          # global.json selects the SDK; these only add the net8.0 and net9.0 runtimes.
           dotnet-version: |
             8.0.x
             9.0.x
-            10.0.x
 
       - name: "Setup Node.js"
         if: runner.os == 'Linux'
@@ -68,7 +79,7 @@ jobs:
 
       - name: "Install AWS CDK CLI"
         if: runner.os == 'Linux'
-        run: npm install -g aws-cdk@2
+        run: npm install -g aws-cdk@2.1148.0
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v6
@@ -96,13 +107,9 @@ jobs:
           results-dir: ${{ runner.os == 'Windows' && format('{0}\unit', env.BASE_TEST_RESULTS_DIR) || format('{0}/unit',  env.BASE_TEST_RESULTS_DIR) }}
           configuration: "Release"
 
-      - name: "Run Integration Tests"
+      - name: "Run secret-free legacy integration suite"
         if: runner.os == 'Linux'
-        uses: ./.github/actions/run-dotnet-tests
-        with:
-          project-path: ${{ env.INTEGRATION_TEST_PROJECT_PATH }}
-          results-dir: ${{ runner.os == 'Windows' && format('{0}\integration', env.BASE_TEST_RESULTS_DIR) || format('{0}/integration',  env.BASE_TEST_RESULTS_DIR) }}
-          configuration: "Release"
+        run: dotnet tools/localstack-tool.cs -- run-runtime legacy "$BASE_TEST_RESULTS_DIR/integration"
 
       - name: "Publish Test Results"
         id: test-results
@@ -145,14 +152,27 @@ jobs:
             ${{ env.BASE_TEST_RESULTS_DIR }}/**/*
           retention-days: 7
 
+  runtime-pair:
+    name: "Trusted current and legacy runtime evidence"
+    permissions:
+      contents: read
+    # A manual run is an explicit approval of this exact revision, not a PR checkout with a secret.
+    if: >-
+      github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
+       (github.event_name == 'workflow_dispatch' && inputs.trusted_revision == github.sha))
+    uses: ./.github/workflows/runtime-pair.yml
+    secrets:
+      LOCALSTACK_CI_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+
   continuous-deployment:
     name: "Continuous Deployment"
     runs-on: ubuntu-24.04
-    needs: build-and-test
+    needs: [build-and-test, runtime-pair]
     if: |
       github.repository == 'localstack-dotnet/dotnet-aspire-for-localstack' &&
       ((github.event_name == 'push' && github.ref == 'refs/heads/master') ||
-       (github.event_name == 'pull_request' && startsWith(github.head_ref, 'feature/')))
+       (github.event_name == 'workflow_dispatch' && inputs.trusted_revision == github.sha && inputs.publish_packages))
     env:
       NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
 
@@ -169,10 +189,11 @@ jobs:
       - name: "Setup .NET SDK"
         uses: actions/setup-dotnet@v5
         with:
+          global-json-file: global.json
+          # global.json selects the SDK; these only add the net8.0 and net9.0 runtimes.
           dotnet-version: |
             8.0.x
             9.0.x
-            10.0.x
 
       - name: "Cache NuGet packages"
         uses: actions/cache@v6
@@ -188,11 +209,12 @@ jobs:
       - name: "Build"
         run: dotnet build --configuration Release --no-restore
 
-      - name: "Raise inotify instance limit"
-        run: sudo sysctl -w fs.inotify.max_user_instances=1024
-
       - name: "Run Unit Tests"
-        run:  dotnet test --project ./tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj --verbosity normal --configuration Release --no-build -- --timeout 5m
+        uses: ./.github/actions/run-dotnet-tests
+        with:
+          project-path: tests/Aspire.Hosting.LocalStack.Unit.Tests/Aspire.Hosting.LocalStack.Unit.Tests.csproj
+          results-dir: artifacts/publication-unit-results
+          configuration: Release
 
       - name: "Setup GitHub Packages Authentication"
         run: |
@@ -221,9 +243,9 @@ jobs:
           RUN_NUMBER="${{ github.run_number }}"     # monotonic
           COMMIT_SHA=$(printf '%s' "${{ github.sha }}" | cut -c1-8)
 
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+          if [[ "$GITHUB_REF_NAME" != "master" ]]; then
             # Feature branches: 9.5.0-feature-name.buildnumber (NuGet SemVer 2.0.0)
-            BRANCH_NAME="$GITHUB_HEAD_REF"
+            BRANCH_NAME="$GITHUB_REF_NAME"
             # Sanitize branch name for use in version and artifact names
             SAFE_BRANCH=$(printf '%s' "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g' | tr '[:upper:]' '[:lower:]')
             VERSION="${BASE_VERSION}-${SAFE_BRANCH}.${RUN_NUMBER}"
@@ -249,6 +271,9 @@ jobs:
             /p:PackageVersion=${{ steps.version.outputs.version }} \
             /p:PackageId=LocalStack.Aspire.Hosting
 
+      - name: "Verify packed consumer compatibility"
+        run: dotnet tools/localstack-tool.cs -- verify-consumer "$GITHUB_WORKSPACE/artifacts" "$GITHUB_WORKSPACE/artifacts/compatibility"
+
       - name: "Push to GitHub Packages"
         run: |
           echo "📦 Publishing to GitHub Packages..."
@@ -269,8 +294,8 @@ jobs:
       - name: "Generate Build Summary"
         run: |
           echo "📦 Generating build summary..."
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
-            BRANCH_OR_REF="$GITHUB_HEAD_REF"
+          if [[ "$GITHUB_REF_NAME" != "master" ]]; then
+            BRANCH_OR_REF="$GITHUB_REF_NAME"
           else
             BRANCH_OR_REF="$GITHUB_REF_NAME"
           fi

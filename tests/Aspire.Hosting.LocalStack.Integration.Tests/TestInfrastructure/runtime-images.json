@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "images": {
+    "current": {
+      "registry": "docker.io",
+      "image": "localstack/localstack",
+      "tag": "2026.10.6",
+      "digest": null,
+      "observed_index_digest": "sha256:f94401988db4c01a5b2634d37d698a9b11c93f74c1ad0f7a8849f5ebd73dcbdc",
+      "platform": "linux/amd64",
+      "observed_utc": "2026-11-06T12:02:11.688537+00:00",
+      "evidence": "https://hub.docker.com/v2/repositories/localstack/localstack/tags/2026.10.6"
+    },
+    "legacy": {
+      "registry": "docker.io",
+      "image": "localstack/localstack",
+      "tag": "4.14.0",
+      "digest": null,
+      "observed_index_digest": "sha256:3ebc37595918b8accb852f8048fef2aff047d465167edd655528065b07bc364a",
+      "platform": "linux/amd64",
+      "observed_utc": "2026-10-17T10:44:35.127874+00:00",
+      "evidence": "https://hub.docker.com/v2/repositories/localstack/localstack/tags/4.14.0"
+    }
+  }
+}

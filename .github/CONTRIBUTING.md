@@ -24,7 +24,7 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### Prerequisites
 
-- [.NET SDK 10.0.402 or a newer 10.0.x SDK](https://dotnet.microsoft.com/download) - pinned in `global.json` (`rollForward: latestFeature`, prereleases disallowed)
+- [.NET SDK 10.0.404 or a newer 10.0.x SDK](https://dotnet.microsoft.com/download) - pinned in `global.json` (`rollForward: latestFeature`, prereleases disallowed)
 - The .NET 8.0 and .NET 9.0 runtimes - the projects multi-target `net8.0`, `net9.0` and `net10.0`, and the unit tests execute on all three (CI installs the `8.0.x`, `9.0.x` and `10.0.x` SDKs)
 - For the integration tests only: [Docker](https://docs.docker.com/get-docker/) (LocalStack container), plus [Node.js](https://nodejs.org/) and the [AWS CDK CLI](https://docs.aws.amazon.com/cdk/v2/guide/cli.html) (`npm install -g aws-cdk@2`) for the CDK playground AppHost
 - [Git](https://git-scm.com/downloads)
@@ -52,6 +52,8 @@ This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
    # Build solution
    dotnet build --configuration Release
    ```
+
+   The repository uses LF line endings on every OS: `.gitattributes` checks text files out with LF and `.editorconfig` sets `end_of_line = lf`. The Release build enforces formatting, so a file with CRLF endings fails with `IDE0055`. If a clone made before `.gitattributes` existed still has CRLF files, commit or stash your work, then run `git rm --cached -r . -q && git reset --hard` once to check everything out again with LF.
 
 3. **Run Tests**
 
@@ -163,6 +165,7 @@ When adding tests:
 - Follow existing naming conventions
 - Test both success and error scenarios
 - Include tests for edge cases
+- Create unit-test AppHost builders with `TestApplicationBuilder.CreateBuilder`, never `DistributedApplication.CreateBuilder` (the analyzer bans it in the unit test project). The helper drops environment-variable configuration, so a developer's `LOCALSTACK_AUTH_TOKEN` or `LocalStack__*` values cannot change a test's outcome
 
 ## 📚 Documentation
 

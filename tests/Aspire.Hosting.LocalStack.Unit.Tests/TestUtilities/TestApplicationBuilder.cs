@@ -1,12 +1,38 @@
+using Microsoft.Extensions.Configuration.EnvironmentVariables;
+
 namespace Aspire.Hosting.LocalStack.Unit.Tests.TestUtilities;
 
 internal static class TestApplicationBuilder
 {
+    /// <summary>
+    /// Creates an AppHost builder that does not read the machine's environment variables.
+    /// The package reads <c>LOCALSTACK_AUTH_TOKEN</c> and the <c>LocalStack</c> and
+    /// <c>Aspire:Hosting:LocalStack</c> sections from configuration, so a developer's
+    /// ambient values would otherwise change what a unit test observes. Command-line
+    /// arguments still apply; tests set any other value explicitly.
+    /// </summary>
+    public static IDistributedApplicationBuilder CreateBuilder(string[] args)
+    {
+#pragma warning disable RS0030 // The one sanctioned call; every other unit test goes through this method.
+        var builder = DistributedApplication.CreateBuilder(args);
+#pragma warning restore RS0030
+        var sources = builder.Configuration.Sources;
+        for (var index = sources.Count - 1; index >= 0; index--)
+        {
+            if (sources[index] is EnvironmentVariablesConfigurationSource)
+            {
+                sources.RemoveAt(index);
+            }
+        }
+
+        return builder;
+    }
+
     public static DistributedApplication Create(Action<IDistributedApplicationBuilder> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
 
-        var builder = DistributedApplication.CreateBuilder([]);
+        var builder = CreateBuilder([]);
         configure(builder);
         return builder.Build(); // Build but never Run()
     }

@@ -144,6 +144,37 @@ public class PublicApiCompatibilityTests
         await Assert.That(typeof(AwsService).GetCustomAttribute<ObsoleteAttribute>()).IsNull();
     }
 
+    [Test]
+    public async Task Runtime_Preset_Should_Be_An_Additive_Options_Extension()
+    {
+        var method = typeof(LocalStackContainerOptionsExtensions).GetMethod(
+            nameof(LocalStackContainerOptionsExtensions.WithLegacy),
+            BindingFlags.Public | BindingFlags.Static,
+            [typeof(LocalStackContainerOptions), typeof(bool)]);
+
+        await Assert.That(method).IsNotNull();
+        await Assert.That(method!.ReturnType).IsEqualTo(typeof(LocalStackContainerOptions));
+        await Assert.That(method.GetParameters()[1].IsOptional).IsTrue();
+        await Assert.That(method.GetParameters()[1].DefaultValue is true).IsTrue();
+        await Assert.That(method.GetCustomAttribute<ObsoleteAttribute>()).IsNull();
+    }
+
+    [Test]
+    public async Task Activation_Input_Should_Be_Additive_Options_Overloads()
+    {
+        var extensionType = typeof(LocalStackContainerOptionsExtensions);
+        var literal = extensionType.GetMethod(nameof(LocalStackContainerOptionsExtensions.WithAuthToken),
+            BindingFlags.Public | BindingFlags.Static, [typeof(LocalStackContainerOptions), typeof(string)]);
+        var parameter = extensionType.GetMethod(nameof(LocalStackContainerOptionsExtensions.WithAuthToken),
+            BindingFlags.Public | BindingFlags.Static,
+            [typeof(LocalStackContainerOptions), typeof(IResourceBuilder<ParameterResource>)]);
+
+        await Assert.That(literal).IsNotNull();
+        await Assert.That(parameter).IsNotNull();
+        await Assert.That(literal!.ReturnType).IsEqualTo(typeof(LocalStackContainerOptions));
+        await Assert.That(parameter!.ReturnType).IsEqualTo(typeof(LocalStackContainerOptions));
+    }
+
     private static MethodInfo? FindPublicAddLocalStack(params Type[] parameterTypes)
         => typeof(LocalStackResourceBuilderExtensions).GetMethod(
             nameof(LocalStackResourceBuilderExtensions.AddLocalStack),

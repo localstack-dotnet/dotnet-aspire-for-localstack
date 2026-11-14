@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "scenario_groups": ["lambda", "cdk", "eager-lazy", "eager-single", "eager-multiple", "eager-empty", "fail-fast", "explicit-reference", "endpoint-contract"],
+  "scenarios": [
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.LocalStack.LocalStackEndpointContractTests","method":"Host_And_Managed_Container_Client_Requests_Use_Their_Own_Network","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.LocalStack.ExplicitReferenceContractTests","method":"Explicit_Import_Is_ReadOnly_And_Bare_Workload_Receives_Client9","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.LocalStack.DynamoDbLocalFailFastTests","method":"UseLocalStack_Should_Fail_Fast_When_DynamoDb_Local_Is_Registered","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.EagerLoadedServices.EagerLoadedServicesTests","method":"LocalStack_Should_Lazy_Load_Services_By_Default_Async","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.EagerLoadedServices.EagerLoadedServicesTests","method":"LocalStack_Should_Eagerly_Load_Services_When_Configured_Async","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.EagerLoadedServices.EagerLoadedServicesTests","method":"LocalStack_Should_Eagerly_Load_Multiple_Services_Async","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.EagerLoadedServices.EagerLoadedServicesTests","method":"LocalStack_Should_Handle_Empty_EagerLoadedServices_Like_Lazy_Loading_Async","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"LocalStack_Should_Be_Healthy","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"CloudFormation_Stack_Should_Have_Required_Outputs","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"S3_Bucket_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"SNS_ChatTopic_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"SQS_ChatMessagesQueue_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Provisioning.LocalStackCdkResourceTests","method":"DynamoDB_ChatMessagesTable_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"LocalStack_Should_Be_Healthy","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"CloudFormation_Stack_Should_Have_Required_Outputs","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"S3_QrBucket_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"DynamoDB_UrlsTable_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"SQS_AnalyticsQueue_Should_Exist","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaResourceTests","method":"DynamoDB_AnalyticsTable_Should_Exist_With_Correct_Schema","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaFunctionalTests","method":"UrlShortener_Should_Create_Short_Url","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaFunctionalTests","method":"UrlShortener_Should_Generate_QrCode_Asynchronously","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaFunctionalTests","method":"Redirector_Should_Redirect_To_Original_Url","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaFunctionalTests","method":"Analyzer_Lambda_Should_Process_Events_From_Queue","case":null},
+    {"class":"Aspire.Hosting.LocalStack.Integration.Tests.Playground.Lambda.LocalStackLambdaFunctionalTests","method":"Redirecting_Url_Should_Send_Analytics_Event_And_Be_Processed","case":null}
+  ]
+}

@@ -13,13 +13,16 @@ public class DynamoDbLocalFailFastTests
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(TimeSpan.FromMinutes(2));
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
         // Create has no non-generic async overload; the sync overload is a builder factory (no I/O).
 #pragma warning disable CA1849
-        await using var builder = DistributedApplicationTestingBuilder.Create("LocalStack:UseLocalStack=true");
+        await using var builder = DistributedApplicationTestingBuilder.Create(runtime.CreateAppHostArguments());
 #pragma warning restore CA1849
 
-        var localStack = builder.AddLocalStack("localstack");
+        var localStack = builder.AddLocalStack("localstack", awsConfig: null,
+            configureContainer: container => runtime.ConfigureContainer(container));
+        await runtime.WriteImageReceiptAsync(localStack!.Resource, "fail-fast", runtime.OutputDirectory, cts.Token);
         builder.UseLocalStack(localStack);
         builder.AddAWSDynamoDBLocal("dynamodb-local");
 

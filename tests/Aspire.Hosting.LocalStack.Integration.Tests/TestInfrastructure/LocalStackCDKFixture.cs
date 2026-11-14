@@ -7,6 +7,7 @@ namespace Aspire.Hosting.LocalStack.Integration.Tests.TestInfrastructure;
 public sealed class LocalStackCdkFixture : IAsyncInitializer, IAsyncDisposable
 {
     private DistributedApplication? _app;
+    private IDistributedApplicationTestingBuilder? _builder;
     private CloudFormationStackOutputs? _stackOutputs;
 
     public DistributedApplication App => _app ?? throw new InvalidOperationException("App not initialized");
@@ -23,9 +24,13 @@ public sealed class LocalStackCdkFixture : IAsyncInitializer, IAsyncDisposable
     public async Task InitializeAsync()
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+        var runtime = await RuntimeTestConfiguration.ForCurrentProcessAsync(cts.Token);
 
         var appHost = await DistributedApplicationTestingBuilder
-            .CreateAsync<Projects.LocalStack_Provisioning_CDK_AppHost>(["LocalStack:UseLocalStack=true"], cts.Token);
+            .CreateAsync<Projects.LocalStack_Provisioning_CDK_AppHost>(runtime.CreateAppHostArguments(), cts.Token);
+        _builder = appHost;
+        await runtime.WriteImageReceiptAsync(appHost.Resources.Single(resource => resource.Name == "localstack"),
+            "cdk", runtime.OutputDirectory, cts.Token);
 
         // Configure logging to capture Aspire app logs
         appHost.Services.AddLogging(logging =>
@@ -58,9 +63,9 @@ public sealed class LocalStackCdkFixture : IAsyncInitializer, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        if (_app is not null)
+        if (_builder is not null)
         {
-            await _app.DisposeAsync();
+            await _builder.DisposeAsync();
         }
     }
 }

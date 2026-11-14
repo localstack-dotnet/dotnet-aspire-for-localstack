@@ -11,6 +11,11 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <ProjectReference Include="../../playground/LocalStack.EndpointProbe/LocalStack.EndpointProbe.csproj" ReferenceOutputAssembly="false"/>
+        <None Update="TestInfrastructure/runtime-images.json" TargetPath="runtime-images.json" CopyToOutputDirectory="PreserveNewest"/>
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="Aspire.Hosting.AppHost"/>
         <PackageReference Include="AWSSDK.Core"/>
         <PackageReference Include="AWSSDK.DynamoDBv2"/>

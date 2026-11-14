@@ -1,2 +1,5 @@
 M:Aspire.Hosting.DistributedApplication.RunAsync(System.Threading.CancellationToken); Do not use RunAsync in Unit Test project
 M:Aspire.Hosting.DistributedApplication.Run; Do not use Run in the Unit Test project
+M:Aspire.Hosting.DistributedApplication.CreateBuilder; Use TestApplicationBuilder.CreateBuilder, which ignores the machine's environment variables
+M:Aspire.Hosting.DistributedApplication.CreateBuilder(System.String[]); Use TestApplicationBuilder.CreateBuilder, which ignores the machine's environment variables
+M:Aspire.Hosting.DistributedApplication.CreateBuilder(Aspire.Hosting.DistributedApplicationOptions); Use TestApplicationBuilder.CreateBuilder, which ignores the machine's environment variables

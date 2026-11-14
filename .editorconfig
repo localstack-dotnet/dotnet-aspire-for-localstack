@@ -13,6 +13,9 @@ root = true
 # =============================================================================
 
 [*]
+# LF everywhere, matching .gitattributes. Without it Roslyn assumes the OS
+# newline, so a Windows Release build reports IDE0055 on LF checkouts.
+end_of_line = lf
 insert_final_newline = true
 indent_style = space
 charset = utf-8

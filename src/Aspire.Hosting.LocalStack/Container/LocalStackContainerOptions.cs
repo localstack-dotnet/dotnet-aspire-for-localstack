@@ -3,6 +3,7 @@
 
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.LocalStack.Container;
+using Aspire.Hosting.LocalStack.Internal;
 using LocalStack.Client.Enums;
 
 namespace Aspire.Hosting.LocalStack;
@@ -12,6 +13,10 @@ namespace Aspire.Hosting.LocalStack;
 /// </summary>
 public sealed class LocalStackContainerOptions
 {
+    internal LocalStackRuntimePreset RuntimePreset { get; set; }
+
+    internal LocalStackAuthTokenSource? AuthTokenSource { get; set; }
+
     /// <summary>
     /// Gets or sets the container lifetime behavior.
     /// </summary>

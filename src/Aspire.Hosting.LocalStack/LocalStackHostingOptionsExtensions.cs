@@ -1,7 +1,9 @@
 #pragma warning disable IDE0130
 // ReSharper disable CheckNamespace
 
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.LocalStack;
+using Aspire.Hosting.LocalStack.Internal;
 
 namespace Aspire.Hosting;
 
@@ -74,6 +76,60 @@ public static class LocalStackHostingOptionsExtensions
         options.AccessKeyId = accessKeyId;
         options.SecretAccessKey = secretAccessKey;
         options.SessionToken = sessionToken;
+        return options;
+    }
+}
+
+/// <summary>
+/// Fluent configuration for LocalStack container runtime selection.
+/// </summary>
+public static class LocalStackContainerOptionsExtensions
+{
+    /// <summary>
+    /// Selects an explicit container activation token above environment and host configuration.
+    /// </summary>
+    /// <param name="options">The container options.</param>
+    /// <param name="authToken">The activation token. Blank input suppresses lower-priority sources.</param>
+    /// <returns>The same <paramref name="options"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when an argument is <see langword="null"/>.</exception>
+    public static LocalStackContainerOptions WithAuthToken(this LocalStackContainerOptions options, string authToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        options.AuthTokenSource = LocalStackAuthTokenSource.FromLiteral(authToken);
+        return options;
+    }
+
+    /// <summary>
+    /// Selects a deferred container activation parameter above environment and host configuration.
+    /// </summary>
+    /// <param name="options">The container options.</param>
+    /// <param name="authToken">The secret activation parameter. Its value is not resolved here.</param>
+    /// <returns>The same <paramref name="options"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when an argument is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the parameter is not marked secret.</exception>
+    public static LocalStackContainerOptions WithAuthToken(
+        this LocalStackContainerOptions options,
+        IResourceBuilder<ParameterResource> authToken)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        options.AuthTokenSource = LocalStackAuthTokenSource.FromParameter(authToken);
+        return options;
+    }
+
+    /// <summary>
+    /// Selects the legacy runtime preset without changing explicit container image overrides.
+    /// </summary>
+    /// <param name="options">The container options.</param>
+    /// <param name="enabled">Whether to select the legacy preset instead of the current preset.</param>
+    /// <returns>The same <paramref name="options"/> instance for chaining.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="options"/> is <see langword="null"/>.</exception>
+    public static LocalStackContainerOptions WithLegacy(this LocalStackContainerOptions options, bool enabled = true)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        options.RuntimePreset = enabled ? LocalStackRuntimePreset.Legacy : LocalStackRuntimePreset.Current;
         return options;
     }
 }

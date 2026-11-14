@@ -195,7 +195,7 @@ public class LocalStackEndpointConflictWarningTests
 
     private static DistributedApplication CreateAppWithWorker(Action<IDistributedApplicationBuilder> configure)
     {
-        var builder = DistributedApplication.CreateBuilder(["--AppHost:Operation=publish"]);
+        var builder = TestApplicationBuilder.CreateBuilder(["--AppHost:Operation=publish"]);
         configure(builder);
         return builder.Build();
     }

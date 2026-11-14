@@ -1,5 +1,4 @@
-﻿using System.Globalization;
-using Amazon;
+﻿using Amazon;
 using Amazon.CloudFormation;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.AWS.CDK;
@@ -18,9 +17,9 @@ internal static class LocalStackResourceConfigurator
     /// Configures a CloudFormation resource to use LocalStack endpoints.
     /// </summary>
     /// <param name="cloudFormationResource">The CloudFormation resource to configure.</param>
-    /// <param name="localStackUrl">The LocalStack URL.</param>
+    /// <param name="localStackUrl">The AppHost-side allocated LocalStack URL.</param>
     /// <param name="state">The resolved LocalStack hosting state.</param>
-    internal static void ConfigureCloudFormationResource(ICloudFormationTemplateResource cloudFormationResource, Uri localStackUrl, LocalStackHostingState state)
+    internal static void ConfigureCloudFormationResource(ICloudFormationResource cloudFormationResource, Uri localStackUrl, LocalStackHostingState state)
     {
         ArgumentNullException.ThrowIfNull(cloudFormationResource);
         ArgumentNullException.ThrowIfNull(localStackUrl);
@@ -68,12 +67,12 @@ internal static class LocalStackResourceConfigurator
     /// Configures a project resource with LocalStack environment variables.
     /// </summary>
     /// <param name="projectResourceBuilder">The project resource to configure.</param>
-    /// <param name="localStackUrl">The LocalStack URL.</param>
+    /// <param name="endpoint">The LocalStack endpoint resolved in the workload's network context.</param>
     /// <param name="state">The resolved LocalStack hosting state.</param>
-    internal static void ConfigureProjectResource(IResourceBuilder<IResourceWithEnvironment> projectResourceBuilder, Uri localStackUrl, LocalStackHostingState state)
+    internal static void ConfigureProjectResource(IResourceBuilder<IResourceWithEnvironment> projectResourceBuilder, EndpointReference endpoint, LocalStackHostingState state)
     {
         ArgumentNullException.ThrowIfNull(projectResourceBuilder);
-        ArgumentNullException.ThrowIfNull(localStackUrl);
+        ArgumentNullException.ThrowIfNull(endpoint);
         ArgumentNullException.ThrowIfNull(state);
 
         projectResourceBuilder.WithEnvironment(context =>
@@ -88,10 +87,10 @@ internal static class LocalStackResourceConfigurator
             context.EnvironmentVariables["LocalStack__Session__RegionName"] = state.Region;
 
             // Config configuration - LocalStack connection settings
-            context.EnvironmentVariables["LocalStack__Config__LocalStackHost"] = localStackUrl.Host;
+            context.EnvironmentVariables["LocalStack__Config__LocalStackHost"] = ReferenceExpression.Create($"{endpoint.Property(EndpointProperty.Host)}");
             context.EnvironmentVariables["LocalStack__Config__UseSsl"] = state.UseSsl.ToString();
             context.EnvironmentVariables["LocalStack__Config__UseLegacyPorts"] = state.UseLegacyPorts.ToString();
-            context.EnvironmentVariables["LocalStack__Config__EdgePort"] = localStackUrl.Port.ToString(CultureInfo.InvariantCulture);
+            context.EnvironmentVariables["LocalStack__Config__EdgePort"] = ReferenceExpression.Create($"{endpoint.Property(EndpointProperty.Port)}");
         });
     }
 
