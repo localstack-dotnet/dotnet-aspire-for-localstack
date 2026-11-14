@@ -101,9 +101,16 @@ select an appropriate disk-backed parent through the process temp environment.
 The implementation uses portable .NET APIs, but native Windows/macOS resource and
 cancellation behavior still requires validation; Linux results are not OS parity.
 Linux success, initialization failure and native-platform timeout probes left no
-wrapper directories. External Ctrl+C remains unverified: the headless readiness
-probe did not deliver SIGINT to the managed handler, and forced termination is
-not cleanup acceptance. No alternate signal path is claimed as a fix.
+wrapper directories. On Linux, Ctrl+C sent to the whole foreground process group
+stops a run within a second: the command exits 130, its record says `cancelled`,
+the test processes and containers are gone, and the incomplete scratch is kept
+and reported. A session network created at the moment of cancellation can remain,
+without containers, until the next Aspire start removes it. An earlier headless
+probe that seemed to show the signal never reaching the managed handler started
+the command as a background job of a non-interactive shell. Such jobs start with
+SIGINT ignored, so .NET installed no handler: a probe defect, not a product one.
+To reproduce Ctrl+C headlessly, restore the default SIGINT disposition and give
+the command its own process group.
 
 For a manual legacy integration run:
 
