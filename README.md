@@ -1,6 +1,6 @@
 # .NET Aspire Integrations for LocalStack
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![NuGet Version](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Fpackages%2Fnuget%2FLocalStack.Aspire.Hosting%3Fprerelease%3Dtrue)](https://www.nuget.org/packages/LocalStack.Aspire.Hosting) [![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Fpackages%2Fgithub%2Flocalstack-dotnet%2FLocalStack.Aspire.Hosting%3Fprerelease%3Dtrue)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/LocalStack.Aspire.Hosting) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Ftests%2Flinux%2Flocalstack-dotnet%2Fdotnet-aspire-for-localstack%2Fmaster)](https://api.localstackfor.net/redirect/test-results/linux/localstack-dotnet/dotnet-aspire-for-localstack/master)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) [![NuGet Version](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Fpackages%2Fnuget%2FLocalStack.Aspire.Hosting%3Fprerelease%3Dtrue)](https://www.nuget.org/packages/LocalStack.Aspire.Hosting) [![CI/CD Pipeline](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/ci-cd.yml) [![Security](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/actions/workflows/github-code-scanning/codeql) [![Linux Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Ftests%2Flinux%2Flocalstack-dotnet%2Fdotnet-aspire-for-localstack%2Fmaster)](https://api.localstackfor.net/redirect/test-results/linux/localstack-dotnet/dotnet-aspire-for-localstack/master)
 
 A .NET Aspire hosting integration for [LocalStack](https://localstack.cloud/) that enables local development and testing of cloud applications using AWS services. This package extends the official [AWS integrations for .NET Aspire](https://github.com/aws/integrations-on-dotnet-aspire-for-aws) to provide LocalStack-specific functionality.
 
@@ -13,25 +13,6 @@ dotnet add package LocalStack.Aspire.Hosting
 > **Package Note**: The package is named `LocalStack.Aspire.Hosting` but uses the namespace `Aspire.Hosting.LocalStack` to align with .NET Aspire hosting conventions. This ensures consistency with other Aspire hosting integrations while maintaining a unique package identity.
 
 **Requirements**: .NET 8.0 or later (supports .NET 8, .NET 9, and .NET 10)
-
-### Development Builds
-
-For access to the latest features and bug fixes:
-
-```bash
-# Add GitHub Packages source
-dotnet nuget add source https://nuget.pkg.github.com/localstack-dotnet/index.json \
-  --name github-localstack-for-aspire \
-  --username YOUR_GITHUB_USERNAME \
-  --password YOUR_GITHUB_TOKEN
-
-# Install development packages
-dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-localstack-for-aspire
-```
-
-> **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
-
-> **Note**: NuGet can only encrypt stored credentials on Windows. On Linux and macOS add `--store-password-in-clear-text`, which writes the token unencrypted into your NuGet config.
 
 ## Version Policy
 
@@ -240,6 +221,27 @@ The `LocalStack.Aspire.Hosting` host automatically transfers LocalStack configur
 - **Eager Service Loading**: Pre-load specific AWS services for faster startup in CI/CD environments
 - **Extension-Based**: Works alongside official AWS integrations for .NET Aspire without code changes
 - **Lambda Event Sources**: SQS and DynamoDB Streams event-source emulators (`WithSQSEventSource`, `WithDynamoDBStreamsEventSource`) are automatically wired to LocalStack
+
+## Development Builds
+
+[![Github Packages](https://img.shields.io/endpoint?url=https%3A%2F%2Fapi.localstackfor.net%2Fbadges%2Fpackages%2Fgithub%2Flocalstack-dotnet%2FLocalStack.Aspire.Hosting%3Fprerelease%3Dtrue)](https://github.com/localstack-dotnet/dotnet-aspire-for-localstack/pkgs/nuget/LocalStack.Aspire.Hosting)
+
+For access to the latest features and bug fixes:
+
+```bash
+# Add GitHub Packages source
+dotnet nuget add source https://nuget.pkg.github.com/localstack-dotnet/index.json \
+  --name github-localstack-for-aspire \
+  --username YOUR_GITHUB_USERNAME \
+  --password YOUR_GITHUB_TOKEN
+
+# Install development packages
+dotnet add package LocalStack.Aspire.Hosting --prerelease --source github-localstack-for-aspire
+```
+
+> **Note**: GitHub Packages requires a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token) with `read:packages` permission.
+
+> **Note**: NuGet can only encrypt stored credentials on Windows. On Linux and macOS add `--store-password-in-clear-text`, which writes the token unencrypted into your NuGet config.
 
 ## Known Limitations
 
