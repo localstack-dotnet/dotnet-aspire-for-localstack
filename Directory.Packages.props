@@ -44,11 +44,11 @@
     <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.21.0"/>
     <!-- third-party packages -->
     <PackageVersion Include="Net.Codecrete.QrCodeGenerator" Version="3.2.1"/>
-    <PackageVersion Include="SkiaSharp" Version="4.156.0"/>
-    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.156.0"/>
+    <PackageVersion Include="SkiaSharp" Version="4.156.1"/>
+    <PackageVersion Include="SkiaSharp.NativeAssets.Linux" Version="4.156.1"/>
     <!-- test packages -->
     <PackageVersion Include="Aspire.Hosting.Testing" Version="13.6.5"/>
     <PackageVersion Include="NSubstitute" Version="6.2.0"/>
-    <PackageVersion Include="TUnit" Version="1.84.0"/>
+    <PackageVersion Include="TUnit" Version="1.85.0"/>
   </ItemGroup>
 </Project>

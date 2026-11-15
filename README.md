@@ -54,7 +54,7 @@ When explicitly disabled, this integration leaves resources on the official AWS 
 
 Configure LocalStack integration in your Aspire AppHost project using the package-owned hosting API:
 
-The unreleased baseline defaults to a qualified current LocalStack image, which
+Since 13.6.0 the package defaults to a qualified current LocalStack image, which
 requires `LOCALSTACK_AUTH_TOKEN` from secure AppHost configuration and suitable
 LocalStack entitlement. AWS access keys in the example are separate from this
 activation token. See [runtime selection and activation](docs/CONFIGURATION.md#runtime-selection-and-container-activation)
