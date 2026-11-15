@@ -545,6 +545,29 @@ public sealed class RuntimeToolingTests : IDisposable
     }
 
     [Test]
+    public async Task Test_Platform_Pipes_Stay_In_The_System_Temp_Directory()
+    {
+        string? temp = null;
+        string? pipes = null;
+        await RunFixtureAsync(async (info, _) =>
+        {
+            temp = info.Environment["TMPDIR"];
+            pipes = info.Environment.TryGetValue("TESTINGPLATFORM_PIPE_DIRECTORY", out var value) ? value : null;
+            await EmitReportsAsync(info);
+            return (0, "");
+        });
+
+        // Unix domain socket paths are limited to 103 bytes on macOS, whose system temp path is
+        // already about 50 bytes long, so the test platform's pipes must not follow the redirect.
+        await Assert.That(pipes).IsNotNull();
+        await Assert.That(temp).StartsWith(Path.GetTempPath());
+        await Assert.That(pipes).StartsWith(Path.GetTempPath());
+        await Assert.That(pipes!.Length).IsLessThanOrEqualTo(Path.GetTempPath().Length + 12);
+        await Assert.That(pipes.StartsWith(Path.GetDirectoryName(temp)!, StringComparison.Ordinal)).IsFalse();
+        await Assert.That(Directory.Exists(pipes)).IsFalse();
+    }
+
+    [Test]
     public async Task Runner_Records_Final_Artifact_Hashes_And_Execution_Id()
     {
         string? executionId = null;

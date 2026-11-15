@@ -36,6 +36,9 @@ internal static class RuntimeRunner
         var temp = Path.Combine(scratch.FullName, "temp");
         Directory.CreateDirectory(reports);
         Directory.CreateDirectory(temp);
+        // The test platform's IPC pipes are Unix domain sockets, whose paths may not exceed 103 bytes.
+        // Under the scratch directory they are too long on macOS, so they get a short private directory.
+        var pipes = Directory.CreateTempSubdirectory("lsp-");
         var credentials = Path.Combine(scratch.FullName, "empty-aws");
         await File.WriteAllTextAsync(credentials, string.Empty, cancellationToken).ConfigureAwait(false);
         var revision = await git(["rev-parse", "HEAD"]).ConfigureAwait(false);
@@ -55,7 +58,7 @@ internal static class RuntimeRunner
         };
         await WriteRecordAsync().ConfigureAwait(false);
         await Console.Out.WriteLineAsync($"Runtime {runtime} started PID={Environment.ProcessId}").ConfigureAwait(false);
-        var info = CreateCommand(root, runtime, reports, temp, credentials, secret, manifest["scenarios"]!.AsArray().Count);
+        var info = CreateCommand(root, runtime, reports, temp, pipes.FullName, credentials, secret, manifest["scenarios"]!.AsArray().Count);
         info.Environment["GITHUB_STEP_SUMMARY"] = summary;
         info.Environment["LOCALSTACK_TEST_EXECUTION_ID"] = executionId;
         var completed = false;
@@ -84,6 +87,7 @@ internal static class RuntimeRunner
                 await Console.Error.WriteLineAsync(summaryFailure).ConfigureAwait(false);
             }
 
+            await DeletePipeDirectoryAsync(pipes).ConfigureAwait(false);
             await FinalizeAsync(output, scratch, record, completed, failed, cancellationToken).ConfigureAwait(false);
         }
 
@@ -95,6 +99,20 @@ internal static class RuntimeRunner
         return exitCode;
 
         Task WriteRecordAsync() => File.WriteAllTextAsync(Path.Combine(output, "profile-run.json"), record.ToJsonString(), CancellationToken.None);
+    }
+
+    private static async Task DeletePipeDirectoryAsync(DirectoryInfo pipes)
+    {
+        try
+        {
+            pipes.Delete(recursive: true);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The directory holds only the test platform's sockets, never evidence, so a leftover
+            // is reported without failing the run.
+            await Console.Error.WriteLineAsync($"Test platform pipe directory retained: {pipes.FullName} ({exception.Message})").ConfigureAwait(false);
+        }
     }
 
     private static async Task<(int ExitCode, string Output)> ExecuteWithinLimitAsync(
@@ -217,7 +235,7 @@ internal static class RuntimeRunner
     }
 
     private static ProcessStartInfo CreateCommand(string root, string runtime, string reports, string temp,
-        string credentials, string? secret, int minimumTests)
+        string pipes, string credentials, string? secret, int minimumTests)
     {
         var project = Path.Combine(root, "tests/Aspire.Hosting.LocalStack.Integration.Tests/Aspire.Hosting.LocalStack.Integration.Tests.csproj");
         var info = ProcessRunner.Create("dotnet", root,
@@ -236,6 +254,7 @@ internal static class RuntimeRunner
         info.Environment["AWS_EC2_METADATA_DISABLED"] = "true";
         info.Environment["AWS_SHARED_CREDENTIALS_FILE"] = credentials;
         info.Environment["AWS_CONFIG_FILE"] = credentials;
+        info.Environment["TESTINGPLATFORM_PIPE_DIRECTORY"] = pipes;
         info.Environment["TMPDIR"] = temp;
         info.Environment["TEMP"] = temp;
         info.Environment["TMP"] = temp;
