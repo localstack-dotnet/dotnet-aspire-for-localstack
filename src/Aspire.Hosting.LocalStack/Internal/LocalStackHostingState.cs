@@ -1,3 +1,5 @@
+using LocalStack.Client.Contracts;
+
 namespace Aspire.Hosting.LocalStack.Internal;
 
 /// <summary>
@@ -39,4 +41,24 @@ internal sealed record LocalStackHostingState
     /// preserved here so downstream LocalStack.Client wiring can still observe it.
     /// </summary>
     public required bool UseLegacyPorts { get; init; }
+
+    /// <summary>
+    /// Translates LocalStack.Client options, as the deprecated constructor and externally
+    /// implemented resources supply them, into hosting state.
+    /// </summary>
+    internal static LocalStackHostingState FromLocalStackOptions(ILocalStackOptions options)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+
+        return new LocalStackHostingState
+        {
+            Enabled = options.UseLocalStack,
+            Region = options.Session.RegionName,
+            AccessKeyId = options.Session.AwsAccessKeyId,
+            SecretAccessKey = options.Session.AwsAccessKey,
+            SessionToken = options.Session.AwsSessionToken,
+            UseSsl = options.Config.UseSsl,
+            UseLegacyPorts = options.Config.UseLegacyPorts,
+        };
+    }
 }

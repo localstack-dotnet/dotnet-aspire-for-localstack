@@ -21,10 +21,25 @@ internal static class LocalStackEndpointConflictWarning
             return;
         }
 
-        resource.Annotations.Add(new LocalStackEndpointConflictWarningAnnotation());
-
         var logger = loggerService.GetLogger(resource);
-        resource.Annotations.Add(new EnvironmentCallbackAnnotation(context => WarnIfConflict(context, resource.Name, logger)));
+        var callback = new EnvironmentCallbackAnnotation(context => WarnIfConflict(context, resource.Name, logger));
+        resource.Annotations.Add(new LocalStackEndpointConflictWarningAnnotation(callback));
+        resource.Annotations.Add(callback);
+    }
+
+    /// <summary>
+    /// Moves a registered warning callback behind the environment callbacks added so far, so it
+    /// also inspects the LocalStack.Client settings the package adds when it adapts the workload.
+    /// </summary>
+    internal static void MoveAfterExistingCallbacks(IResourceWithEnvironment resource)
+    {
+        ArgumentNullException.ThrowIfNull(resource);
+
+        var marker = resource.Annotations.OfType<LocalStackEndpointConflictWarningAnnotation>().FirstOrDefault();
+        if (marker is not null && resource.Annotations.Remove(marker.Callback))
+        {
+            resource.Annotations.Add(marker.Callback);
+        }
     }
 
     private static void WarnIfConflict(EnvironmentCallbackContext context, string resourceName, ILogger logger)
