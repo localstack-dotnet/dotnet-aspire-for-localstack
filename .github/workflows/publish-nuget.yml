@@ -46,6 +46,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write # OIDC token for NuGet.org Trusted Publishing
 
     steps:
       - name: "Checkout"
@@ -121,13 +122,25 @@ jobs:
             --api-key ${{ secrets.GITHUB_TOKEN }} \
             --skip-duplicate
 
+      # Trusted Publishing: exchange a GitHub OIDC token for a short-lived NuGet.org key, so there is no
+      # long-lived NUGET_API_KEY to rotate or leak. The key lives one hour, hence immediately before the push.
+      # Policy: owner LocalStack.NET, repo localstack-dotnet/dotnet-aspire-for-localstack, workflow publish-nuget.yml.
+      - name: "NuGet.org login (OIDC)"
+        id: nuget-login
+        if: ${{ github.event.inputs.package-source == 'nuget' }}
+        uses: NuGet/login@v1
+        with:
+          user: localstack-dotnet
+
       - name: "Publish to NuGet.org"
         if: ${{ github.event.inputs.package-source == 'nuget' }}
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           echo "📦 Publishing to NuGet.org..."
           dotnet nuget push ./artifacts/*.nupkg \
             --source https://api.nuget.org/v3/index.json \
-            --api-key ${{ secrets.NUGET_API_KEY }} \
+            --api-key "$NUGET_API_KEY" \
             --skip-duplicate
 
       - name: "Upload Package Artifacts"
