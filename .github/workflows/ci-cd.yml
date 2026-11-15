@@ -125,22 +125,35 @@ jobs:
           fail-on-error: true
           max-annotations: 50
 
-      - name: Update test badge via BadgeSmith API
+      # BadgeSmith's update action lives under .github/workflows/ in its repository, so a step
+      # cannot reference it remotely; check it out at the commit api.localstackfor.net runs and
+      # use it by local path, as localstack-dotnet-client does. The HMAC key is the organization's
+      # TESTDATASECRET.
+      - name: "Checkout BadgeSmith action"
         if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
         continue-on-error: true
-        uses: ./.github/actions/update-test-badge
+        uses: actions/checkout@v7
+        with:
+          repository: localstack-dotnet/badge-smith
+          ref: bc7ed07860ec4b0e702add6370c2636daccb2adf
+          path: .badge-smith
+
+      - name: "Update test badge via BadgeSmith API"
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/master'
+        continue-on-error: true
+        uses: ./.badge-smith/.github/workflows/update-test-badge
         with:
           platform: ${{ matrix.name }}
-          test_passed: '${{ steps.test-results.outputs.passed || 0 }}'
-          test_failed: '${{ steps.test-results.outputs.failed || 0 }}'
-          test_skipped: '${{ steps.test-results.outputs.skipped || 0 }}'
+          test_passed: ${{ steps.test-results.outputs.passed || 0 }}
+          test_failed: ${{ steps.test-results.outputs.failed || 0 }}
+          test_skipped: ${{ steps.test-results.outputs.skipped || 0 }}
           test_url_html: ${{ steps.test-results.outputs.url_html || '' }}
-          commit_sha: '${{ github.sha }}'
-          run_id: '${{ github.run_id }}'
-          repository: '${{ github.repository }}'
-          server_url: '${{ github.server_url }}'
-          api_domain: 'api.localstackfor.net'
-          hmac_secret: '${{ secrets.TESTDATASECRET }}'
+          commit_sha: ${{ github.sha }}
+          run_id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          server_url: ${{ github.server_url }}
+          api_base_url: ${{ env.BADGE_API_ENDPOINT }}
+          hmac_secret: ${{ secrets.TESTDATASECRET }}
 
       - name: "Upload Test Artifacts"
         uses: actions/upload-artifact@v7
