@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [13.6.0] - Unreleased
+## [13.6.0] - 2026-11-15
 
 ### Added
 
@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Each run's record (`schema_version` 2) binds the TRX and every image receipt to its `execution_id` by SHA-256. `validate-runtime` rejects stale, dirty, incomplete or mismatched evidence.
   - Reports are masked and checked for the activation token before publication, and the check fails closed.
   - Each profile's test step has a 30-minute limit; a step that hangs, for example on a native prompt nobody can answer, is stopped and fails instead of blocking the run.
+  - The pair runs natively on Linux, Windows and macOS. On macOS the runner keeps the test platform's pipe paths within the 103-byte Unix socket limit, and the integration tests opt out of Aspire's developer certificate, so a run needs no desktop session or keychain prompt.
   - PR checks are secret-free. The authenticated pair runs in the `localstack-current` GitHub environment. Every publication path, CI deployment and the manual workflow alike, requires the passing pair and a packed-consumer `verify-consumer` pass for the same SHA.
 - **Package-owned AppHost configuration.** `LocalStackHostingOptions` (`Enabled`, `Region`, `AccessKeyId`, `SecretAccessKey`, `SessionToken`) now owns host-level LocalStack settings, with `WithEnabled(...)`, `WithRegion(...)`, and `WithCredentials(...)` fluent extensions in the `Aspire.Hosting` namespace — configuring an AppHost no longer requires LocalStack.Client types.
 - **Canonical `Aspire:Hosting:LocalStack` configuration section.** Host settings bind from `Aspire:Hosting:LocalStack` (`Aspire__Hosting__LocalStack__*` as environment variables). The legacy `LocalStack:*` section remains honored at lower precedence; resolution runs defaults → legacy `LocalStack:*` → canonical `Aspire:Hosting:LocalStack:*` → the `configureOptions` callback → `IAWSSDKConfig.Region`.
@@ -23,7 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Current runtime default.** The unreleased default moves from `4.12.0` to `2026.10.6`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
+- **Current runtime default.** The default moves from `4.12.0` to `2026.10.6`, requiring a LocalStack activation token and suitable entitlement. Use the explicit `4.14.0` legacy preset when appropriate; manual image components still win. Missing activation never causes a downgrade or real-AWS fallback. Legacy is tested compatibility, not an integration edition or a promise of future feature parity.
 - **Internal hosting-state boundary.** Resolved configuration is frozen into an immutable internal snapshot, so LocalStack.Client models are translated only at the runtime seam instead of flowing through the hosting API. Workload `LocalStack__*` environment emission is unchanged.
 - **Dependencies**: Updated `Aspire.Hosting` to `13.6.5` and `Aspire.Hosting.AWS` to `13.7.3`
   - **`LocalStack.Client` and `LocalStack.Client.Extensions` 3.0.0.**
@@ -31,7 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - On net8.0 and net9.0 the package resolves the client's `netstandard2.0` asset.
     - Consumers that pin `LocalStack.Client(.Extensions)` below 3.0.0, or `AWSSDK.Core` below 4.0.102.6, now get NU1605 on restore and must raise those pins.
     - On net10.0 the client's registry source generator flows to consuming projects. It adds about 12–20 ms per compilation (measured with `ReportAnalyzer`).
-  - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, SkiaSharp, TUnit, NSubstitute, and the analyzer set to their latest stable versions. `Microsoft.Extensions.Http.Resilience` and `Microsoft.Extensions.ServiceDiscovery.Dns` stay on 10.11.0, the newest 10.x release: their 11.0.0 releases belong to the .NET 11 band, and Aspire 13.6.5 uses the 10.x line
+  - Aligned the AWSSDK and Amazon.Lambda families, OpenTelemetry, SkiaSharp 4.156.1, TUnit 1.85.0, NSubstitute, and the analyzer set to their latest stable versions. `Microsoft.Extensions.Http.Resilience` and `Microsoft.Extensions.ServiceDiscovery.Dns` stay on 10.11.0, the newest 10.x release: their 11.0.0 releases belong to the .NET 11 band, and Aspire 13.6.5 uses the 10.x line
   - Moved the `global.json` SDK pin to `10.0.404`
 - **CDK bootstrap template**: Refreshed the embedded template to the one `aws-cdk` 2.1148.0 ships (`BootstrapVersion` `33`), which adds the `ApplyPermissionsBoundaryToAllRoles` parameter
 - **Version renumbering.** This release is `13.6.0`, not the `13.4.1` the unreleased section previously carried. The package tracks Aspire's major.minor, and it now depends on Aspire 13.6.5. No `13.4.1` was ever published; the entry was renumbered in place.

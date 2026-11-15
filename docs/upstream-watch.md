@@ -136,7 +136,7 @@ upgrade is claimed here.
 
 On 2026-10-17, `4.14.0` started without activation and passed the shared scenarios;
 current `2026.10.0` was exercised with the supplied valid entitlement. The
-unreleased integration now has an explicit legacy preset and deferred secret
+integration now (13.6.0) has an explicit legacy preset and deferred secret
 activation inputs. [Configuration](CONFIGURATION.md#runtime-selection-and-container-activation)
 owns their precedence and migration guidance. This closes the candidate-selection
 question, not vendor account/license management or the release gate. An October

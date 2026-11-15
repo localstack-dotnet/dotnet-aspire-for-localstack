@@ -72,8 +72,7 @@ Options are resolved from lowest to highest precedence: built-in defaults, the l
 
 ## Runtime Selection and Container Activation
 
-These runtime/onboarding APIs are part of the unreleased baseline work. Final
-shared runtime acceptance remains required before release.
+These runtime and onboarding APIs were added in 13.6.0.
 
 The current preset selects `docker.io/localstack/localstack:2026.10.6`.
 `container.WithLegacy()` selects the explicitly supported token-free compatibility
