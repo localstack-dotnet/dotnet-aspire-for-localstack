@@ -562,8 +562,11 @@ public sealed class RuntimeToolingTests : IDisposable
         await Assert.That(pipes).IsNotNull();
         await Assert.That(temp).StartsWith(Path.GetTempPath());
         await Assert.That(pipes).StartsWith(Path.GetTempPath());
+        // The 103-byte limit applies to Unix domain sockets; Windows pipes are not file paths, and
+        // there the random directory name is also longer.
+        var unixSocketBudget = OperatingSystem.IsWindows() ? int.MaxValue : Path.GetTempPath().Length + 53;
         await Assert.That(Path.Combine(pipes!, "MONITORTOHOST_" + new string('0', 32)).Length)
-            .IsLessThanOrEqualTo(Path.GetTempPath().Length + 53);
+            .IsLessThanOrEqualTo(unixSocketBudget);
         await Assert.That(pipes.StartsWith(Path.GetDirectoryName(temp)!, StringComparison.Ordinal)).IsFalse();
         await Assert.That(Directory.Exists(pipes)).IsFalse();
     }
