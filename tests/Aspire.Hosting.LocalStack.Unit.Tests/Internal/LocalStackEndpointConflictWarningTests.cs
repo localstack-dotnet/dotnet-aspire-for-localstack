@@ -40,6 +40,29 @@ public class LocalStackEndpointConflictWarningTests
     }
 
     [Test]
+    public async Task Warns_When_The_Package_Emits_The_Client_Settings_For_A_Workload_With_A_Native_Endpoint()
+    {
+        var builder = TestApplicationBuilder.CreateBuilder(["--AppHost:Operation=publish"]);
+        var localStack = builder.AddLocalStack("localstack", awsConfig: null, options => options.WithEnabled(true))
+                         ?? throw new InvalidOperationException("LocalStack resource was not created.");
+        AllocateLocalhostEndpoint((IResourceWithEndpoints)localStack.Resource);
+        builder.AddResource(new ExecutableResource("worker", "run-worker", "."))
+            .WithReference(localStack)
+            .WithEnvironment("AWS_ENDPOINT_URL", EndpointValue);
+        builder.UseLocalStack(localStack);
+        await using var app = builder.Build();
+        var worker = app.GetResource<ExecutableResource>("worker");
+
+        await PublishBeforeStart(app);
+        await LocalStackConnectionStringAvailableCallback.CreateCallback(builder)(localStack.Resource, null!, CancellationToken.None);
+        var result = await BuildEnvironment(worker);
+        var logLines = GetLogs(app, worker);
+
+        await Assert.That(result.EnvironmentVariables.ToDictionary(StringComparer.Ordinal)["LocalStack__UseLocalStack"]).IsEqualTo("True");
+        await Assert.That(logLines.Count(IsWarningLog)).IsEqualTo(1);
+    }
+
+    [Test]
     [Arguments("false")]
     [Arguments("")]
     public async Task Does_Not_Warn_When_LocalStack_Client_Proxy_Is_False_Or_Missing(string useLocalStackValue)
@@ -208,6 +231,14 @@ public class LocalStackEndpointConflictWarningTests
         worker.Resource.Annotations.Add(new LocalStackEnabledAnnotation(localStack?.Resource ?? throw new InvalidOperationException("LocalStack resource was not created.")));
 
         return worker;
+    }
+
+    private static void AllocateLocalhostEndpoint(IResourceWithEndpoints resource)
+    {
+        var endpoint = resource.Annotations.OfType<EndpointAnnotation>().Single(annotation => annotation.Name == "http");
+        endpoint.AllAllocatedEndpoints.AddOrUpdateAllocatedEndpoint(KnownNetworkIdentifiers.LocalhostNetwork,
+            new AllocatedEndpoint(endpoint, "localhost", 4566, EndpointBindingMode.SingleAddress,
+                targetPortExpression: null, networkId: KnownNetworkIdentifiers.LocalhostNetwork));
     }
 
     private static async Task PublishBeforeStart(DistributedApplication app)

@@ -80,6 +80,7 @@ internal static class LocalStackConnectionStringAvailableCallback
                         ?? throw new DistributedApplicationException("The LocalStack source has no workload endpoint.");
                     LocalStackResourceConfigurator.ConfigureProjectResource(projectResourceBuilder,
                         new EndpointReference(source, LocalStackResource.PrimaryEndpointName), hostingState);
+                    LocalStackEndpointConflictWarning.MoveAfterExistingCallbacks(resourceWithEnvironment);
                 }
             }
 

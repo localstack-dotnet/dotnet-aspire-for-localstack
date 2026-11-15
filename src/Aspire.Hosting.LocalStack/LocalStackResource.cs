@@ -51,8 +51,9 @@ public sealed class LocalStackResource : ContainerResource, ILocalStackResource,
     [Obsolete("Use LocalStackResource(string name, LocalStackHostingState hostingState) through AddLocalStack package-owned overloads instead. This constructor will be removed in the next major version.", false)]
 #pragma warning restore S1133
     public LocalStackResource(string name, ILocalStackOptions options)
-        : this(name, CreateHostingState(options))
+        : this(name, LocalStackHostingState.FromLocalStackOptions(options))
     {
+        _options = options;
     }
 
     internal LocalStackHostingState HostingState { get; }
@@ -77,22 +78,6 @@ public sealed class LocalStackResource : ContainerResource, ILocalStackResource,
     /// </summary>
     public ReferenceExpression ConnectionStringExpression => ReferenceExpression.Create(
         $"{(HostingState.UseSsl ? "https://" : "http://")}{PrimaryEndpoint.Property(EndpointProperty.Host)}:{PrimaryEndpoint.Property(EndpointProperty.Port)}");
-
-    private static LocalStackHostingState CreateHostingState(ILocalStackOptions options)
-    {
-        ArgumentNullException.ThrowIfNull(options);
-
-        return new LocalStackHostingState
-        {
-            Enabled = options.UseLocalStack,
-            Region = options.Session.RegionName,
-            AccessKeyId = options.Session.AwsAccessKeyId,
-            SecretAccessKey = options.Session.AwsAccessKey,
-            SessionToken = options.Session.AwsSessionToken,
-            UseSsl = options.Config.UseSsl,
-            UseLegacyPorts = options.Config.UseLegacyPorts,
-        };
-    }
 
     private static LocalStackOptions CreateLocalStackOptions(LocalStackHostingState state)
         => new(

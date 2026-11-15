@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - **LocalStack.Client-shaped hosting API.** The released all-optional `AddLocalStack(name, localStackOptions, awsConfig, configureContainer)` overload and `AddLocalStackOptions()` are retained as `[Obsolete]` compatibility adapters (warning, not error) and will be removed in the next major version. `ILocalStackResource.Options`, the `LocalStackResource(string, ILocalStackOptions)` constructor, and the `ILocalStackOptions` helpers in `LocalStackConfigurationExtensions` are deprecated alongside them. Migrate to the package-owned `AddLocalStack` overloads and `Aspire:Hosting:LocalStack` configuration.
+- **Source break for positional `null` calls.** A call that passes literal `null` positionally for both the LocalStack options and the AWS config now matches both the released overload and a new one, and the compiler reports CS0121. Examples: `AddLocalStack("localstack", null, null, container => ...)` and `AddLocalStack("localstack", null, null, null)`. Name the arguments instead, for example `AddLocalStack("localstack", awsConfig: null, configureContainer: container => ...)`, or use `AddLocalStack("localstack")`. Already compiled AppHosts are not affected, and named calls only report the CS0618 deprecation warning.
 
 ### Fixed
 
@@ -53,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Avoid combining Client proxy mode and native `AWS_ENDPOINT_URL*` settings.** These configure different routing layers. The pinned AppHost SDK graph contains the custom-endpoint signing correction; the Lambda Test Tool bundles its own older SDK and still requires `us-east-1` for its stream poller. The conflict warning stays read-only and does not select or rewrite a routing lane. See [Upstream Watch](docs/upstream-watch.md).
 - **Intermittent current-runtime Lambda redirect timeout, cause unknown.** One October full run timed out on the analytics redirect request; isolated replays passed, and no cause has been established. Two clean-source current+legacy pairs passed on 2026-11-06: 30/30 on `2026.10.0`, then 32/32 on `2026.10.6` with `4.14.0`. That does not explain the earlier failure. It has not recurred in later local pairs or in the trusted pair on GitHub-hosted runners. The [roadmap](https://github.com/localstack-dotnet/.github/blob/main/roadmap/aspire-hosting.md#ws5--test-integrity--shared-runtime-matrix-first) tracks the remaining acceptance work.
-- **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values and cannot observe callbacks appended after its `BeforeStartEvent` registration.
+- **The conflict warning is best-effort.** When the package can observe coexistence of LocalStack.Client proxy configuration and native `AWS_ENDPOINT_URL*` variables on the same workload, it emits a read-only warning via the resource logger. The warning does not mutate environment values. It sees the `LocalStack__*` settings the package adds to a referenced workload, but not environment callbacks appended after the package adapts that workload.
 
 ## [13.4.0] - 2026-07-09
 
