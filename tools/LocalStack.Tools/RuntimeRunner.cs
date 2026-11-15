@@ -36,9 +36,10 @@ internal static class RuntimeRunner
         var temp = Path.Combine(scratch.FullName, "temp");
         Directory.CreateDirectory(reports);
         Directory.CreateDirectory(temp);
-        // The test platform's IPC pipes are Unix domain sockets, whose paths may not exceed 103 bytes.
-        // Under the scratch directory they are too long on macOS, so they get a short private directory.
-        var pipes = Directory.CreateTempSubdirectory("lsp-");
+        // The test platform's IPC pipes are Unix domain sockets, whose paths may not exceed 103 bytes;
+        // its longest pipe name, MONITORTOHOST_ plus 32 hex digits, is 46 bytes. macOS gives each user a
+        // 49-byte private temp path, so the pipes get an unprefixed private directory of 7 bytes: 102 in all.
+        var pipes = Directory.CreateTempSubdirectory();
         var credentials = Path.Combine(scratch.FullName, "empty-aws");
         await File.WriteAllTextAsync(credentials, string.Empty, cancellationToken).ConfigureAwait(false);
         var revision = await git(["rev-parse", "HEAD"]).ConfigureAwait(false);

@@ -562,7 +562,8 @@ public sealed class RuntimeToolingTests : IDisposable
         await Assert.That(pipes).IsNotNull();
         await Assert.That(temp).StartsWith(Path.GetTempPath());
         await Assert.That(pipes).StartsWith(Path.GetTempPath());
-        await Assert.That(pipes!.Length).IsLessThanOrEqualTo(Path.GetTempPath().Length + 12);
+        await Assert.That(Path.Combine(pipes!, "MONITORTOHOST_" + new string('0', 32)).Length)
+            .IsLessThanOrEqualTo(Path.GetTempPath().Length + 53);
         await Assert.That(pipes.StartsWith(Path.GetDirectoryName(temp)!, StringComparison.Ordinal)).IsFalse();
         await Assert.That(Directory.Exists(pipes)).IsFalse();
     }
